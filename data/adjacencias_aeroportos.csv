@@ -1,0 +1,51 @@
+origem,destino,tipo_conexao,justificativa,peso
+REC,JPA,regional_curta,"proximidade regional alta, voo curto e forte integração entre capitais vizinhas do Nordeste",13
+REC,NAT,regional,conexão regional entre capitais litorâneas com relevância turística e tempo de voo baixo,15
+REC,SSA,regional_forte,"ligação entre capitais nordestinas densas, economicamente relevantes e com boa capacidade de ligação",18
+REC,FOR,regional_forte,conexão entre polos relevantes do Nordeste com boa capacidade e importância econômica/turística,19
+REC,THE,regional_interior_litoral,"integra capital litorânea densa a capital interiorana do Nordeste, com relevância regional",17
+NAT,JPA,regional_curta,"capitais muito próximas, com alta proximidade regional e tempo médio de voo reduzido",12
+FOR,NAT,regional_turistica,conexão regional costeira com forte apelo turístico e boa proximidade,15
+SSA,FOR,regional_forte,ligação entre grandes capitais nordestinas com alta relevância econômica e boa capacidade,19
+GRU,CGH,metropolitana,"ligação entre aeroportos da mesma metrópole, altíssima relevância econômica e capacidade operacional",18
+GRU,GIG,eixo_sudeste,conexão entre grandes centros nacionais com altíssima relevância econômica e elevada capacidade,21
+GRU,CNF,eixo_sudeste,ligação entre hub paulista e capital mineira com forte peso econômico e corporativo,20
+GRU,VIX,eixo_sudeste,conexão entre hub nacional e capital estratégica do Sudeste com boa capacidade e relevância econômica,19
+CGH,CNF,ponte_corporativa,"rota corporativa entre São Paulo e Belo Horizonte, com forte relevância econômica e boa capacidade",20
+GIG,CNF,eixo_sudeste,ligação entre Rio de Janeiro e Belo Horizonte com relevância econômica e turística combinadas,18
+GIG,VIX,litoral_sudeste,conexão entre capitais costeiras do Sudeste com componente turístico e econômico,17
+BSB,GYN,regional_forte,"proximidade regional muito alta, tempo curto e forte integração funcional entre as capitais",14
+CWB,FLN,regional_sul,ligação curta entre capitais do Sul com forte proximidade regional e componente turístico,15
+CWB,POA,regional_sul,conexão entre capitais do Sul com relevância econômica e boa articulação regional,18
+FLN,POA,regional_sul_turistica,"ligação regional com proximidade alta, turismo relevante e voo curto",16
+MAO,BEL,regional_estrategica,"conexão entre os principais polos do Norte, estratégica para integração amazônica",20
+MAO,PVH,regional_norte,articulação regional do Norte com importância logística e tempo de voo intermediário,18
+PVH,RBR,regional_remota,"conexão essencial entre capitais do Norte ocidental, com baixa redundância e função estrutural",17
+REC,BSB,ponte_nacional,"liga polo nordestino à capital federal, com forte relevância política e boa capacidade",21
+SSA,BSB,ponte_nacional,"conexão entre capital nordestina e centro político do país, importante na malha nacional",20
+FOR,GRU,hub_nacional,liga grande capital nordestina ao principal hub econômico do Brasil,23
+NAT,GIG,turistica_nacional,rota entre destino turístico do Nordeste e grande metrópole turística do Sudeste,20
+THE,BSB,articulacao_nacional,integra capital nordestina interiorana ao centro político-administrativo do país,19
+BSB,GRU,eixo_nacional,conexão entre capital federal e principal centro econômico e aeroportuário nacional,24
+BSB,CNF,eixo_centro_sudeste,articulação entre centro político e polo econômico mineiro com alta relevância institucional,20
+BSB,BEL,integracao_nacional,ponte entre Centro-Oeste e Norte oriental com relevância estratégica de integração nacional,22
+BSB,MAO,integracao_nacional,ligação estrutural entre capital federal e principal polo amazônico,24
+GYN,CWB,conexao_interregional,integra Centro-Oeste ao Sul por eixo intermediário de relevância econômica regional,18
+CWB,GRU,eixo_sul_sudeste,forte conexão entre capital do Sul e principal hub do país,21
+FLN,GIG,turistica_interregional,"liga capital turística do Sul à metrópole fluminense, unindo turismo e relevância nacional",20
+POA,GRU,eixo_sul_sudeste_longo,conexão longa entre extremo Sul e hub nacional com alta importância econômica,23
+BEL,GRU,hub_nacional,liga principal polo do Norte oriental ao maior hub nacional,24
+MAO,GRU,hub_nacional_longo,conexão estrutural de longa distância entre Amazônia e centro econômico do país,25
+PVH,BSB,integracao_remota,articulação entre capital amazônica ocidental e centro político nacional,23
+RBR,BSB,integracao_remota,"integração de região periférica e remota à capital federal, com importância estrutural",24
+VIX,REC,litoral_nacional,ligação entre capitais litorâneas de regiões distintas com relevância econômica e turística,20
+GIG,SSA,turistica_nacional,"conecta duas capitais de forte apelo cultural, turístico e econômico",20
+CNF,FOR,conexao_interregional,liga polo econômico mineiro a capital nordestina estratégica,21
+SSA,VIX,litoral_interregional,ligação entre capitais litorâneas de Nordeste e Sudeste com relevância turística e econômica,19
+FOR,BSB,articulacao_nacional,conecta capital nordestina de grande porte à capital federal com forte relevância política e boa capacidade,21
+REC,GIG,eixo_turistico_economico,une capital nordestina estratégica a metrópole fluminense com demanda turística e econômica relevante,21
+JPA,BSB,conexao_nacional,integra capital nordestina de porte médio ao centro político-administrativo do país,18
+POA,CNF,conexao_interregional_longa,ligação entre Sul e Sudeste com importância econômica e tempo de voo elevado,22
+BEL,CNF,eixo_norte_sudeste,conecta polo do Norte a capital mineira com relevância logística e econômica nacional,22
+BEL,PVH,integracao_norte,"conexão entre polos relevantes do Norte, com função estratégica de integração amazônica e articulação logística regional",19
+FLN,VIX,litoral_interregional,conexão entre capitais costeiras com componente turístico e integração entre Sul e Sudeste,19

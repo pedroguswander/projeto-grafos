@@ -1,0 +1,6 @@
+origem,destino,custo,caminho
+REC,POA,63,REC > BSB > CNF > POA
+MAO,GRU,25,MAO > GRU
+JPA,POA,60,JPA > BSB > CNF > POA
+THE,FLN,58,THE > REC > GIG > FLN
+RBR,VIX,63,RBR > BSB > CNF > VIX
