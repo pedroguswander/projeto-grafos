@@ -1,0 +1,202 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 720px;
+                 background-color: #0F1923;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; background: #0F1923; color: #ECEFF4; }
+  #header {
+    background: linear-gradient(135deg, #162030 0%, #1E2E42 100%);
+    border-bottom: 2px solid #2A4060;
+    padding: 16px 28px 10px;
+  }
+  #header h1 { margin: 0 0 4px; font-size: 1.5rem; letter-spacing: 1px; }
+  #header p  { margin: 0; font-size: 0.85rem; color: #8AABB0; }
+  #legend {
+    display: flex; gap: 32px; align-items: center;
+    background: #162030; padding: 8px 28px;
+    border-bottom: 1px solid #2A4060; flex-wrap: wrap;
+  }
+  .leg-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+  .leg-line  { width: 36px; height: 4px; border-radius: 2px; }
+  .leg-node  { width: 14px; height: 14px; border-radius: 50%; }
+  #mynetwork { border: none !important; }
+  /* custo total badges */
+  #badges {
+    display:flex; gap:20px; padding: 8px 28px;
+    background:#101820; border-bottom:1px solid #2A4060; flex-wrap:wrap;
+  }
+  .badge {
+    display:flex; align-items:center; gap:8px;
+    background:#1B2D40; border-radius:8px; padding:6px 14px;
+    font-size:0.83rem;
+  }
+  .badge-dot { width:12px; height:12px; border-radius:50%; }
+</style>
+
+<div id="header">
+  <h1>🌐 Árvore de Percurso — Malha Aérea Brasileira</h1>
+  <p>Subgrafo construído a partir dos caminhos obrigatórios de custo mínimo</p>
+</div>
+
+<div id="badges">
+  <div class="badge">
+    <div class="badge-dot" style="background:#4A90D9"></div>
+    <span><b>Recife → Porto Alegre</b> &nbsp;|&nbsp; Caminho: REC › BSB › CNF › POA &nbsp;|&nbsp; Custo total: <b>63</b></span>
+  </div>
+  <div class="badge">
+    <div class="badge-dot" style="background:#E8A838"></div>
+    <span><b>Manaus → São Paulo</b> &nbsp;|&nbsp; Caminho: MAO › GRU &nbsp;|&nbsp; Custo total: <b>25</b></span>
+  </div>
+</div>
+
+<div id="legend">
+  <span style="font-size:0.78rem;color:#8AABB0;font-weight:bold;">LEGENDA</span>
+  <div class="leg-item">
+    <div class="leg-line" style="background:#4A90D9"></div>
+    <span>Rota REC → POA</span>
+  </div>
+  <div class="leg-item">
+    <div class="leg-line" style="background:#E8A838"></div>
+    <span>Rota MAO → GRU</span>
+  </div>
+  <div class="leg-item">
+    <div class="leg-node" style="background:#1A6BB5"></div>
+    <span>Origem / Destino (Rota 1)</span>
+  </div>
+  <div class="leg-item">
+    <div class="leg-node" style="background:#C07000"></div>
+    <span>Origem / Destino (Rota 2)</span>
+  </div>
+  <div class="leg-item">
+    <div class="leg-node" style="background:#9B59B6"></div>
+    <span>Nó intermediário</span>
+  </div>
+  <div class="leg-item" style="color:#8AABB0;font-size:0.75rem;">
+    ★ = aeroporto terminal &nbsp;|&nbsp; ● = escala &nbsp;|&nbsp; número na aresta = peso
+  </div>
+</div>
+
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#1A6BB5", "font": {"color": "#ECEFF4"}, "id": "REC", "label": "\u2708 Recife\n(REC)", "shape": "star", "size": 38, "title": "\u003cb\u003eRecife\u003c/b\u003e\u003cbr\u003eC\u00f3digo IATA: REC"}, {"color": "#1A6BB5", "font": {"color": "#ECEFF4"}, "id": "POA", "label": "\u2708 Porto Alegre\n(POA)", "shape": "star", "size": 38, "title": "\u003cb\u003ePorto Alegre\u003c/b\u003e\u003cbr\u003eC\u00f3digo IATA: POA"}, {"color": "#C07000", "font": {"color": "#ECEFF4"}, "id": "MAO", "label": "\u2708 Manaus\n(MAO)", "shape": "star", "size": 38, "title": "\u003cb\u003eManaus\u003c/b\u003e\u003cbr\u003eC\u00f3digo IATA: MAO"}, {"color": "#C07000", "font": {"color": "#ECEFF4"}, "id": "GRU", "label": "\u2708 S\u00e3o Paulo\n(GRU)", "shape": "star", "size": 38, "title": "\u003cb\u003eS\u00e3o Paulo\u003c/b\u003e\u003cbr\u003eC\u00f3digo IATA: GRU"}, {"color": "#9B59B6", "font": {"color": "#ECEFF4"}, "id": "BSB", "label": "\u2708 Bras\u00edlia\n(BSB)", "shape": "ellipse", "size": 30, "title": "\u003cb\u003eBras\u00edlia\u003c/b\u003e\u003cbr\u003eC\u00f3digo IATA: BSB"}, {"color": "#2ECC71", "font": {"color": "#ECEFF4"}, "id": "CNF", "label": "\u2708 Belo Horizonte\n(CNF)", "shape": "ellipse", "size": 28, "title": "\u003cb\u003eBelo Horizonte\u003c/b\u003e\u003cbr\u003eC\u00f3digo IATA: CNF"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": {"color": "#4A90D9", "highlight": "#FFFFFF", "hover": "#FFFFFF"}, "from": "REC", "label": "  21  ", "title": "\u003cb\u003eRecife \u2192 Bras\u00edlia\u003c/b\u003e\u003cbr\u003ePeso: 21\u003cbr\u003eRota: REC \u2192 POA", "to": "BSB", "width": 3.5}, {"arrows": "to", "color": {"color": "#4A90D9", "highlight": "#FFFFFF", "hover": "#FFFFFF"}, "from": "BSB", "label": "  20  ", "title": "\u003cb\u003eBras\u00edlia \u2192 Belo Horizonte\u003c/b\u003e\u003cbr\u003ePeso: 20\u003cbr\u003eRota: REC \u2192 POA", "to": "CNF", "width": 3.5}, {"arrows": "to", "color": {"color": "#4A90D9", "highlight": "#FFFFFF", "hover": "#FFFFFF"}, "from": "CNF", "label": "  22  ", "title": "\u003cb\u003eBelo Horizonte \u2192 Porto Alegre\u003c/b\u003e\u003cbr\u003ePeso: 22\u003cbr\u003eRota: REC \u2192 POA", "to": "POA", "width": 3.5}, {"arrows": "to", "color": {"color": "#E8A838", "highlight": "#FFFFFF", "hover": "#FFFFFF"}, "from": "MAO", "label": "  25  ", "title": "\u003cb\u003eManaus \u2192 S\u00e3o Paulo\u003c/b\u003e\u003cbr\u003ePeso: 25\u003cbr\u003eRota: MAO \u2192 GRU", "to": "GRU", "width": 3.5}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"nodes": {"font": {"size": 14, "face": "Arial", "bold": true}, "borderWidth": 2, "borderWidthSelected": 4, "shadow": {"enabled": true, "size": 8, "x": 3, "y": 3}}, "edges": {"font": {"size": 13, "face": "Arial", "align": "middle", "color": "#FFFFFF"}, "arrows": {"to": {"enabled": true, "scaleFactor": 1.3}}, "smooth": {"type": "curvedCW", "roundness": 0.1}, "shadow": {"enabled": true}}, "physics": {"enabled": true, "solver": "forceAtlas2Based", "forceAtlas2Based": {"gravitationalConstant": -120, "centralGravity": 0.005, "springLength": 220, "springConstant": 0.04, "damping": 0.9}, "stabilization": {"iterations": 200}}, "interaction": {"hover": true, "navigationButtons": true, "keyboard": true, "tooltipDelay": 100}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
