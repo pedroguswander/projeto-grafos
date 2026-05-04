@@ -1,0 +1,120 @@
+.home-clean-bg {
+  min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(77, 163, 255, 0.18), transparent 30%),
+    radial-gradient(circle at top right, rgba(124, 92, 255, 0.16), transparent 28%),
+    linear-gradient(135deg, #06121f 0%, #081827 45%, #0b1b2d 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.home-clean-content {
+  width: 100%;
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: rgba(10, 25, 47, 0.68);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 28px;
+  padding: 3rem 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.main-logo-clean {
+  width: 240px;
+  max-width: 80vw;
+  margin-bottom: 1.5rem;
+  display: block;
+  filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.35));
+}
+
+.home-title {
+  color: #e8eef7;
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 0.7rem;
+  letter-spacing: -0.03em;
+}
+
+.home-subtitle {
+  color: #9db0c7;
+  font-size: 1.05rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-weight: 400;
+  max-width: 680px;
+  line-height: 1.6;
+}
+
+.clean-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.clean-btn {
+  background: rgba(255,255,255,0.06);
+  color: #e8eef7;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 1rem 1.4rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s ease;
+  letter-spacing: 0.3px;
+  outline: none;
+}
+
+.clean-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.1);
+}
+
+.clean-btn.main {
+  background: linear-gradient(135deg, #4da3ff, #7c5cff);
+  color: white;
+  box-shadow: 0 12px 30px rgba(77, 163, 255, 0.24);
+}
+
+.clean-btn.main:hover {
+  filter: brightness(1.05);
+}
+
+@media (max-width: 700px) {
+  .home-clean-content {
+    padding: 2.2rem 1.2rem;
+  }
+
+  .clean-btn-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .clean-btn {
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .main-logo-clean {
+    width: 170px;
+  }
+
+  .home-title {
+    font-size: 1.8rem;
+  }
+
+  .home-subtitle {
+    font-size: 0.95rem;
+  }
+}

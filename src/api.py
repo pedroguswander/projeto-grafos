@@ -111,10 +111,15 @@ def get_graph_data():
             'group': 'airport'
         })
 
-    # Arestas (rotas)
+    # Arestas (rotas) - evitar duplicidade (ida/volta)
     edges = []
+    seen = set()
     for from_code, neighbors in g.adjacency_list.items():
         for to_code, distance in neighbors:
+            key = tuple(sorted([from_code, to_code]))
+            if key in seen:
+                continue
+            seen.add(key)
             edges.append({
                 'from': from_code,
                 'to': to_code,

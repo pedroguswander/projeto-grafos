@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { Network } from 'vis-network/standalone'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
+import { Network } from 'vis-network/standalone'
+import logo from './assets/logo/logo_branca_isolada.png'
 import './App.css'
 
 function App() {
@@ -9,12 +10,104 @@ function App() {
   const [pathResult, setPathResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] })
+  const [hoveredAirport, setHoveredAirport] = useState(null)
+
   const networkRef = useRef(null)
   const containerRef = useRef(null)
+  const pendingSwapTypeRef = useRef(null)
+  const skipAutoCalculateRef = useRef(false)
+  const startAirportRef = useRef('')
+  const endAirportRef = useRef('')
+  const pathResultRef = useRef(null)
+
+  function formatWeightLabel(value) {
+    if (value === null || value === undefined || value === '') return ''
+    const text = String(value).trim()
+    const match = text.match(/-?\d+(\.\d+)?/)
+
+    if (!match) {
+      return text.replace(/dist[aâ]ncia/gi, 'Peso')
+    }
+
+    const numericValue = Number(match[0])
+
+    if (Number.isNaN(numericValue)) {
+      return text.replace(/dist[aâ]ncia/gi, 'Peso')
+    }
+
+    return `Peso: ${Math.trunc(numericValue)}`
+  }
+
+  function extractWeightNumber(value) {
+    if (value === null || value === undefined || value === '') return ''
+    const match = String(value).match(/-?\d+(\.\d+)?/)
+
+    if (!match) return ''
+
+    const numericValue = Number(match[0])
+
+    if (Number.isNaN(numericValue)) return ''
+
+    return `${Math.trunc(numericValue)}`
+  }
+
+  const normalizeGraphData = (data) => {
+    const nodes = data.nodes.map((node) => ({
+      ...node,
+      x: undefined,
+      y: undefined,
+      fixed: false,
+      label: node.id,
+      title: '',
+      font: {
+        color: '#e8eef7',
+        size: 18,
+        face: 'Inter',
+        bold: true,
+        strokeWidth: 0
+      }
+    }))
+
+    const edges = data.edges.map((edge) => ({
+      ...edge,
+      label: formatWeightLabel(edge.label ?? edge.weight ?? edge.peso ?? ''),
+      font: {
+        color: 'rgba(232, 238, 247, 0.78)',
+        size: 11,
+        align: 'middle',
+        face: 'Inter',
+        strokeWidth: 0,
+        background: 'rgba(6, 18, 31, 0.4)'
+      }
+    }))
+
+    return { nodes, edges }
+  }
+
+  const loadGraphData = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/graph-data')
+      setGraphData(normalizeGraphData(response.data))
+    } catch (error) {
+      console.error('Erro ao carregar dados do grafo:', error)
+    }
+  }
 
   useEffect(() => {
     loadGraphData()
   }, [])
+
+  useEffect(() => {
+    startAirportRef.current = startAirport
+  }, [startAirport])
+
+  useEffect(() => {
+    endAirportRef.current = endAirport
+  }, [endAirport])
+
+  useEffect(() => {
+    pathResultRef.current = pathResult
+  }, [pathResult])
 
   useEffect(() => {
     if (containerRef.current && graphData.nodes.length > 0) {
@@ -22,13 +115,281 @@ function App() {
     }
   }, [graphData])
 
-  const loadGraphData = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/graph-data')
-      setGraphData(response.data)
-    } catch (error) {
-      console.error('Erro ao carregar dados do grafo:', error)
+  useEffect(() => {
+    const handleResize = () => {
+      if (networkRef.current) {
+        networkRef.current.redraw()
+      }
     }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (networkRef.current) {
+        networkRef.current.destroy()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (skipAutoCalculateRef.current) {
+      skipAutoCalculateRef.current = false
+      return
+    }
+
+    if (startAirport && endAirport && startAirport !== endAirport) {
+      calculatePath(startAirport, endAirport)
+    } else {
+      setPathResult(null)
+      updateGraphVisual([], startAirport, endAirport, pendingSwapTypeRef.current)
+    }
+  }, [startAirport, endAirport])
+
+  const airportOptions = useMemo(() => {
+    return [...graphData.nodes]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((node) => ({
+        value: node.id,
+        label: node.city ? `${node.id} — ${node.city}` : node.id
+      }))
+  }, [graphData.nodes])
+
+  const nodeById = useMemo(() => {
+    return new Map(graphData.nodes.map((node) => [node.id, node]))
+  }, [graphData.nodes])
+
+  const connectionMap = useMemo(() => {
+    const map = new Map()
+
+    graphData.nodes.forEach((node) => {
+      map.set(node.id, [])
+    })
+
+    graphData.edges.forEach((edge) => {
+      const fromNode = nodeById.get(edge.from)
+      const toNode = nodeById.get(edge.to)
+      const weight = extractWeightNumber(edge.label ?? edge.weight ?? edge.peso ?? '')
+
+      if (!map.has(edge.from)) map.set(edge.from, [])
+      if (!map.has(edge.to)) map.set(edge.to, [])
+
+      map.get(edge.from).push({
+        code: edge.to,
+        city: toNode?.city || '',
+        weight
+      })
+
+      map.get(edge.to).push({
+        code: edge.from,
+        city: fromNode?.city || '',
+        weight
+      })
+    })
+
+    for (const [key, values] of map.entries()) {
+      const unique = values.filter(
+        (item, index, arr) =>
+          index ===
+          arr.findIndex(
+            (candidate) =>
+              candidate.code === item.code &&
+              candidate.weight === item.weight
+          )
+      )
+
+      unique.sort((a, b) => a.code.localeCompare(b.code))
+      map.set(key, unique)
+    }
+
+    return map
+  }, [graphData.edges, graphData.nodes, nodeById])
+
+  const isIntermediatePathNode = (
+    nodeId,
+    customPath = pathResultRef.current?.path || [],
+    customStart = startAirportRef.current,
+    customEnd = endAirportRef.current
+  ) => {
+    if (!customPath.length) return false
+    if (nodeId === customStart || nodeId === customEnd) return false
+    return customPath.includes(nodeId)
+  }
+
+  const getNodeVisualState = (
+    nodeId,
+    path = [],
+    customStart = startAirport,
+    customEnd = endAirport,
+    pendingSwapType = pendingSwapTypeRef.current
+  ) => {
+    const isStart = !!customStart && nodeId === customStart
+    const isEnd = !!customEnd && nodeId === customEnd
+    const isIntermediate = path.includes(nodeId) && !isStart && !isEnd
+
+    if (isStart && pendingSwapType === 'start') {
+      return { background: '#7c5cff', border: '#ffffff' }
+    }
+
+    if (isEnd && pendingSwapType === 'end') {
+      return { background: '#f6c56f', border: '#ffffff' }
+    }
+
+    if (isStart) {
+      return { background: '#26c281', border: '#ffffff' }
+    }
+
+    if (isEnd) {
+      return { background: '#ff6b6b', border: '#ffffff' }
+    }
+
+    if (isIntermediate) {
+      return { background: '#f6c56f', border: '#ffe29e' }
+    }
+
+    return { background: '#4da3ff', border: '#9fcbff' }
+  }
+
+  const updateGraphVisual = (
+    customPath = [],
+    customStart = startAirportRef.current,
+    customEnd = endAirportRef.current,
+    pendingSwapType = pendingSwapTypeRef.current
+  ) => {
+    if (!networkRef.current) return
+
+    const updatedNodes = graphData.nodes.map((node) => ({
+      ...node,
+      color: getNodeVisualState(node.id, customPath, customStart, customEnd, pendingSwapType)
+    }))
+
+    const updatedEdges = graphData.edges.map((edge) => {
+      const isPathEdge = customPath.some(
+        (node, index) =>
+          index < customPath.length - 1 &&
+          ((edge.from === customPath[index] && edge.to === customPath[index + 1]) ||
+            (edge.from === customPath[index + 1] && edge.to === customPath[index]))
+      )
+
+      return {
+        ...edge,
+        color: {
+          color: isPathEdge ? '#f6c56f' : 'rgba(185, 203, 227, 0.28)'
+        },
+        width: isPathEdge ? 4.5 : 1.6
+      }
+    })
+
+    networkRef.current.setData({
+      nodes: updatedNodes,
+      edges: updatedEdges
+    })
+  }
+
+  const highlightPath = (
+    path,
+    currentStart = startAirportRef.current,
+    currentEnd = endAirportRef.current,
+    pendingSwapType = pendingSwapTypeRef.current
+  ) => {
+    if (!networkRef.current) return
+
+    const updatedNodes = graphData.nodes.map((node) => ({
+      ...node,
+      color: getNodeVisualState(node.id, path, currentStart, currentEnd, pendingSwapType)
+    }))
+
+    const updatedEdges = graphData.edges.map((edge) => {
+      const isPathEdge = path.some(
+        (node, index) =>
+          index < path.length - 1 &&
+          ((edge.from === path[index] && edge.to === path[index + 1]) ||
+            (edge.from === path[index + 1] && edge.to === path[index]))
+      )
+
+      return {
+        ...edge,
+        color: {
+          color: isPathEdge ? '#f6c56f' : 'rgba(185, 203, 227, 0.28)'
+        },
+        width: isPathEdge ? 4.5 : 1.6
+      }
+    })
+
+    networkRef.current.setData({
+      nodes: updatedNodes,
+      edges: updatedEdges
+    })
+
+    setTimeout(() => {
+      if (networkRef.current) {
+        networkRef.current.fit({
+          animation: {
+            duration: 350,
+            easingFunction: 'easeInOutQuad'
+          }
+        })
+      }
+    }, 120)
+  }
+
+  const calculatePath = async (
+    customStart = startAirportRef.current,
+    customEnd = endAirportRef.current
+  ) => {
+    if (!customStart || !customEnd || customStart === customEnd) {
+      setPathResult(null)
+      updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/dijkstra', {
+        start: customStart,
+        end: customEnd
+      })
+
+      if (response.data.success) {
+        setPathResult(response.data)
+        highlightPath(response.data.path, customStart, customEnd, pendingSwapTypeRef.current)
+      } else {
+        alert(response.data.message)
+        setPathResult(null)
+        updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
+      }
+    } catch (error) {
+      console.error('Erro ao calcular caminho:', error)
+      alert('Erro ao calcular caminho')
+      setPathResult(null)
+      updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const clearStartAndWaitForNewSelection = () => {
+    const currentEnd = endAirportRef.current
+    pendingSwapTypeRef.current = 'start'
+    skipAutoCalculateRef.current = true
+    setPathResult(null)
+    setStartAirport('')
+    updateGraphVisual([], '', currentEnd, 'start')
+  }
+
+  const clearEndAndWaitForNewSelection = () => {
+    const currentStart = startAirportRef.current
+    pendingSwapTypeRef.current = 'end'
+    skipAutoCalculateRef.current = true
+    setPathResult(null)
+    setEndAirport('')
+    updateGraphVisual([], currentStart, '', 'end')
   }
 
   const initializeNetwork = () => {
@@ -37,201 +398,441 @@ function App() {
     }
 
     const options = {
-      nodes: {
-        shape: 'circle',
-        size: 25,
-        font: {
-          size: 12,
-          color: '#ffffff'
-        },
-        borderWidth: 2,
-        shadow: true
+      autoResize: true,
+      layout: {
+        improvedLayout: true,
+        randomSeed: 12
       },
-      edges: {
-        width: 2,
-        shadow: true,
+      nodes: {
+        shape: 'dot',
+        size: 26,
+        borderWidth: 2.5,
+        shadow: {
+          enabled: true,
+          color: 'rgba(0,0,0,0.28)',
+          size: 16,
+          x: 0,
+          y: 8
+        },
         font: {
-          size: 10,
-          align: 'middle'
+          size: 18,
+          color: '#e8eef7',
+          face: 'Inter',
+          bold: true
         },
         color: {
-          color: '#848484',
-          highlight: '#ff0000'
+          background: '#4da3ff',
+          border: '#9fcbff',
+          highlight: {
+            background: '#7c5cff',
+            border: '#ffffff'
+          },
+          hover: {
+            background: '#69b3ff',
+            border: '#ffffff'
+          }
+        }
+      },
+      edges: {
+        width: 2.2,
+        selectionWidth: 3,
+        hoverWidth: 2.8,
+        shadow: {
+          enabled: false
+        },
+        font: {
+          size: 11,
+          align: 'middle',
+          color: 'rgba(232, 238, 247, 0.78)',
+          face: 'Inter',
+          strokeWidth: 0,
+          background: 'rgba(6, 18, 31, 0.35)'
+        },
+        color: {
+          color: 'rgba(185, 203, 227, 0.48)',
+          highlight: '#f6c56f',
+          hover: '#8fc5ff',
+          inherit: false
+        },
+        smooth: {
+          enabled: true,
+          type: 'continuous',
+          roundness: 0.18
         }
       },
       physics: {
         enabled: true,
+        solver: 'barnesHut',
+        stabilization: {
+          enabled: true,
+          iterations: 350,
+          updateInterval: 25,
+          fit: true
+        },
         barnesHut: {
-          gravitationalConstant: -2000,
-          centralGravity: 0.3,
-          springLength: 95,
-          springConstant: 0.04,
-          damping: 0.09,
-          avoidOverlap: 0.1
+          gravitationalConstant: -5400,
+          centralGravity: 0.16,
+          springLength: 170,
+          springConstant: 0.026,
+          damping: 0.16,
+          avoidOverlap: 0.8
         }
       },
       interaction: {
         hover: true,
-        tooltipDelay: 200
+        hoverConnectedEdges: true,
+        tooltipDelay: 0,
+        navigationButtons: false,
+        zoomView: true,
+        dragView: true,
+        multiselect: false,
+        selectable: true
       }
     }
 
     networkRef.current = new Network(containerRef.current, graphData, options)
 
-    networkRef.current.on('click', (params) => {
-      if (params.nodes.length > 0) {
-        const nodeId = params.nodes[0]
-        if (!startAirport) {
-          setStartAirport(nodeId)
-        } else if (!endAirport && nodeId !== startAirport) {
-          setEndAirport(nodeId)
-        } else if (nodeId === startAirport) {
-          setStartAirport('')
-        } else if (nodeId === endAirport) {
-          setEndAirport('')
-        }
-      }
-    })
-  }
+    networkRef.current.once('stabilizationIterationsDone', () => {
+      if (!networkRef.current) return
 
-  const calculatePath = async () => {
-    if (!startAirport || !endAirport) {
-      alert('Selecione aeroporto de origem e destino!')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const response = await axios.post('http://localhost:5000/api/dijkstra', {
-        start: startAirport,
-        end: endAirport
+      networkRef.current.setOptions({
+        physics: false
       })
 
-      if (response.data.success) {
-        setPathResult(response.data)
-        highlightPath(response.data.path)
+      const currentPath = pathResultRef.current?.path || []
+      const currentStart = startAirportRef.current
+      const currentEnd = endAirportRef.current
+
+      if (currentPath.length) {
+        highlightPath(currentPath, currentStart, currentEnd, pendingSwapTypeRef.current)
       } else {
-        alert(response.data.message)
-        setPathResult(null)
+        updateGraphVisual([], currentStart, currentEnd, pendingSwapTypeRef.current)
       }
-    } catch (error) {
-      console.error('Erro ao calcular caminho:', error)
-      alert('Erro ao calcular caminho')
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  const highlightPath = (path) => {
-    if (!networkRef.current) return
+      networkRef.current.redraw()
+    })
 
-    const updatedNodes = graphData.nodes.map(node => ({
-      ...node,
-      color: node.id === startAirport ? '#00ff00' : node.id === endAirport ? '#ff0000' : '#97C2FC'
-    }))
-
-    const updatedEdges = graphData.edges.map(edge => ({
-      ...edge,
-      color: { color: '#848484' },
-      width: 2
-    }))
-
-    path.forEach(nodeId => {
-      const nodeIndex = updatedNodes.findIndex(n => n.id === nodeId)
-      if (nodeIndex !== -1) {
-        updatedNodes[nodeIndex].color = '#ffff00'
+    networkRef.current.on('doubleClick', () => {
+      if (networkRef.current) {
+        networkRef.current.fit({
+          animation: {
+            duration: 300,
+            easingFunction: 'easeInOutQuad'
+          }
+        })
       }
     })
 
-    for (let i = 0; i < path.length - 1; i++) {
-      const edgeIndex = updatedEdges.findIndex(e =>
-        (e.from === path[i] && e.to === path[i + 1]) ||
-        (e.from === path[i + 1] && e.to === path[i])
-      )
-      if (edgeIndex !== -1) {
-        updatedEdges[edgeIndex].color = { color: '#ff0000' }
-        updatedEdges[edgeIndex].width = 4
-      }
-    }
+    networkRef.current.on('hoverNode', (params) => {
+      const node = nodeById.get(params.node)
+      if (!node) return
 
-    networkRef.current.setData({ nodes: updatedNodes, edges: updatedEdges })
+      setHoveredAirport({
+        id: node.id,
+        city: node.city || '',
+        connections: connectionMap.get(node.id) || []
+      })
+    })
+
+    networkRef.current.on('blurNode', () => {
+      setHoveredAirport(null)
+    })
+
+    networkRef.current.on('dragging', () => {
+      setHoveredAirport(null)
+    })
+
+    networkRef.current.on('zoom', () => {
+      setHoveredAirport(null)
+    })
+
+    networkRef.current.on('click', (params) => {
+      const currentStart = startAirportRef.current
+      const currentEnd = endAirportRef.current
+      const currentPath = pathResultRef.current?.path || []
+      const pendingType = pendingSwapTypeRef.current
+
+      if (params.nodes.length === 0) {
+        pendingSwapTypeRef.current = null
+
+        if (currentPath.length) {
+          highlightPath(currentPath, currentStart, currentEnd, null)
+        } else {
+          updateGraphVisual([], currentStart, currentEnd, null)
+        }
+
+        return
+      }
+
+      const nodeId = params.nodes[0]
+      const clickedIsStart = !!currentStart && nodeId === currentStart
+      const clickedIsEnd = !!currentEnd && nodeId === currentEnd
+      const clickedIsIntermediate = isIntermediatePathNode(
+        nodeId,
+        currentPath,
+        currentStart,
+        currentEnd
+      )
+
+      if (clickedIsIntermediate) return
+
+      if (clickedIsStart) {
+        clearStartAndWaitForNewSelection()
+        return
+      }
+
+      if (clickedIsEnd) {
+        clearEndAndWaitForNewSelection()
+        return
+      }
+
+      if (pendingType === 'start') {
+        if (nodeId === currentEnd) return
+        pendingSwapTypeRef.current = null
+        setStartAirport(nodeId)
+        return
+      }
+
+      if (pendingType === 'end') {
+        if (nodeId === currentStart) return
+        pendingSwapTypeRef.current = null
+        setEndAirport(nodeId)
+        return
+      }
+
+      if (!currentStart && !currentEnd) {
+        setStartAirport(nodeId)
+        return
+      }
+
+      if (currentStart && !currentEnd) {
+        if (nodeId === currentStart) return
+        return
+      }
+
+      if (!currentStart && currentEnd) {
+        if (nodeId === currentEnd) return
+        return
+      }
+    })
   }
 
-  const resetSelection = () => {
+  const resetSelection = async () => {
+    pendingSwapTypeRef.current = null
+    skipAutoCalculateRef.current = true
+    setHoveredAirport(null)
     setStartAirport('')
     setEndAirport('')
     setPathResult(null)
-    loadGraphData()
+    await loadGraphData()
   }
 
+  const handleStartChange = (value) => {
+    const currentEnd = endAirportRef.current
+
+    if (!value) {
+      clearStartAndWaitForNewSelection()
+      return
+    }
+
+    pendingSwapTypeRef.current = null
+
+    if (value === currentEnd) return
+
+    setStartAirport(value)
+  }
+
+  const handleEndChange = (value) => {
+    const currentStart = startAirportRef.current
+
+    if (!value) {
+      clearEndAndWaitForNewSelection()
+      return
+    }
+
+    pendingSwapTypeRef.current = null
+
+    if (value === currentStart) return
+
+    setEndAirport(value)
+  }
+
+  const formattedCost =
+    pathResult?.cost !== undefined && pathResult?.cost !== null
+      ? Math.trunc(Number(pathResult.cost))
+      : ''
+
   return (
-    <div className="app">
-      <header className="header">
-        <h1>🛩️ Grafo de Aeroportos - Dijkstra</h1>
-        <p>Clique nos aeroportos para selecionar origem e destino</p>
+    <div className="app-modern-bg">
+      <header className="app-modern-header clean-header">
+        <div className="clean-header-brand">
+          <img src={logo} alt="Logo ETA Airlines" className="clean-header-logo" />
+        </div>
+
+        <div className="clean-header-content">
+          <h1 className="clean-header-title">Painel de Voos & Rotas</h1>
+        </div>
       </header>
 
-      <div className="main-content">
-        <div className="controls">
-          <div className="selection">
-            <div className="airport-select">
-              <label>Origem:</label>
-              <input
-                type="text"
-                value={startAirport}
-                onChange={(e) => setStartAirport(e.target.value)}
-                placeholder="Clique no grafo ou digite"
-              />
-            </div>
-            <div className="airport-select">
-              <label>Destino:</label>
-              <input
-                type="text"
-                value={endAirport}
-                onChange={(e) => setEndAirport(e.target.value)}
-                placeholder="Clique no grafo ou digite"
-              />
-            </div>
-          </div>
-
-          <div className="buttons">
-            <button
-              onClick={calculatePath}
-              disabled={loading || !startAirport || !endAirport}
-              className="calculate-btn"
+      <main className="app-modern-main">
+        <section className="glass-card app-top-bar clean-top-bar">
+          <div className="field-group">
+            <label>Origem</label>
+            <select
+              value={startAirport}
+              onChange={(e) => handleStartChange(e.target.value)}
             >
-              {loading ? 'Calculando...' : '🔍 Calcular Caminho (Dijkstra)'}
-            </button>
-            <button onClick={resetSelection} className="reset-btn">
-              🔄 Resetar
+              <option value="">Selecione a origem</option>
+              {airportOptions.map((airport) => (
+                <option
+                  key={airport.value}
+                  value={airport.value}
+                  disabled={airport.value === endAirport}
+                >
+                  {airport.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field-group">
+            <label>Destino</label>
+            <select
+              value={endAirport}
+              onChange={(e) => handleEndChange(e.target.value)}
+            >
+              <option value="">Selecione o destino</option>
+              {airportOptions.map((airport) => (
+                <option
+                  key={airport.value}
+                  value={airport.value}
+                  disabled={airport.value === startAirport}
+                >
+                  {airport.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="top-action">
+            <button
+              onClick={() => calculatePath()}
+              disabled={loading || !startAirport || !endAirport}
+              className="modern-btn main"
+            >
+              {loading ? 'Analisando...' : 'Analisar'}
             </button>
           </div>
 
-          {pathResult && (
-            <div className="result">
-              <h3>✅ Caminho Encontrado!</h3>
-              <p><strong>Custo Total:</strong> {pathResult.cost}</p>
-              <p><strong>Conexões:</strong> {pathResult.connections}</p>
-              <p><strong>Caminho:</strong> {pathResult.path.join(' → ')}</p>
+          <div className="top-action">
+            <button onClick={resetSelection} className="modern-btn">
+              Limpar
+            </button>
+          </div>
+        </section>
+
+        {pathResult ? (
+          <section className="glass-card app-route-summary">
+            <div className="summary-stats">
+              <div className="summary-stat">
+                <div className="summary-label">Peso total</div>
+                <div className="summary-value">{formattedCost}</div>
+              </div>
+
+              <div className="summary-stat">
+                <div className="summary-label">Conexões</div>
+                <div className="summary-value">{pathResult.connections}</div>
+              </div>
+            </div>
+
+            <div className="summary-route">
+              <div className="summary-route-title">Rota encontrada</div>
+              <div className="summary-route-subtitle">
+                Sequência de aeroportos do trajeto analisado
+              </div>
+
+              <div className="summary-route-flow">
+                {pathResult.path.map((airport, index) => (
+                  <div key={index} className="route-flow-item">
+                    <span className="route-flow-code">{airport}</span>
+                    {index < pathResult.path.length - 1 && (
+                      <span className="route-flow-arrow">→</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
               <div className="path-details">
                 {pathResult.path_info.map((airport, index) => (
                   <div key={index} className="path-airport">
-                    <strong>{airport.code}</strong> - {airport.city}
+                    <span className="path-airport-code">{airport.code}</span>
+                    <span className="path-airport-separator">—</span>
+                    <span className="path-airport-city">{airport.city}</span>
                   </div>
                 ))}
               </div>
             </div>
-          )}
-        </div>
+          </section>
+        ) : (
+          <section className="glass-card empty-summary">
+            Selecione os aeroportos para ver peso, conexões e rota detalhada automaticamente.
+          </section>
+        )}
 
-        <div className="graph-container">
+        <section className="glass-card app-modern-graph">
           <div ref={containerRef} className="network-canvas"></div>
-        </div>
-      </div>
 
-      <footer className="footer">
-        <p>Implementação manual do algoritmo de Dijkstra | Frontend: React + Vis.js | Backend: Flask</p>
-      </footer>
+          <div className="airport-connections-panel">
+            <div className="airport-connections-header">
+              <div className="airport-connections-title">Conexões do Aeroporto</div>
+              <div className="airport-connections-subtitle">
+                Passe o mouse sobre um aeroporto no mapa para visualizar suas conexões.
+              </div>
+            </div>
+
+            {hoveredAirport ? (
+              <div className="airport-connections-content">
+                <div className="airport-connections-airport">
+                  <div className="airport-connections-code">{hoveredAirport.id}</div>
+                  {hoveredAirport.city ? (
+                    <div className="airport-connections-city">{hoveredAirport.city}</div>
+                  ) : null}
+                </div>
+
+                {hoveredAirport.connections.length > 0 ? (
+                  <div className="airport-connections-list">
+                    {hoveredAirport.connections.map((connection, index) => (
+                      <div
+                        key={`${hoveredAirport.id}-${connection.code}-${connection.weight}-${index}`}
+                        className="airport-connection-card"
+                      >
+                        <div className="airport-connection-info">
+                          <div className="airport-connection-code">{connection.code}</div>
+                          {connection.city ? (
+                            <div className="airport-connection-city">{connection.city}</div>
+                          ) : null}
+                        </div>
+
+                        <div className="airport-connection-weight">
+                          {connection.weight ? `Peso ${connection.weight}` : 'Peso -'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="airport-connections-no-data">
+                    Este aeroporto não possui conexões cadastradas.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="airport-connections-empty">
+                Passe o mouse em cima de algum aeroporto no mapa de conexões para exibir as informações aqui.
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
