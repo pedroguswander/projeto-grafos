@@ -878,7 +878,7 @@ function App({ onNavigate }) {
                 />
               </svg>
             </span>
-            <span className="back-button-text">Voltar ao início</span>
+            <span className="back-button-text">Voltar</span>
           </button>
         </div>
 
