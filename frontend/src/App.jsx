@@ -4,13 +4,15 @@ import { Network } from 'vis-network/standalone'
 import logo from './assets/logo/logo_branca_isolada.png'
 import './App.css'
 
-function App() {
+function App({ onNavigate }) {
   const [startAirport, setStartAirport] = useState('')
   const [endAirport, setEndAirport] = useState('')
   const [pathResult, setPathResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] })
   const [hoveredAirport, setHoveredAirport] = useState(null)
+  const [dijkstraSteps, setDijkstraSteps] = useState([])
+  const [isSimulatingSteps, setIsSimulatingSteps] = useState(false)
 
   const networkRef = useRef(null)
   const containerRef = useRef(null)
@@ -19,35 +21,34 @@ function App() {
   const startAirportRef = useRef('')
   const endAirportRef = useRef('')
   const pathResultRef = useRef(null)
+  const simulationTimeoutsRef = useRef([])
+
+  const handleGoBack = () => {
+    if (typeof onNavigate === 'function') {
+      onNavigate('home')
+    }
+  }
 
   function formatWeightLabel(value) {
     if (value === null || value === undefined || value === '') return ''
     const text = String(value).trim()
     const match = text.match(/-?\d+(\.\d+)?/)
-
     if (!match) {
       return text.replace(/dist[aâ]ncia/gi, 'Peso')
     }
-
     const numericValue = Number(match[0])
-
     if (Number.isNaN(numericValue)) {
       return text.replace(/dist[aâ]ncia/gi, 'Peso')
     }
-
     return `Peso: ${Math.trunc(numericValue)}`
   }
 
   function extractWeightNumber(value) {
     if (value === null || value === undefined || value === '') return ''
     const match = String(value).match(/-?\d+(\.\d+)?/)
-
     if (!match) return ''
-
     const numericValue = Number(match[0])
-
     if (Number.isNaN(numericValue)) return ''
-
     return `${Math.trunc(numericValue)}`
   }
 
@@ -63,7 +64,6 @@ function App() {
         color: '#e8eef7',
         size: 18,
         face: 'Inter',
-        bold: true,
         strokeWidth: 0
       }
     }))
@@ -91,6 +91,17 @@ function App() {
     } catch (error) {
       console.error('Erro ao carregar dados do grafo:', error)
     }
+  }
+
+  const clearSimulationTimeouts = () => {
+    simulationTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId))
+    simulationTimeoutsRef.current = []
+  }
+
+  const resetDijkstraSimulation = () => {
+    clearSimulationTimeouts()
+    setDijkstraSteps([])
+    setIsSimulatingSteps(false)
   }
 
   useEffect(() => {
@@ -131,6 +142,7 @@ function App() {
 
   useEffect(() => {
     return () => {
+      clearSimulationTimeouts()
       if (networkRef.current) {
         networkRef.current.destroy()
       }
@@ -147,6 +159,7 @@ function App() {
       calculatePath(startAirport, endAirport)
     } else {
       setPathResult(null)
+      resetDijkstraSimulation()
       updateGraphVisual([], startAirport, endAirport, pendingSwapTypeRef.current)
     }
   }, [startAirport, endAirport])
@@ -202,13 +215,125 @@ function App() {
               candidate.weight === item.weight
           )
       )
-
       unique.sort((a, b) => a.code.localeCompare(b.code))
       map.set(key, unique)
     }
 
     return map
   }, [graphData.edges, graphData.nodes, nodeById])
+
+  const dijkstraTableNodes = useMemo(() => {
+    return [...graphData.nodes].map((node) => node.id).sort((a, b) => a.localeCompare(b))
+  }, [graphData.nodes])
+
+  const buildAdjacencyMap = () => {
+    const adjacency = new Map()
+
+    graphData.nodes.forEach((node) => {
+      adjacency.set(node.id, [])
+    })
+
+    graphData.edges.forEach((edge) => {
+      const rawWeight = extractWeightNumber(edge.label ?? edge.weight ?? edge.peso ?? '')
+      const weight = Number(rawWeight)
+      if (Number.isNaN(weight)) return
+
+      if (!adjacency.has(edge.from)) adjacency.set(edge.from, [])
+      if (!adjacency.has(edge.to)) adjacency.set(edge.to, [])
+
+      adjacency.get(edge.from).push({ to: edge.to, weight })
+      adjacency.get(edge.to).push({ to: edge.from, weight })
+    })
+
+    return adjacency
+  }
+
+  const generateDijkstraSteps = (start, end) => {
+    if (!start || !end) return []
+
+    const adjacency = buildAdjacencyMap()
+    const nodeIds = [...graphData.nodes].map((node) => node.id).sort((a, b) => a.localeCompare(b))
+    const distances = {}
+    const previous = {}
+    const visited = new Set()
+    const steps = []
+
+    nodeIds.forEach((nodeId) => {
+      distances[nodeId] = Infinity
+      previous[nodeId] = null
+    })
+
+    distances[start] = 0
+    previous[start] = start
+
+    while (visited.size < nodeIds.length) {
+      const unvisited = nodeIds.filter((nodeId) => !visited.has(nodeId))
+      let current = null
+
+      for (const nodeId of unvisited) {
+        if (distances[nodeId] !== Infinity) {
+          if (current === null || distances[nodeId] < distances[current]) {
+            current = nodeId
+          }
+        }
+      }
+
+      if (current === null) break
+
+      visited.add(current)
+
+      const neighbors = adjacency.get(current) || []
+      neighbors.forEach(({ to, weight }) => {
+        if (visited.has(to)) return
+        const alt = distances[current] + weight
+        if (alt < distances[to]) {
+          distances[to] = alt
+          previous[to] = current
+        }
+      })
+
+      const snapshot = {
+        selectedNode: current,
+        rows: {}
+      }
+
+      nodeIds.forEach((nodeId) => {
+        if (distances[nodeId] === Infinity) {
+          snapshot.rows[nodeId] = '-'
+          return
+        }
+        const parent = previous[nodeId] || nodeId
+        snapshot.rows[nodeId] = `(${Math.trunc(distances[nodeId])}, ${parent})`
+      })
+
+      steps.push(snapshot)
+
+      if (current === end) break
+    }
+
+    return steps
+  }
+
+  const playDijkstraSteps = (start, end) => {
+    resetDijkstraSimulation()
+    if (!start || !end) return
+
+    const steps = generateDijkstraSteps(start, end)
+    if (!steps.length) return
+
+    setIsSimulatingSteps(true)
+
+    steps.forEach((step, index) => {
+      const timeoutId = setTimeout(() => {
+        setDijkstraSteps((prev) => [...prev, step])
+        if (index === steps.length - 1) {
+          setIsSimulatingSteps(false)
+        }
+      }, index * 1100)
+
+      simulationTimeoutsRef.current.push(timeoutId)
+    })
+  }
 
   const isIntermediatePathNode = (
     nodeId,
@@ -235,19 +360,15 @@ function App() {
     if (isStart && pendingSwapType === 'start') {
       return { background: '#7c5cff', border: '#ffffff' }
     }
-
     if (isEnd && pendingSwapType === 'end') {
       return { background: '#f6c56f', border: '#ffffff' }
     }
-
     if (isStart) {
       return { background: '#26c281', border: '#ffffff' }
     }
-
     if (isEnd) {
       return { background: '#ff6b6b', border: '#ffffff' }
     }
-
     if (isIntermediate) {
       return { background: '#f6c56f', border: '#ffe29e' }
     }
@@ -344,6 +465,7 @@ function App() {
   ) => {
     if (!customStart || !customEnd || customStart === customEnd) {
       setPathResult(null)
+      resetDijkstraSimulation()
       updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
       return
     }
@@ -359,15 +481,18 @@ function App() {
       if (response.data.success) {
         setPathResult(response.data)
         highlightPath(response.data.path, customStart, customEnd, pendingSwapTypeRef.current)
+        playDijkstraSteps(customStart, customEnd)
       } else {
         alert(response.data.message)
         setPathResult(null)
+        resetDijkstraSimulation()
         updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
       }
     } catch (error) {
       console.error('Erro ao calcular caminho:', error)
       alert('Erro ao calcular caminho')
       setPathResult(null)
+      resetDijkstraSimulation()
       updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
     } finally {
       setLoading(false)
@@ -379,6 +504,7 @@ function App() {
     pendingSwapTypeRef.current = 'start'
     skipAutoCalculateRef.current = true
     setPathResult(null)
+    resetDijkstraSimulation()
     setStartAirport('')
     updateGraphVisual([], '', currentEnd, 'start')
   }
@@ -388,6 +514,7 @@ function App() {
     pendingSwapTypeRef.current = 'end'
     skipAutoCalculateRef.current = true
     setPathResult(null)
+    resetDijkstraSimulation()
     setEndAirport('')
     updateGraphVisual([], currentStart, '', 'end')
   }
@@ -417,8 +544,7 @@ function App() {
         font: {
           size: 18,
           color: '#e8eef7',
-          face: 'Inter',
-          bold: true
+          face: 'Inter'
         },
         color: {
           background: '#4da3ff',
@@ -607,12 +733,13 @@ function App() {
 
       if (currentStart && !currentEnd) {
         if (nodeId === currentStart) return
+        setEndAirport(nodeId)
         return
       }
 
       if (!currentStart && currentEnd) {
         if (nodeId === currentEnd) return
-        return
+        setStartAirport(nodeId)
       }
     })
   }
@@ -624,36 +751,29 @@ function App() {
     setStartAirport('')
     setEndAirport('')
     setPathResult(null)
+    resetDijkstraSimulation()
     await loadGraphData()
   }
 
   const handleStartChange = (value) => {
     const currentEnd = endAirportRef.current
-
     if (!value) {
       clearStartAndWaitForNewSelection()
       return
     }
-
     pendingSwapTypeRef.current = null
-
     if (value === currentEnd) return
-
     setStartAirport(value)
   }
 
   const handleEndChange = (value) => {
     const currentStart = startAirportRef.current
-
     if (!value) {
       clearEndAndWaitForNewSelection()
       return
     }
-
     pendingSwapTypeRef.current = null
-
     if (value === currentStart) return
-
     setEndAirport(value)
   }
 
@@ -664,13 +784,41 @@ function App() {
 
   return (
     <div className="app-modern-bg">
-      <header className="app-modern-header clean-header">
-        <div className="clean-header-brand">
-          <img src={logo} alt="Logo ETA Airlines" className="clean-header-logo" />
+      <header className="app-modern-header">
+        <div className="header-top-actions">
+          <button
+            onClick={handleGoBack}
+            className="back-button fancy-back-button"
+            type="button"
+          >
+            <span className="back-button-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M15 6L9 12L15 18"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <span className="back-button-text" onClick={() => setScreen('home')}>Voltar ao início</span>
+          </button>
         </div>
 
-        <div className="clean-header-content">
-          <h1 className="clean-header-title">Painel de Voos & Rotas</h1>
+        <div className="clean-header">
+          <div className="clean-header-brand">
+            <img src={logo} alt="Logo ETA Airlines" className="clean-header-logo" />
+          </div>
+          <div className="clean-header-content">
+            <h1 className="clean-header-title">Painel de Voos & Rotas</h1>
+          </div>
         </div>
       </header>
 
@@ -719,13 +867,14 @@ function App() {
               onClick={() => calculatePath()}
               disabled={loading || !startAirport || !endAirport}
               className="modern-btn main"
+              type="button"
             >
               {loading ? 'Analisando...' : 'Analisar'}
             </button>
           </div>
 
           <div className="top-action">
-            <button onClick={resetSelection} className="modern-btn">
+            <button onClick={resetSelection} className="modern-btn" type="button">
               Limpar
             </button>
           </div>
@@ -738,7 +887,6 @@ function App() {
                 <div className="summary-label">Peso total</div>
                 <div className="summary-value">{formattedCost}</div>
               </div>
-
               <div className="summary-stat">
                 <div className="summary-label">Conexões</div>
                 <div className="summary-value">{pathResult.connections}</div>
@@ -828,6 +976,92 @@ function App() {
             ) : (
               <div className="airport-connections-empty">
                 Passe o mouse em cima de algum aeroporto no mapa de conexões para exibir as informações aqui.
+              </div>
+            )}
+          </div>
+
+          <div className="algorithm-steps-panel">
+            <div className="algorithm-steps-header">
+              <div className="algorithm-steps-title">Passo a passo do algoritmo</div>
+              <div className="algorithm-steps-subtitle">
+                Visualização gradual da execução do Dijkstra até encontrar a melhor rota.
+              </div>
+            </div>
+
+            {startAirport && endAirport ? (
+              dijkstraSteps.length > 0 ? (
+                <>
+                  <div className="algorithm-steps-table-wrap">
+                    <table className="algorithm-steps-table">
+                      <thead>
+                        <tr>
+                          <th>Aeroporto</th>
+                          {dijkstraSteps.map((_, index) => (
+                            <th key={`step-head-${index}`}>Passo {index + 1}</th>
+                          ))}
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {dijkstraTableNodes.map((nodeId) => (
+                          <tr key={nodeId}>
+                            <td className="algorithm-node-label">{nodeId}</td>
+                            {dijkstraSteps.map((step, stepIndex) => {
+                              const isSelected = step.selectedNode === nodeId
+                              const isFinalSelected =
+                                stepIndex === dijkstraSteps.length - 1 &&
+                                pathResult?.path?.includes(nodeId)
+
+                              return (
+                                <td
+                                  key={`${nodeId}-${stepIndex}`}
+                                  className={[
+                                    isSelected ? 'is-active-step' : '',
+                                    isFinalSelected ? 'is-final-path-step' : ''
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                >
+                                  {isSelected ? (
+                                    <span className="algorithm-step-value emphasis">
+                                      {step.rows[nodeId]}
+                                    </span>
+                                  ) : (
+                                    <span className="algorithm-step-value">
+                                      {step.rows[nodeId]}
+                                    </span>
+                                  )}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="algorithm-steps-status">
+                    {isSimulatingSteps ? (
+                      <span className="algorithm-status-badge running">
+                        Executando passo a passo...
+                      </span>
+                    ) : (
+                      <span className="algorithm-status-badge done">
+                        Melhor rota encontrada
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="algorithm-steps-empty">
+                  Clique em <strong>Analisar</strong> ou selecione origem e destino para iniciar a
+                  simulação do algoritmo.
+                </div>
+              )
+            ) : (
+              <div className="algorithm-steps-empty">
+                Escolha uma origem e um destino para visualizar a execução passo a passo do
+                algoritmo.
               </div>
             )}
           </div>

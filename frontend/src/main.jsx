@@ -34,7 +34,7 @@ function Root() {
     );
   }
   // painel de voos
-  return <App />;
+  return <App onNavigate={handleNavigate} />;
 }
 
 createRoot(document.getElementById('root')).render(
