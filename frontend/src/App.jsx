@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import { Network } from 'vis-network/standalone'
 import logo from './assets/logo/logo_branca_isolada.png'
-import './App.css'
+
 
 function App({ onNavigate }) {
   const [startAirport, setStartAirport] = useState('')
@@ -14,6 +14,9 @@ function App({ onNavigate }) {
   const [dijkstraSteps, setDijkstraSteps] = useState([])
   const [isSimulatingSteps, setIsSimulatingSteps] = useState(false)
   const [visibleTopRoutes, setVisibleTopRoutes] = useState(5)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const searchRef = useRef(null)
 
   const networkRef = useRef(null)
   const containerRef = useRef(null)
@@ -791,6 +794,36 @@ function App({ onNavigate }) {
     await loadGraphData()
   }
 
+  const handleSearch = (e) => {
+    const q = e.target.value
+    setSearchQuery(q)
+    if (!q.trim()) { setSearchResults([]); return }
+    const lower = q.toLowerCase()
+    const matches = graphData.nodes.filter((n) =>
+      n.id.toLowerCase().includes(lower) ||
+      (n.city && n.city.toLowerCase().includes(lower))
+    ).slice(0, 8)
+    setSearchResults(matches)
+  }
+
+  const handleSearchSelect = (nodeId) => {
+    setSearchQuery('')
+    setSearchResults([])
+    if (networkRef.current) {
+      networkRef.current.focus(nodeId, { scale: 1.8, animation: { duration: 700, easingFunction: 'easeInOutQuad' } })
+      networkRef.current.selectNodes([nodeId])
+    }
+    const currentStart = startAirportRef.current
+    const currentEnd = endAirportRef.current
+    if (!currentStart) {
+      pendingSwapTypeRef.current = null
+      setStartAirport(nodeId)
+    } else if (!currentEnd && nodeId !== currentStart) {
+      pendingSwapTypeRef.current = null
+      setEndAirport(nodeId)
+    }
+  }
+
   const handleStartChange = (value) => {
     const currentEnd = endAirportRef.current
 
@@ -948,6 +981,29 @@ function App({ onNavigate }) {
             <button onClick={resetSelection} className="modern-btn" type="button">
               Limpar
             </button>
+          </div>
+
+          <div className="sb-wrap field-group" ref={searchRef}>
+            <label>Buscar aeroporto</label>
+            <input
+              type="text"
+              className="sb-input"
+              value={searchQuery}
+              onChange={handleSearch}
+              onKeyDown={(e) => { if (e.key === 'Escape') setSearchResults([]) }}
+              placeholder="Digite o Codigo ou Cidade"
+              autoComplete="off"
+            />
+            {searchResults.length > 0 && (
+              <ul className="sb-dropdown">
+                {searchResults.map((n) => (
+                  <li key={n.id} className="sb-item" onMouseDown={() => handleSearchSelect(n.id)}>
+                    <strong className="sb-code">{n.id}</strong>
+                    <span className="sb-city">{n.city}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
 

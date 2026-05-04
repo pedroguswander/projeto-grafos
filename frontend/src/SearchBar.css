@@ -1,0 +1,75 @@
+.sb-wrap {
+  position: relative;
+  z-index: 1000;
+}
+
+.glass-card.app-top-bar {
+  overflow: visible !important; /* Permite que o dropdown "saia" dos limites do card */
+}
+
+.sb-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(185, 203, 227, 0.2);
+  border-radius: 8px;
+  color: #e8eef7;
+  font-size: 13px;
+  font-family: Inter, sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sb-input::placeholder {
+  color: rgba(232, 238, 247, 0.35);
+}
+
+.sb-input:focus {
+  border-color: #4da3ff;
+}
+
+.sb-dropdown {
+  position: relative;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #0d1b2e;
+  border: 1px solid rgba(77, 163, 255, 0.3);
+  border-radius: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  z-index: 999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s;
+}
+
+.sb-item:last-child {
+  border-bottom: none;
+}
+
+.sb-item:hover {
+  background: rgba(77, 163, 255, 0.12);
+}
+
+.sb-code {
+  color: #4da3ff;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 36px;
+}
+
+.sb-city {
+  color: #8fa3c0;
+  font-size: 12px;
+}
