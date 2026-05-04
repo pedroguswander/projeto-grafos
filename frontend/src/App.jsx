@@ -13,6 +13,7 @@ function App({ onNavigate }) {
   const [hoveredAirport, setHoveredAirport] = useState(null)
   const [dijkstraSteps, setDijkstraSteps] = useState([])
   const [isSimulatingSteps, setIsSimulatingSteps] = useState(false)
+  const [visibleTopRoutes, setVisibleTopRoutes] = useState(5)
 
   const networkRef = useRef(null)
   const containerRef = useRef(null)
@@ -134,7 +135,6 @@ function App({ onNavigate }) {
     }
 
     window.addEventListener('resize', handleResize)
-
     return () => {
       window.removeEventListener('resize', handleResize)
     }
@@ -159,6 +159,7 @@ function App({ onNavigate }) {
       calculatePath(startAirport, endAirport)
     } else {
       setPathResult(null)
+      setVisibleTopRoutes(5)
       resetDijkstraSimulation()
       updateGraphVisual([], startAirport, endAirport, pendingSwapTypeRef.current)
     }
@@ -215,6 +216,7 @@ function App({ onNavigate }) {
               candidate.weight === item.weight
           )
       )
+
       unique.sort((a, b) => a.code.localeCompare(b.code))
       map.set(key, unique)
     }
@@ -226,6 +228,24 @@ function App({ onNavigate }) {
     return [...graphData.nodes].map((node) => node.id).sort((a, b) => a.localeCompare(b))
   }, [graphData.nodes])
 
+  const topRoutesToShow = useMemo(() => {
+    if (pathResult?.topRoutes?.length > 0) {
+      return pathResult.topRoutes
+    }
+
+    if (pathResult?.path?.length > 0) {
+      return [
+        {
+          path: pathResult.path,
+          cost: pathResult.cost,
+          connections: pathResult.connections
+        }
+      ]
+    }
+
+    return []
+  }, [pathResult])
+
   const buildAdjacencyMap = () => {
     const adjacency = new Map()
 
@@ -236,6 +256,7 @@ function App({ onNavigate }) {
     graphData.edges.forEach((edge) => {
       const rawWeight = extractWeightNumber(edge.label ?? edge.weight ?? edge.peso ?? '')
       const weight = Number(rawWeight)
+
       if (Number.isNaN(weight)) return
 
       if (!adjacency.has(edge.from)) adjacency.set(edge.from, [])
@@ -285,6 +306,7 @@ function App({ onNavigate }) {
       const neighbors = adjacency.get(current) || []
       neighbors.forEach(({ to, weight }) => {
         if (visited.has(to)) return
+
         const alt = distances[current] + weight
         if (alt < distances[to]) {
           distances[to] = alt
@@ -302,6 +324,7 @@ function App({ onNavigate }) {
           snapshot.rows[nodeId] = '-'
           return
         }
+
         const parent = previous[nodeId] || nodeId
         snapshot.rows[nodeId] = `(${Math.trunc(distances[nodeId])}, ${parent})`
       })
@@ -316,6 +339,7 @@ function App({ onNavigate }) {
 
   const playDijkstraSteps = (start, end) => {
     resetDijkstraSimulation()
+
     if (!start || !end) return
 
     const steps = generateDijkstraSteps(start, end)
@@ -326,6 +350,7 @@ function App({ onNavigate }) {
     steps.forEach((step, index) => {
       const timeoutId = setTimeout(() => {
         setDijkstraSteps((prev) => [...prev, step])
+
         if (index === steps.length - 1) {
           setIsSimulatingSteps(false)
         }
@@ -360,15 +385,19 @@ function App({ onNavigate }) {
     if (isStart && pendingSwapType === 'start') {
       return { background: '#7c5cff', border: '#ffffff' }
     }
+
     if (isEnd && pendingSwapType === 'end') {
       return { background: '#f6c56f', border: '#ffffff' }
     }
+
     if (isStart) {
       return { background: '#26c281', border: '#ffffff' }
     }
+
     if (isEnd) {
       return { background: '#ff6b6b', border: '#ffffff' }
     }
+
     if (isIntermediate) {
       return { background: '#f6c56f', border: '#ffe29e' }
     }
@@ -465,6 +494,7 @@ function App({ onNavigate }) {
   ) => {
     if (!customStart || !customEnd || customStart === customEnd) {
       setPathResult(null)
+      setVisibleTopRoutes(5)
       resetDijkstraSimulation()
       updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
       return
@@ -479,12 +509,14 @@ function App({ onNavigate }) {
       })
 
       if (response.data.success) {
+        setVisibleTopRoutes(5)
         setPathResult(response.data)
         highlightPath(response.data.path, customStart, customEnd, pendingSwapTypeRef.current)
         playDijkstraSteps(customStart, customEnd)
       } else {
         alert(response.data.message)
         setPathResult(null)
+        setVisibleTopRoutes(5)
         resetDijkstraSimulation()
         updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
       }
@@ -492,6 +524,7 @@ function App({ onNavigate }) {
       console.error('Erro ao calcular caminho:', error)
       alert('Erro ao calcular caminho')
       setPathResult(null)
+      setVisibleTopRoutes(5)
       resetDijkstraSimulation()
       updateGraphVisual([], customStart, customEnd, pendingSwapTypeRef.current)
     } finally {
@@ -504,6 +537,7 @@ function App({ onNavigate }) {
     pendingSwapTypeRef.current = 'start'
     skipAutoCalculateRef.current = true
     setPathResult(null)
+    setVisibleTopRoutes(5)
     resetDijkstraSimulation()
     setStartAirport('')
     updateGraphVisual([], '', currentEnd, 'start')
@@ -514,6 +548,7 @@ function App({ onNavigate }) {
     pendingSwapTypeRef.current = 'end'
     skipAutoCalculateRef.current = true
     setPathResult(null)
+    setVisibleTopRoutes(5)
     resetDijkstraSimulation()
     setEndAirport('')
     updateGraphVisual([], currentStart, '', 'end')
@@ -751,16 +786,19 @@ function App({ onNavigate }) {
     setStartAirport('')
     setEndAirport('')
     setPathResult(null)
+    setVisibleTopRoutes(5)
     resetDijkstraSimulation()
     await loadGraphData()
   }
 
   const handleStartChange = (value) => {
     const currentEnd = endAirportRef.current
+
     if (!value) {
       clearStartAndWaitForNewSelection()
       return
     }
+
     pendingSwapTypeRef.current = null
     if (value === currentEnd) return
     setStartAirport(value)
@@ -768,19 +806,51 @@ function App({ onNavigate }) {
 
   const handleEndChange = (value) => {
     const currentStart = startAirportRef.current
+
     if (!value) {
       clearEndAndWaitForNewSelection()
       return
     }
+
     pendingSwapTypeRef.current = null
     if (value === currentStart) return
     setEndAirport(value)
+  }
+
+  const getRouteRankMeta = (index) => {
+    if (index === 0) {
+      return {
+        badge: '🥇 Melhor rota',
+        className: 'route-rank-card top-1'
+      }
+    }
+
+    if (index === 1) {
+      return {
+        badge: '🥈 2ª melhor',
+        className: 'route-rank-card top-2'
+      }
+    }
+
+    if (index === 2) {
+      return {
+        badge: '🥉 3ª melhor',
+        className: 'route-rank-card top-3'
+      }
+    }
+
+    return {
+      badge: `#${index + 1}`,
+      className: 'route-rank-card'
+    }
   }
 
   const formattedCost =
     pathResult?.cost !== undefined && pathResult?.cost !== null
       ? Math.trunc(Number(pathResult.cost))
       : ''
+
+  const maxTopRoutes = Math.min(20, topRoutesToShow.length)
 
   return (
     <div className="app-modern-bg">
@@ -808,7 +878,7 @@ function App({ onNavigate }) {
                 />
               </svg>
             </span>
-            <span className="back-button-text" onClick={() => setScreen('home')}>Voltar ao início</span>
+            <span className="back-button-text">Voltar ao início</span>
           </button>
         </div>
 
@@ -816,6 +886,7 @@ function App({ onNavigate }) {
           <div className="clean-header-brand">
             <img src={logo} alt="Logo ETA Airlines" className="clean-header-logo" />
           </div>
+
           <div className="clean-header-content">
             <h1 className="clean-header-title">Painel de Voos & Rotas</h1>
           </div>
@@ -887,6 +958,7 @@ function App({ onNavigate }) {
                 <div className="summary-label">Peso total</div>
                 <div className="summary-value">{formattedCost}</div>
               </div>
+
               <div className="summary-stat">
                 <div className="summary-label">Conexões</div>
                 <div className="summary-value">{pathResult.connections}</div>
@@ -975,7 +1047,8 @@ function App({ onNavigate }) {
               </div>
             ) : (
               <div className="airport-connections-empty">
-                Passe o mouse em cima de algum aeroporto no mapa de conexões para exibir as informações aqui.
+                Passe o mouse em cima de algum aeroporto no mapa de conexões para exibir as
+                informações aqui.
               </div>
             )}
           </div>
@@ -1006,6 +1079,7 @@ function App({ onNavigate }) {
                         {dijkstraTableNodes.map((nodeId) => (
                           <tr key={nodeId}>
                             <td className="algorithm-node-label">{nodeId}</td>
+
                             {dijkstraSteps.map((step, stepIndex) => {
                               const isSelected = step.selectedNode === nodeId
                               const isFinalSelected =
@@ -1049,6 +1123,118 @@ function App({ onNavigate }) {
                       <span className="algorithm-status-badge done">
                         Melhor rota encontrada
                       </span>
+                    )}
+                  </div>
+
+                  <div className="top-routes-visual">
+                    <div className="top-routes-header">
+                      <div className="top-routes-title">Top 20 rotas possíveis</div>
+                      <div className="top-routes-subtitle">
+                        Ranking visual da melhor rota até a menos eficiente para o trajeto
+                        selecionado.
+                      </div>
+                    </div>
+
+                    {topRoutesToShow.length > 0 ? (
+                      <>
+                        <div className="top-routes-list">
+                          {topRoutesToShow.slice(0, visibleTopRoutes).map((route, index) => {
+                            const rankMeta = getRouteRankMeta(index)
+                            const totalCost = Math.trunc(Number(route.cost || 0))
+                            const totalConnections =
+                              route.connections ?? Math.max((route.path?.length || 0) - 2, 0)
+                            const totalSegments = Math.max((route.path?.length || 0) - 1, 0)
+
+                            return (
+                              <div
+                                key={`top-route-${index}-${route.path?.join('-') || index}`}
+                                className={rankMeta.className}
+                              >
+                                <div className="route-rank-header">
+                                  <div className="route-rank-badge">{rankMeta.badge}</div>
+
+                                  <div className="route-rank-metrics">
+                                    <span className="route-metric">
+                                      ⚖ Peso total: <strong>{totalCost}</strong>
+                                    </span>
+                                    <span className="route-metric">
+                                      🔁 Conexões: <strong>{totalConnections}</strong>
+                                    </span>
+                                    <span className="route-metric">
+                                      ✈ Trechos: <strong>{totalSegments}</strong>
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="route-rank-flow">
+                                  {route.path?.map((airport, pathIndex) => (
+                                    <div
+                                      key={`${airport}-${pathIndex}`}
+                                      className="route-rank-flow-item"
+                                    >
+                                      <span className="route-rank-airport">{airport}</span>
+                                      {pathIndex < route.path.length - 1 && (
+                                        <span className="route-rank-arrow">→</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="route-rank-footer">
+                                  <div className="route-rank-quality-bar">
+                                    <div
+                                      className="route-rank-quality-fill"
+                                      style={{
+                                        width: `${Math.max(18, 100 - index * 4)}%`
+                                      }}
+                                    />
+                                  </div>
+
+                                  <div className="route-rank-footer-label">
+                                    {index === 0
+                                      ? 'Mais eficiente'
+                                      : index < 5
+                                      ? 'Ótima alternativa'
+                                      : index < 10
+                                      ? 'Boa alternativa'
+                                      : 'Alternativa menos eficiente'}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {maxTopRoutes > 5 && (
+                          <div className="top-routes-actions">
+                            {visibleTopRoutes < maxTopRoutes && (
+                              <button
+                                type="button"
+                                className="top-routes-btn"
+                                onClick={() =>
+                                  setVisibleTopRoutes((prev) => Math.min(prev + 5, maxTopRoutes))
+                                }
+                              >
+                                Mostrar mais 5
+                              </button>
+                            )}
+
+                            {visibleTopRoutes > 5 && (
+                              <button
+                                type="button"
+                                className="top-routes-btn secondary"
+                                onClick={() => setVisibleTopRoutes(5)}
+                              >
+                                Mostrar menos
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="algorithm-steps-empty">
+                        Nenhuma rota alternativa foi retornada para este trajeto.
+                      </div>
                     )}
                   </div>
                 </>

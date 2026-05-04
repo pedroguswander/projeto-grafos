@@ -44,6 +44,261 @@ body {
   position: relative;
 }
 
+.top-routes-visual {
+  margin-top: 1.2rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.top-routes-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+}
+
+.top-routes-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.top-routes-subtitle {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.top-routes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.top-routes-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.top-routes-btn {
+  appearance: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0.82rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  box-shadow: 0 10px 24px rgba(77, 163, 255, 0.2);
+  transition:
+    transform 0.22s ease,
+    filter 0.22s ease,
+    box-shadow 0.22s ease,
+    opacity 0.22s ease;
+}
+
+.top-routes-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 14px 28px rgba(77, 163, 255, 0.24);
+}
+
+.top-routes-btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #dce8f4;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.top-routes-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.route-rank-card {
+  position: relative;
+  padding: 1rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.route-rank-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(77, 163, 255, 0.25);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.route-rank-card.top-1 {
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.18), rgba(77, 163, 255, 0.12));
+  border-color: rgba(38, 194, 129, 0.32);
+}
+
+.route-rank-card.top-2 {
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.16), rgba(77, 163, 255, 0.1));
+  border-color: rgba(124, 92, 255, 0.28);
+}
+
+.route-rank-card.top-3 {
+  background: linear-gradient(135deg, rgba(246, 197, 111, 0.16), rgba(255, 255, 255, 0.05));
+  border-color: rgba(246, 197, 111, 0.28);
+}
+
+.route-rank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.route-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.route-rank-metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.route-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.48rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.79rem;
+  color: #dce8f4;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.route-metric strong {
+  color: #ffffff;
+}
+
+.route-rank-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.9rem;
+  border-radius: 15px;
+  background: rgba(6, 18, 31, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.route-rank-flow-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.route-rank-airport {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 0.58rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(77, 163, 255, 0.12);
+  border: 1px solid rgba(77, 163, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.route-rank-arrow {
+  color: #9ec8ff;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.route-rank-footer {
+  margin-top: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.route-rank-quality-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.route-rank-quality-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #26c281, #4da3ff, #7c5cff);
+}
+
+.route-rank-footer-label {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: #bfd0e1;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .route-rank-card {
+    padding: 0.9rem;
+  }
+
+  .route-rank-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .route-rank-metrics {
+    gap: 0.45rem;
+  }
+
+  .route-rank-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .route-rank-footer-label {
+    text-align: center;
+  }
+
+  .top-routes-actions {
+    flex-direction: column;
+  }
+
+  .top-routes-btn {
+    width: 100%;
+  }
+}
+
 .app-modern-bg::before {
   content: '';
   position: fixed;
