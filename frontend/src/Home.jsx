@@ -24,6 +24,9 @@ export default function Home({ onNavigate }) {
           <button className="clean-btn" onClick={() => onNavigate('metricas')}>
             MÉTRICAS GLOBAIS
           </button>
+          <button className="clean-btn" onClick={() => onNavigate('dashboard')}>
+            Dashboard
+          </button>
         </div>
       </div>
     </div>

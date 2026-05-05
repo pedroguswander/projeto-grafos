@@ -6,6 +6,7 @@ import './SearchBar.css';
 import App from './App.jsx';
 import Home from './Home.jsx';
 import Regras from './Regras.jsx';
+import { Dashboard } from './Dashboard/Dashboard.jsx';
 import GlobalMetrics from './GlobalMetrics.jsx';
 
 function Root() {
@@ -16,10 +17,8 @@ function Root() {
     else setScreen(target);
   };
 
-  if (screen === 'home') {
-    return <Home onNavigate={handleNavigate} />;
-  }
-
+  if (screen === 'home') return <Home onNavigate={handleNavigate} />;
+  if (screen === 'dashboard') return <Dashboard onBack={() => setScreen('home')} />;
   if (screen === 'requisitos') {
     return (
       <div
@@ -43,14 +42,8 @@ function Root() {
       </div>
     );
   }
-
-  if (screen === 'regras') {
-    return <Regras onBack={() => setScreen('home')} />;
-  }
-
-  if (screen === 'metricas') {
-    return <GlobalMetrics onBack={() => setScreen('home')} />;
-  }
+  if (screen === 'regras') return <Regras onBack={() => setScreen('home')} />;
+  if (screen === 'metricas') return <GlobalMetrics onBack={() => setScreen('home')} />;
 
   return <App onNavigate={handleNavigate} />;
 }
