@@ -4,3 +4,5 @@ dataclasses; python_version < "3.7"
 matplotlib>=3.8
 seaborn>=0.13
 pandas>=2.0
+d3-geo
+react-simple-maps

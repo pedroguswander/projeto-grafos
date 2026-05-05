@@ -36,29 +36,38 @@ projeto-grafos/
 
 ## 🛠️ Como Executar
 
-### Opção 1: Script Automático (Recomendado)
+### Passo a Passo
 
+1. **Criar e ativar a Virtual Environment:**
 ```powershell
-# Execute tudo de uma vez
-.\run.ps1
+python -m venv venv
+.\venv\Scripts\Activate
 ```
 
-### Opção 2: Passo a Passo
-
-1. **Instalar dependências:**
+2. **Instalar dependências do Backend:**
 ```powershell
-.\build.ps1
+pip install -r requirements.txt
 ```
 
-2. **Executar Backend:**
+3. **Executar o Backend:**
 ```powershell
-python src/api.py
+cd src
+python api.py
 # API disponível em: http://localhost:5000
 ```
 
-3. **Executar Frontend:**
+4. **Entrar na pasta do Frontend:**
 ```powershell
 cd frontend
+```
+
+5. **Instalar o Vite:**
+```powershell
+npm i vite
+```
+
+6. **Executar o Frontend:**
+```powershell
 npm run dev
 # Interface disponível em: http://localhost:5173
 ```

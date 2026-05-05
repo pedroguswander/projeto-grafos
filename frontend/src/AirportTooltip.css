@@ -1,0 +1,40 @@
+.airport-tooltip {
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(77, 163, 255, 0.10);
+  padding: 0.85rem 1.1rem 0.95rem 1.1rem;
+  color: var(--text);
+  min-width: 210px;
+  max-width: 300px;
+  font-size: 0.96rem;
+  font-family: inherit;
+  margin-bottom: 1.2rem;
+}
+.tooltip-title {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.45rem;
+  letter-spacing: 0.01em;
+}
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.18rem;
+  font-size: 0.93rem;
+  gap: 0.7em;
+  line-height: 1.45;
+}
+.tooltip-row span {
+  color: var(--muted);
+  font-weight: 600;
+  margin-right: 0.5em;
+}
+.tooltip-row strong {
+  color: #fff;
+  font-weight: 700;
+  margin-left: 0.5em;
+  letter-spacing: 0.01em;
+}
