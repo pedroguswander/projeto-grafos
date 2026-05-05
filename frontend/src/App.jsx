@@ -3,21 +3,19 @@ import axios from 'axios'
 import { Network } from 'vis-network/standalone'
 import logo from './assets/logo/logo_branca_isolada.png'
 
-
 function App({ onNavigate }) {
   const [startAirport, setStartAirport] = useState('')
   const [endAirport, setEndAirport] = useState('')
   const [pathResult, setPathResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] })
-  const [hoveredAirport, setHoveredAirport] = useState(null)
+  const [selectedConnectionAirport, setSelectedConnectionAirport] = useState(null)
   const [dijkstraSteps, setDijkstraSteps] = useState([])
   const [isSimulatingSteps, setIsSimulatingSteps] = useState(false)
   const [visibleTopRoutes, setVisibleTopRoutes] = useState(5)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const searchRef = useRef(null)
-
   const networkRef = useRef(null)
   const containerRef = useRef(null)
   const pendingSwapTypeRef = useRef(null)
@@ -138,6 +136,7 @@ function App({ onNavigate }) {
     }
 
     window.addEventListener('resize', handleResize)
+
     return () => {
       window.removeEventListener('resize', handleResize)
     }
@@ -167,6 +166,19 @@ function App({ onNavigate }) {
       updateGraphVisual([], startAirport, endAirport, pendingSwapTypeRef.current)
     }
   }, [startAirport, endAirport])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setSearchResults([])
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const airportOptions = useMemo(() => {
     return [...graphData.nodes]
@@ -305,11 +317,10 @@ function App({ onNavigate }) {
       if (current === null) break
 
       visited.add(current)
-
       const neighbors = adjacency.get(current) || []
+
       neighbors.forEach(({ to, weight }) => {
         if (visited.has(to)) return
-
         const alt = distances[current] + weight
         if (alt < distances[to]) {
           distances[to] = alt
@@ -327,7 +338,6 @@ function App({ onNavigate }) {
           snapshot.rows[nodeId] = '-'
           return
         }
-
         const parent = previous[nodeId] || nodeId
         snapshot.rows[nodeId] = `(${Math.trunc(distances[nodeId])}, ${parent})`
       })
@@ -342,7 +352,6 @@ function App({ onNavigate }) {
 
   const playDijkstraSteps = (start, end) => {
     resetDijkstraSimulation()
-
     if (!start || !end) return
 
     const steps = generateDijkstraSteps(start, end)
@@ -353,7 +362,6 @@ function App({ onNavigate }) {
     steps.forEach((step, index) => {
       const timeoutId = setTimeout(() => {
         setDijkstraSteps((prev) => [...prev, step])
-
         if (index === steps.length - 1) {
           setIsSimulatingSteps(false)
         }
@@ -388,19 +396,15 @@ function App({ onNavigate }) {
     if (isStart && pendingSwapType === 'start') {
       return { background: '#7c5cff', border: '#ffffff' }
     }
-
     if (isEnd && pendingSwapType === 'end') {
       return { background: '#f6c56f', border: '#ffffff' }
     }
-
     if (isStart) {
       return { background: '#26c281', border: '#ffffff' }
     }
-
     if (isEnd) {
       return { background: '#ff6b6b', border: '#ffffff' }
     }
-
     if (isIntermediate) {
       return { background: '#f6c56f', border: '#ffe29e' }
     }
@@ -687,29 +691,6 @@ function App({ onNavigate }) {
       }
     })
 
-    networkRef.current.on('hoverNode', (params) => {
-      const node = nodeById.get(params.node)
-      if (!node) return
-
-      setHoveredAirport({
-        id: node.id,
-        city: node.city || '',
-        connections: connectionMap.get(node.id) || []
-      })
-    })
-
-    networkRef.current.on('blurNode', () => {
-      setHoveredAirport(null)
-    })
-
-    networkRef.current.on('dragging', () => {
-      setHoveredAirport(null)
-    })
-
-    networkRef.current.on('zoom', () => {
-      setHoveredAirport(null)
-    })
-
     networkRef.current.on('click', (params) => {
       const currentStart = startAirportRef.current
       const currentEnd = endAirportRef.current
@@ -718,13 +699,11 @@ function App({ onNavigate }) {
 
       if (params.nodes.length === 0) {
         pendingSwapTypeRef.current = null
-
         if (currentPath.length) {
           highlightPath(currentPath, currentStart, currentEnd, null)
         } else {
           updateGraphVisual([], currentStart, currentEnd, null)
         }
-
         return
       }
 
@@ -785,7 +764,9 @@ function App({ onNavigate }) {
   const resetSelection = async () => {
     pendingSwapTypeRef.current = null
     skipAutoCalculateRef.current = true
-    setHoveredAirport(null)
+    setSelectedConnectionAirport(null)
+    setSearchQuery('')
+    setSearchResults([])
     setStartAirport('')
     setEndAirport('')
     setPathResult(null)
@@ -797,30 +778,46 @@ function App({ onNavigate }) {
   const handleSearch = (e) => {
     const q = e.target.value
     setSearchQuery(q)
-    if (!q.trim()) { setSearchResults([]); return }
+
+    if (!q.trim()) {
+      setSearchResults([])
+      setSelectedConnectionAirport(null)
+      return
+    }
+
     const lower = q.toLowerCase()
-    const matches = graphData.nodes.filter((n) =>
-      n.id.toLowerCase().includes(lower) ||
-      (n.city && n.city.toLowerCase().includes(lower))
-    ).slice(0, 8)
+    const matches = graphData.nodes
+      .filter(
+        (n) =>
+          n.id.toLowerCase().includes(lower) ||
+          (n.city && n.city.toLowerCase().includes(lower))
+      )
+      .slice(0, 8)
+
     setSearchResults(matches)
   }
 
   const handleSearchSelect = (nodeId) => {
-    setSearchQuery('')
+    const node = nodeById.get(nodeId)
+
+    setSearchQuery(node ? `${node.id}${node.city ? ` — ${node.city}` : ''}` : nodeId)
     setSearchResults([])
+
+    setSelectedConnectionAirport({
+      id: nodeId,
+      city: node?.city || '',
+      connections: connectionMap.get(nodeId) || []
+    })
+
     if (networkRef.current) {
-      networkRef.current.focus(nodeId, { scale: 1.8, animation: { duration: 700, easingFunction: 'easeInOutQuad' } })
+      networkRef.current.focus(nodeId, {
+        scale: 1.8,
+        animation: {
+          duration: 700,
+          easingFunction: 'easeInOutQuad'
+        }
+      })
       networkRef.current.selectNodes([nodeId])
-    }
-    const currentStart = startAirportRef.current
-    const currentEnd = endAirportRef.current
-    if (!currentStart) {
-      pendingSwapTypeRef.current = null
-      setStartAirport(nodeId)
-    } else if (!currentEnd && nodeId !== currentStart) {
-      pendingSwapTypeRef.current = null
-      setEndAirport(nodeId)
     }
   }
 
@@ -919,7 +916,6 @@ function App({ onNavigate }) {
           <div className="clean-header-brand">
             <img src={logo} alt="Logo ETA Airlines" className="clean-header-logo" />
           </div>
-
           <div className="clean-header-content">
             <h1 className="clean-header-title">Painel de Voos & Rotas</h1>
           </div>
@@ -982,29 +978,6 @@ function App({ onNavigate }) {
               Limpar
             </button>
           </div>
-
-          <div className="sb-wrap field-group" ref={searchRef}>
-            <label>Buscar aeroporto</label>
-            <input
-              type="text"
-              className="sb-input"
-              value={searchQuery}
-              onChange={handleSearch}
-              onKeyDown={(e) => { if (e.key === 'Escape') setSearchResults([]) }}
-              placeholder="Digite o Codigo ou Cidade"
-              autoComplete="off"
-            />
-            {searchResults.length > 0 && (
-              <ul className="sb-dropdown">
-                {searchResults.map((n) => (
-                  <li key={n.id} className="sb-item" onMouseDown={() => handleSearchSelect(n.id)}>
-                    <strong className="sb-code">{n.id}</strong>
-                    <span className="sb-city">{n.city}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </section>
 
         {pathResult ? (
@@ -1014,7 +987,6 @@ function App({ onNavigate }) {
                 <div className="summary-label">Peso total</div>
                 <div className="summary-value">{formattedCost}</div>
               </div>
-
               <div className="summary-stat">
                 <div className="summary-label">Conexões</div>
                 <div className="summary-value">{pathResult.connections}</div>
@@ -1062,24 +1034,58 @@ function App({ onNavigate }) {
             <div className="airport-connections-header">
               <div className="airport-connections-title">Conexões do Aeroporto</div>
               <div className="airport-connections-subtitle">
-                Passe o mouse sobre um aeroporto no mapa para visualizar suas conexões.
+                Pesquise um aeroporto para visualizar suas conexões diretas.
               </div>
             </div>
 
-            {hoveredAirport ? (
+            <div className="airport-connections-search" ref={searchRef}>
+              <input
+                type="text"
+                className="search-bar-input"
+                value={searchQuery}
+                onChange={handleSearch}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setSearchResults([])
+                  if (e.key === 'Enter' && searchResults.length > 0) {
+                    handleSearchSelect(searchResults[0].id)
+                  }
+                }}
+                placeholder="Digite o código ou a cidade do aeroporto"
+                autoComplete="off"
+              />
+
+              {searchResults.length > 0 && (
+                <ul className="search-bar-dropdown">
+                  {searchResults.map((n) => (
+                    <li
+                      key={n.id}
+                      className="search-bar-item"
+                      onMouseDown={() => handleSearchSelect(n.id)}
+                    >
+                      <strong className="search-bar-code">{n.id}</strong>
+                      <span className="search-bar-city">{n.city}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {selectedConnectionAirport ? (
               <div className="airport-connections-content">
                 <div className="airport-connections-airport">
-                  <div className="airport-connections-code">{hoveredAirport.id}</div>
-                  {hoveredAirport.city ? (
-                    <div className="airport-connections-city">{hoveredAirport.city}</div>
+                  <div className="airport-connections-code">{selectedConnectionAirport.id}</div>
+                  {selectedConnectionAirport.city ? (
+                    <div className="airport-connections-city">
+                      {selectedConnectionAirport.city}
+                    </div>
                   ) : null}
                 </div>
 
-                {hoveredAirport.connections.length > 0 ? (
+                {selectedConnectionAirport.connections.length > 0 ? (
                   <div className="airport-connections-list">
-                    {hoveredAirport.connections.map((connection, index) => (
+                    {selectedConnectionAirport.connections.map((connection, index) => (
                       <div
-                        key={`${hoveredAirport.id}-${connection.code}-${connection.weight}-${index}`}
+                        key={`${selectedConnectionAirport.id}-${connection.code}-${connection.weight}-${index}`}
                         className="airport-connection-card"
                       >
                         <div className="airport-connection-info">
@@ -1103,8 +1109,7 @@ function App({ onNavigate }) {
               </div>
             ) : (
               <div className="airport-connections-empty">
-                Passe o mouse em cima de algum aeroporto no mapa de conexões para exibir as
-                informações aqui.
+                Pesquise um aeroporto acima para exibir suas conexões aqui.
               </div>
             )}
           </div>
@@ -1130,12 +1135,10 @@ function App({ onNavigate }) {
                           ))}
                         </tr>
                       </thead>
-
                       <tbody>
                         {dijkstraTableNodes.map((nodeId) => (
                           <tr key={nodeId}>
                             <td className="algorithm-node-label">{nodeId}</td>
-
                             {dijkstraSteps.map((step, stepIndex) => {
                               const isSelected = step.selectedNode === nodeId
                               const isFinalSelected =
@@ -1208,7 +1211,6 @@ function App({ onNavigate }) {
                               >
                                 <div className="route-rank-header">
                                   <div className="route-rank-badge">{rankMeta.badge}</div>
-
                                   <div className="route-rank-metrics">
                                     <span className="route-metric">
                                       ⚖ Peso total: <strong>{totalCost}</strong>
@@ -1245,7 +1247,6 @@ function App({ onNavigate }) {
                                       }}
                                     />
                                   </div>
-
                                   <div className="route-rank-footer-label">
                                     {index === 0
                                       ? 'Mais eficiente'
