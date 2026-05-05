@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import { Network } from 'vis-network/standalone'
+
 import logo from './assets/logo/logo_branca_isolada.png'
+import AirportTooltip from './AirportTooltip'
+import './airport-ego-panel-horizontal.css'
 
 function App({ onNavigate }) {
   const [startAirport, setStartAirport] = useState('')
@@ -10,11 +13,49 @@ function App({ onNavigate }) {
   const [loading, setLoading] = useState(false)
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] })
   const [selectedConnectionAirport, setSelectedConnectionAirport] = useState(null)
+  // Carrega aeroportosData e egoAeroportos via API/backend
+  const [aeroportosData, setAeroportosData] = useState({})
+  const [egoAeroportos, setEgoAeroportos] = useState({})
+
+  // Carregar dados dos CSVs ao iniciar
+  useEffect(() => {
+    async function fetchCSVs() {
+      try {
+        const [aeroData, egoData] = await Promise.all([
+          axios.get('http://localhost:5000/api/aeroportos-data'),
+          axios.get('http://localhost:5000/api/ego-aeroportos')
+        ])
+        // aeroportos_data.csv: { iata, cidade, regiao }
+        const aeroObj = {}
+        for (const row of aeroData.data) {
+          aeroObj[row.iata] = { cidade: row.cidade, regiao: row.regiao }
+        }
+        setAeroportosData(aeroObj)
+        // ego_aeroportos.csv: { aeroporto, grau, ordem_ego, tamanho_ego, densidade_ego }
+        const egoObj = {}
+        for (const row of egoData.data) {
+          egoObj[row.aeroporto] = {
+            grau: row.grau,
+            ordem_ego: row.ordem_ego,
+            tamanho_ego: row.tamanho_ego,
+            densidade_ego: row.densidade_ego
+          }
+        }
+        setEgoAeroportos(egoObj)
+      } catch (err) {
+        console.error('Erro ao carregar CSVs:', err)
+      }
+    }
+    fetchCSVs()
+  }, [])
   const [dijkstraSteps, setDijkstraSteps] = useState([])
   const [isSimulatingSteps, setIsSimulatingSteps] = useState(false)
   const [visibleTopRoutes, setVisibleTopRoutes] = useState(5)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  // Tooltip de hover no grafo
+  const [hoveredNode, setHoveredNode] = useState(null)
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
   const searchRef = useRef(null)
   const networkRef = useRef(null)
   const containerRef = useRef(null)
@@ -660,6 +701,22 @@ function App({ onNavigate }) {
 
     networkRef.current = new Network(containerRef.current, graphData, options)
 
+    // Evento de hover para mostrar tooltip
+    networkRef.current.on('hoverNode', function(params) {
+      const nodeId = params.node
+      setHoveredNode(nodeId)
+      // Pega posição do mouse relativa ao container
+      if (params.event && params.event.pointer && params.event.pointer.DOM) {
+        setTooltipPos({
+          x: params.event.pointer.DOM.x,
+          y: params.event.pointer.DOM.y
+        })
+      }
+    })
+    networkRef.current.on('blurNode', function() {
+      setHoveredNode(null)
+    })
+
     networkRef.current.once('stabilizationIterationsDone', () => {
       if (!networkRef.current) return
 
@@ -883,7 +940,7 @@ function App({ onNavigate }) {
   const maxTopRoutes = Math.min(20, topRoutesToShow.length)
 
   return (
-    <div className="app-modern-bg">
+    <div className="app-modern-bg" style={{ position: 'relative' }}>
       <header className="app-modern-header">
         <div className="header-top-actions">
           <button
@@ -1027,8 +1084,30 @@ function App({ onNavigate }) {
           </section>
         )}
 
-        <section className="glass-card app-modern-graph">
+        <section className="glass-card app-modern-graph" style={{ position: 'relative' }}>
           <div ref={containerRef} className="network-canvas"></div>
+          {/* Tooltip de hover sobre nó do grafo */}
+          {hoveredNode && (
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                margin: '24px 24px 0 0',
+                zIndex: 100,
+                pointerEvents: 'none'
+              }}
+            >
+              <AirportTooltip
+                airport={hoveredNode}
+                region={aeroportosData[hoveredNode]?.regiao || '-'}
+                grau={egoAeroportos[hoveredNode]?.grau || '-'}
+                ordem_ego={egoAeroportos[hoveredNode]?.ordem_ego || '-'}
+                tamanho_ego={egoAeroportos[hoveredNode]?.tamanho_ego || '-'}
+                densidade_ego={egoAeroportos[hoveredNode]?.densidade_ego || '-'}
+              />
+            </div>
+          )}
 
           <div className="airport-connections-panel">
             <div className="airport-connections-header">
@@ -1071,42 +1150,50 @@ function App({ onNavigate }) {
             </div>
 
             {selectedConnectionAirport ? (
-              <div className="airport-connections-content">
-                <div className="airport-connections-airport">
-                  <div className="airport-connections-code">{selectedConnectionAirport.id}</div>
-                  {selectedConnectionAirport.city ? (
-                    <div className="airport-connections-city">
-                      {selectedConnectionAirport.city}
-                    </div>
-                  ) : null}
+              <>
+                <div className="airport-ego-panel-horizontal">
+                  <div className="ego-block-title">
+                    {selectedConnectionAirport.id}
+                    {aeroportosData[selectedConnectionAirport.id]?.cidade ? (
+                      <span className="ego-block-city"> — {aeroportosData[selectedConnectionAirport.id]?.cidade}</span>
+                    ) : null}
+                  </div>
+                  <div className="ego-block-row">
+                    <div className="ego-block-item"><span>Região:</span> <strong>{aeroportosData[selectedConnectionAirport.id]?.regiao || '-'}</strong></div>
+                    <div className="ego-block-item"><span>Grau:</span> <strong>{egoAeroportos[selectedConnectionAirport.id]?.grau || '-'}</strong></div>
+                    <div className="ego-block-item"><span>Ordem Ego:</span> <strong>{egoAeroportos[selectedConnectionAirport.id]?.ordem_ego || '-'}</strong></div>
+                    <div className="ego-block-item"><span>Tamanho Ego:</span> <strong>{egoAeroportos[selectedConnectionAirport.id]?.tamanho_ego || '-'}</strong></div>
+                    <div className="ego-block-item"><span>Densidade Ego:</span> <strong>{egoAeroportos[selectedConnectionAirport.id]?.densidade_ego || '-'}</strong></div>
+                  </div>
                 </div>
+                <div className="airport-connections-content">
+                  {selectedConnectionAirport.connections.length > 0 ? (
+                    <div className="airport-connections-list">
+                      {selectedConnectionAirport.connections.map((connection, index) => (
+                        <div
+                          key={`${selectedConnectionAirport.id}-${connection.code}-${connection.weight}-${index}`}
+                          className="airport-connection-card"
+                        >
+                          <div className="airport-connection-info">
+                            <div className="airport-connection-code">{connection.code}</div>
+                            {connection.city ? (
+                              <div className="airport-connection-city">{connection.city}</div>
+                            ) : null}
+                          </div>
 
-                {selectedConnectionAirport.connections.length > 0 ? (
-                  <div className="airport-connections-list">
-                    {selectedConnectionAirport.connections.map((connection, index) => (
-                      <div
-                        key={`${selectedConnectionAirport.id}-${connection.code}-${connection.weight}-${index}`}
-                        className="airport-connection-card"
-                      >
-                        <div className="airport-connection-info">
-                          <div className="airport-connection-code">{connection.code}</div>
-                          {connection.city ? (
-                            <div className="airport-connection-city">{connection.city}</div>
-                          ) : null}
+                          <div className="airport-connection-weight">
+                            {connection.weight ? `Peso ${connection.weight}` : 'Peso -'}
+                          </div>
                         </div>
-
-                        <div className="airport-connection-weight">
-                          {connection.weight ? `Peso ${connection.weight}` : 'Peso -'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="airport-connections-no-data">
-                    Este aeroporto não possui conexões cadastradas.
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="airport-connections-no-data">
+                      Este aeroporto não possui conexões cadastradas.
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
               <div className="airport-connections-empty">
                 Pesquise um aeroporto acima para exibir suas conexões aqui.

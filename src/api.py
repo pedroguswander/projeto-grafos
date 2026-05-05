@@ -6,6 +6,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sys
 import os
+import csv
 
 # Adicionar o diretório src ao path para importar os módulos
 sys.path.insert(0, os.path.dirname(__file__))
@@ -21,10 +22,29 @@ CORS(app)  # Habilitar CORS para o frontend
 graph = None
 
 
+def get_data_dir():
+    """
+    Retorna o diretório de dados.
+    Ajustado para a estrutura mostrada, onde a pasta `data`
+    está na raiz do projeto.
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+
+
+def load_csv_as_dict_list(file_path):
+    """Lê um CSV e retorna lista de dicionários."""
+    data = []
+    with open(file_path, mode='r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            data.append(row)
+    return data
+
+
 def load_global_graph():
     global graph
     if graph is None:
-        data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+        data_dir = get_data_dir()
         graph = load_graph_from_csvs(data_dir)
     return graph
 
@@ -39,8 +59,8 @@ def calculate_path_cost(g, path):
     for i in range(len(path) - 1):
         current_node = path[i]
         next_node = path[i + 1]
-
         found = False
+
         for neighbor, distance in g.adjacency_list.get(current_node, []):
             if neighbor == next_node:
                 total_cost += distance
@@ -143,6 +163,32 @@ def get_routes():
     return jsonify(routes)
 
 
+@app.route('/api/aeroportos-data', methods=['GET'])
+def get_aeroportos_data():
+    """Retorna dados de cidade e região por aeroporto."""
+    data_dir = get_data_dir()
+    file_path = os.path.join(data_dir, 'aeroportos_data.csv')
+
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'Arquivo aeroportos_data.csv não encontrado'}), 404
+
+    data = load_csv_as_dict_list(file_path)
+    return jsonify(data)
+
+
+@app.route('/api/ego-aeroportos', methods=['GET'])
+def get_ego_aeroportos():
+    """Retorna métricas ego dos aeroportos."""
+    data_dir = get_data_dir()
+    file_path = os.path.join(data_dir, 'ego_aeroportos.csv')
+
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'Arquivo ego_aeroportos.csv não encontrado'}), 404
+
+    data = load_csv_as_dict_list(file_path)
+    return jsonify(data)
+
+
 @app.route('/api/dijkstra', methods=['POST'])
 def calculate_dijkstra():
     """Calcula o caminho mais curto entre dois aeroportos e retorna top rotas possíveis."""
@@ -154,7 +200,6 @@ def calculate_dijkstra():
         return jsonify({'error': 'Parâmetros start e end são obrigatórios'}), 400
 
     g = load_global_graph()
-
     cost, path = dijkstra(g, start, end)
 
     if cost is None or path is None:
@@ -176,8 +221,8 @@ def calculate_dijkstra():
 
     # Top rotas possíveis
     top_routes_raw = find_top_routes(g, start, end, limit=20, max_depth=8)
-
     top_routes = []
+
     for route in top_routes_raw:
         route_path_info = []
         for code in route['path']:
