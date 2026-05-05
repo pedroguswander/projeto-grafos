@@ -12,6 +12,11 @@
   --danger: #ff6b6b;
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   --radius: 22px;
+  --region-norte: #26c281;
+  --region-nordeste: #f6c56f;
+  --region-centrooeste: #7c5cff;
+  --region-sudeste: #4da3ff;
+  --region-sul: #ff6b6b;
 }
 
 * {

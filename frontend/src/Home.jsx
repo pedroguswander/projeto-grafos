@@ -21,6 +21,9 @@ export default function Home({ onNavigate }) {
           <button className="clean-btn main" onClick={() => onNavigate('painel')}>
             PAINEL DE VOOS
           </button>
+          <button className="clean-btn" onClick={() => onNavigate('metricas')}>
+            MÉTRICAS GLOBAIS
+          </button>
         </div>
       </div>
     </div>

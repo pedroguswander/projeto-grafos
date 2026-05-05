@@ -250,6 +250,15 @@ def calculate_dijkstra():
         'topRoutes': top_routes
     })
 
+@app.route('/api/ego-regiao', methods=['GET'])
+def get_ego_regiao():
+    """Retorna métricas ego por região."""
+    data_dir = get_data_dir()
+    file_path = os.path.join(data_dir, 'ego_regiao.csv')
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'Arquivo ego_regiao.csv não encontrado'}), 404
+    data = load_csv_as_dict_list(file_path)
+    return jsonify(data)
 
 @app.route('/api/graph-data', methods=['GET'])
 def get_graph_data():

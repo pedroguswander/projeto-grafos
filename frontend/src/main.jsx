@@ -6,6 +6,7 @@ import './SearchBar.css';
 import App from './App.jsx';
 import Home from './Home.jsx';
 import Regras from './Regras.jsx';
+import GlobalMetrics from './GlobalMetrics.jsx';
 
 function Root() {
   const [screen, setScreen] = useState('home');
@@ -45,6 +46,10 @@ function Root() {
 
   if (screen === 'regras') {
     return <Regras onBack={() => setScreen('home')} />;
+  }
+
+  if (screen === 'metricas') {
+    return <GlobalMetrics onBack={() => setScreen('home')} />;
   }
 
   return <App onNavigate={handleNavigate} />;
