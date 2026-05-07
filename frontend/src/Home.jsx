@@ -27,6 +27,9 @@ export default function Home({ onNavigate }) {
           <button className="clean-btn" onClick={() => onNavigate('dashboard')}>
             Dashboard
           </button>
+          <button className="clean-btn" onClick={() => onNavigate('database')}>
+            Data Base
+          </button>
         </div>
       </div>
     </div>
