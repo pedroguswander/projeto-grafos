@@ -1,587 +1,377 @@
-
 .database-page {
   min-height: 100vh;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(77, 163, 255, 0.14), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(77, 163, 255, 0.08), transparent 20%),
+    linear-gradient(180deg, #07111d 0%, #0b1b2d 100%);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #0b1b2d;
+}
+
+.database-shell {
+  width: 100%;
+  max-width: 1200px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 28px;
+  padding: 1.8rem;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+}
+
+.database-topbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
 }
 
 .database-back-btn {
-  background: #2d3a4d;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f9ff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 0.75rem 1.2rem;
+  font-size: 0.98rem;
+  font-weight: 800;
   cursor: pointer;
-  margin-bottom: 2rem;
-  transition: background 0.2s;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
+
 .database-back-btn:hover {
-  background: #3d4a5d;
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(77, 163, 255, 0.22);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.database-header {
+  margin-bottom: 1.8rem;
 }
 
 .database-title {
   color: #f5f9ff;
-  font-size: 2.2rem;
+  font-size: 2.4rem;
   font-weight: 900;
-  margin-bottom: 1rem;
+  letter-spacing: -0.04em;
+  margin: 0 0 0.7rem 0;
 }
 
 .database-desc {
-  color: #b6c6d8;
-  font-size: 1.1rem;
-  text-align: center;
-  max-width: 500px;
+  color: #a9bfd4;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 760px;
 }
 
-.global-metrics-section-head {
-  margin-bottom: 1rem;
-}
-
-.global-metrics-section-head.align-left {
-  text-align: left;
-}
-
-.global-metrics-section-head.compact {
-  margin-bottom: 0.8rem;
-}
-
-.global-metrics-section-title {
-  font-size: 1.02rem;
-  font-weight: 900;
-  color: #f5f9ff;
-  margin-bottom: 0.32rem;
-}
-
-.global-metrics-section-title span {
-  color: #66a9ef;
-}
-
-.global-metrics-section-subtitle {
-  color: #96adc6;
-  font-size: 0.92rem;
-  line-height: 1.55;
-}
-
-.brazil-map-real {
-  position: relative;
-  width: 100%;
-  min-height: 540px;
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at top left, rgba(77, 163, 255, 0.08), transparent 24%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.012));
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-  padding: 0.85rem 0.85rem 4.6rem 0.85rem;
-}
-
-.brazil-map-real svg {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.18));
-}
-
-.map-hover-card {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  min-width: 150px;
-  padding: 0.8rem 0.9rem;
-  border-radius: 14px;
-  background: rgba(8, 18, 31, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
-  pointer-events: none;
-}
-
-.map-hover-title {
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 800;
-  margin-bottom: 0.18rem;
-}
-
-.map-hover-meta {
-  color: #bed0e3;
-  font-size: 0.78rem;
-}
-
-.map-legend {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  justify-content: center;
-}
-
-.map-legend-item {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(8, 20, 34, 0.78);
-  color: #dce8f4;
-  border-radius: 999px;
-  padding: 0.62rem 0.92rem;
-  font-size: 0.86rem;
-  font-weight: 800;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.map-legend-item:hover {
-  transform: translateY(-1px);
-  border-color: rgba(77, 163, 255, 0.22);
-  background: rgba(10, 24, 40, 0.92);
-}
-
-.map-legend-item.active {
-  border-color: rgba(77, 163, 255, 0.3);
-  box-shadow: 0 8px 18px rgba(77, 163, 255, 0.08);
-}
-
-.map-legend-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.region-metrics-grid {
+.database-content {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-bottom: 1.15rem;
+  grid-template-columns: 340px 1fr;
+  gap: 1.4rem;
+  align-items: stretch;
 }
 
-.region-metric-box {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 18px;
-  padding: 0.95rem 0.9rem;
+.database-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  padding: 1.35rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.database-controls {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  align-items: flex-start;
-  justify-content: center;
-  min-height: 92px;
 }
 
-.region-metric-label {
-  font-size: 0.78rem;
+.database-panel-title {
+  color: #f5f9ff;
+  font-size: 1.08rem;
+  font-weight: 900;
+  margin: 0 0 0.4rem 0;
+}
+
+.database-panel-text {
+  color: #9bb3ca;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin: 0 0 1.1rem 0;
+}
+
+.database-label {
+  display: block;
+  color: #dbe8f4;
+  font-size: 0.88rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.database-select {
+  width: 100%;
+  height: 50px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 19, 32, 0.88);
+  color: #f5f9ff;
+  padding: 0 1rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.database-select:focus {
+  border-color: rgba(77, 163, 255, 0.32);
+  box-shadow: 0 0 0 4px rgba(77, 163, 255, 0.12);
+}
+
+.database-info-card {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(77, 163, 255, 0.08);
+  border: 1px solid rgba(77, 163, 255, 0.14);
+}
+
+.database-info-label {
+  display: block;
+  color: #8fbbea;
+  font-size: 0.75rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #8fa7bf;
-  font-weight: 800;
+  margin-bottom: 0.35rem;
 }
 
-.region-metric-value {
-  font-size: 1.8rem;
+.database-info-title {
+  display: block;
+  color: #ffffff;
+  font-size: 1.12rem;
   font-weight: 900;
-  color: #63a8ee;
-  line-height: 1;
+  margin-bottom: 0.35rem;
 }
 
-.region-airports-block {
-  margin-top: 0.35rem;
+.database-info-desc {
+  color: #c8d7e6;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
 }
 
-.region-airports-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.5rem;
-  max-height: 260px;
-  overflow-y: auto;
-  padding-right: 0.1rem;
-}
-
-.region-airport-card {
-  appearance: none;
-  width: 100%;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.028);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.region-airport-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(77, 163, 255, 0.18);
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
-}
-
-.region-airport-code {
-  min-width: 56px;
-  height: 56px;
-  border-radius: 999px;
-  background: rgba(77, 163, 255, 0.12);
-  border: 1px solid rgba(77, 163, 255, 0.22);
-  color: #eef5fc;
-  font-size: 0.96rem;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.region-airport-meta {
-  min-width: 0;
+.database-viewer {
   display: flex;
   flex-direction: column;
-  gap: 0.22rem;
 }
 
-.region-airport-city {
-  color: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 800;
-}
-
-.region-airport-region {
-  color: #a8bed3;
-  font-size: 0.85rem;
-}
-
-.global-metrics-empty {
-  min-height: 120px;
+.database-image-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.08);
-  color: #b6c6d8;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
-/* modal */
-.airport-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(circle at top, rgba(77, 163, 255, 0.08), transparent 25%),
-    rgba(3, 9, 18, 0.74);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  padding: 1rem;
-  animation: airportFadeIn 0.22s ease;
-}
-
-.airport-modal {
-  width: 100%;
-  max-width: 640px;
-  background:
-    radial-gradient(circle at top left, rgba(77, 163, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, rgba(17, 32, 51, 0.98) 0%, rgba(12, 25, 42, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 28px;
-  padding: 1.5rem;
-  box-shadow:
-    0 28px 70px rgba(0, 0, 0, 0.36),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  animation: airportModalPop 0.24s ease;
-}
-
-.airport-modal-header {
-  display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 1.2rem;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
-.airport-modal-header-main {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.airport-modal-code-badge {
-  width: 74px;
-  height: 74px;
-  border-radius: 22px;
-  flex-shrink: 0;
-  display: flex;
+.database-image-tag {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background:
-    linear-gradient(135deg, rgba(77, 163, 255, 0.18), rgba(101, 126, 255, 0.12));
-  border: 1px solid rgba(77, 163, 255, 0.22);
-  color: #ffffff;
-  font-size: 1.55rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  box-shadow:
-    0 12px 28px rgba(77, 163, 255, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.airport-modal-header-text {
-  min-width: 0;
-}
-
-.airport-modal-title {
-  color: #f5f9ff;
-  font-size: 1.45rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  margin: 0 0 0.22rem 0;
-}
-
-.airport-modal-subtitle {
-  color: #9db4cb;
-  font-size: 1rem;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.airport-modal-close {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
-  color: #eef5fc;
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  cursor: pointer;
-  font-size: 1.6rem;
-  line-height: 1;
-  flex-shrink: 0;
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.airport-modal-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-1px);
-  border-color: rgba(77, 163, 255, 0.18);
-  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.16);
-}
-
-.airport-modal-divider {
-  height: 1px;
-  width: 100%;
-  margin: 0 0 1.15rem 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.06),
-    rgba(77, 163, 255, 0.16),
-    rgba(255, 255, 255, 0.06)
-  );
-}
-
-.airport-modal-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.airport-modal-stat {
-  position: relative;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.032), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 22px;
-  padding: 1.2rem 1.1rem;
-  min-height: 118px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.airport-modal-stat:hover {
-  transform: translateY(-2px);
-  border-color: rgba(77, 163, 255, 0.16);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025));
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
-}
-
-.airport-modal-stat span {
-  display: block;
-  color: #9cb4cc;
+  color: #dce8f4;
   font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
   font-weight: 800;
-  margin-bottom: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.airport-modal-stat strong {
-  color: #6eb2f6;
-  font-size: 2rem;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.03em;
+.database-image-frame {
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(5, 13, 23, 0.72), rgba(10, 21, 36, 0.9));
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem;
+  overflow: hidden;
+  min-height: 560px;
 }
 
-@keyframes airportFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.database-clickable-plane {
+  position: relative;
+  width: min(100%, 760px);
+  margin: 0 auto;
 }
 
-@keyframes airportModalPop {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.database-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.3));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* HOTSPOTS CAMUFLADOS */
+.plane-hotspot {
+  position: absolute;
+  appearance: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.plane-hotspot:hover,
+.plane-hotspot:focus,
+.plane-hotspot:active {
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.plane-hotspot::after,
+.plane-hotspot::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Frente */
+.hotspot-frente {
+  left: 9%;
+  top: 66%;
+  width: 18%;
+  height: 26%;
+}
+
+/* Meio */
+.hotspot-meio-1 {
+  left: 26.5%;
+  top: 61.5%;
+  width: 8.5%;
+  height: 13%;
+}
+
+.hotspot-meio-2 {
+  left: 32%;
+  top: 54.5%;
+  width: 15.5%;
+  height: 13%;
+}
+
+.hotspot-meio-3 {
+  left: 44.5%;
+  top: 47%;
+  width: 8.5%;
+  height: 14%;
+}
+
+.hotspot-meio-4 {
+  left: 40%;
+  top: 50.5%;
+  width: 10.2%;
+  height: 3.6%;
+}
+
+/* Asas */
+.hotspot-asa-1 {
+  left: 42%;
+  top: 63%;
+  width: 47%;
+  height: 17%;
+}
+
+.hotspot-asa-2 {
+  left: 56%;
+  top: 80%;
+  width: 33%;
+  height: 8%;
+}
+
+.hotspot-asa-3 {
+  left: 29%;
+  top: 7%;
+  width: 12%;
+  height: 46%;
+}
+
+/* Turbinas */
+.hotspot-turbina-1 {
+  left: 21.5%;
+  top: 45%;
+  width: 8.5%;
+  height: 13%;
+}
+
+.hotspot-turbina-2 {
+  left: 45%;
+  top: 80.2%;
+  width: 10.2%;
+  height: 11.2%;
+}
+
+/* Calda */
+.hotspot-calda {
+  left: 53%;
+  top: 8%;
+  width: 41%;
+  height: 49%;
 }
 
 @media (max-width: 980px) {
-  .global-metrics-shell {
-    padding: 1.4rem;
-  }
-
-  .global-metrics-layout {
+  .database-content {
     grid-template-columns: 1fr;
   }
 
-  .brazil-map-real {
-    min-height: 480px;
+  .database-image-frame {
+    min-height: 460px;
   }
 }
 
 @media (max-width: 640px) {
-  .global-metrics-page {
+  .database-page {
     padding: 1rem;
   }
 
-  .global-metrics-shell {
+  .database-shell {
     padding: 1.1rem;
     border-radius: 22px;
   }
 
-  .global-metrics-top-actions {
-    justify-content: center;
+  .database-title {
+    font-size: 1.85rem;
   }
 
-  .global-metrics-back-button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .global-metrics-title {
-    font-size: 1.8rem;
-  }
-
-  .global-metrics-subtitle {
-    font-size: 0.94rem;
-  }
-
-  .global-metrics-controls {
-    justify-content: stretch;
-  }
-
-  .global-metrics-field {
-    max-width: 100%;
-  }
-
-  .brazil-map-real {
-    min-height: 410px;
-    padding: 0.8rem 0.8rem 5rem 0.8rem;
-  }
-
-  .region-metrics-grid,
-  .airport-modal-grid,
-  .region-airports-list {
-    grid-template-columns: 1fr;
-  }
-
-  .map-hover-card {
-    position: static;
-    margin-top: 0.8rem;
-    pointer-events: auto;
-  }
-
-  .airport-modal {
-    padding: 1.15rem;
-    border-radius: 24px;
-  }
-
-  .airport-modal-header {
+  .database-image-head {
+    flex-direction: column;
     align-items: flex-start;
   }
 
-  .airport-modal-header-main {
-    align-items: flex-start;
-    gap: 0.85rem;
-  }
-
-  .airport-modal-code-badge {
-    width: 62px;
-    height: 62px;
-    border-radius: 18px;
-    font-size: 1.25rem;
-  }
-
-  .airport-modal-title {
-    font-size: 1.2rem;
-  }
-
-  .airport-modal-subtitle {
-    font-size: 0.92rem;
-  }
-
-  .airport-modal-close {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-  }
-
-  .airport-modal-stat {
-    min-height: 102px;
+  .database-image-frame {
     padding: 1rem;
+    min-height: 320px;
   }
 
-  .airport-modal-stat strong {
-    font-size: 1.7rem;
+  .database-back-btn {
+    width: 100%;
   }
 }
