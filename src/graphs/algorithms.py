@@ -113,3 +113,45 @@ def calculate_distance(graph: Graph, path: List[str]) -> float:
             raise ValueError(f"Não há conexão direta entre {from_node} e {to_node}")
 
     return total_distance
+
+
+def bellman_ford(graph: Graph, start: str, end: str) -> Tuple[Optional[float], Optional[List[str]]]:
+    if start not in graph.adjacency_list or end not in graph.adjacency_list:
+        return None, None
+
+    distances: Dict[str, float] = {node: float('inf') for node in graph.adjacency_list}
+    distances[start] = 0
+    previous: Dict[str, Optional[str]] = {node: None for node in graph.adjacency_list}
+
+    V = len(graph.adjacency_list)
+
+    for i in range(V - 1):
+        for u in graph.adjacency_list:
+            if distances[u] == float('inf'):
+                continue
+            for v, wt in graph.get_neighbors(u):
+                if distances[u] + wt < distances[v]:
+                    distances[v] = distances[u] + wt
+                    previous[v] = u
+
+    for u in graph.adjacency_list:
+        if distances[u] == float('inf'):
+            continue
+        for v, wt in graph.get_neighbors(u):
+            if distances[u] + wt < distances[v]:
+                return None, None
+
+    if distances[end] == float('inf'):
+        return None, None
+
+    path = []
+    current = end
+    while current is not None:
+        path.append(current)
+        current = previous[current]
+    path.reverse()
+
+    if path[0] != start:
+        return None, None
+
+    return distances[end], path
