@@ -34,6 +34,32 @@ projeto-grafos/
 └── requirements.txt       # Dependências Python
 ```
 
+## 🧪 Como Executar os Testes
+
+Os testes ficam na pasta `tests/` e usam **pytest**.
+
+```powershell
+# Com a venv ativada:
+.\venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+Testes disponíveis:
+
+| Arquivo | Algoritmo |
+|---|---|
+| `test_dijkstra.py` | Dijkstra |
+| `test_bellman_ford.py` | Bellman-Ford |
+| `test_bfs.py` | BFS |
+| `test_dfs.py` | DFS |
+
+Para rodar apenas um arquivo específico:
+
+```powershell
+.\venv\Scripts\python.exe -m pytest tests/test_bellman_ford.py -v
+```
+
+---
+
 ## 🛠️ Como Executar
 
 ### Passo a Passo

@@ -115,6 +115,31 @@ def calculate_distance(graph: Graph, path: List[str]) -> float:
     return total_distance
 
 
+def _shortest_simple_path(
+    graph: Graph, start: str, end: str
+) -> Tuple[Optional[float], Optional[List[str]]]:
+    best: List = [float('inf'), None]
+
+    def dfs(node: str, path: List[str], visited: set, cost: float) -> None:
+        if node == end:
+            if cost < best[0]:
+                best[0] = cost
+                best[1] = path.copy()
+            return
+        for neighbor, weight in graph.get_neighbors(node):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                path.append(neighbor)
+                dfs(neighbor, path, visited, cost + weight)
+                path.pop()
+                visited.remove(neighbor)
+
+    dfs(start, [start], {start}, 0.0)
+    if best[1] is None:
+        return None, None
+    return best[0], best[1]
+
+
 def bellman_ford(graph: Graph, start: str, end: str) -> Tuple[Optional[float], Optional[List[str]]]:
     if start not in graph.adjacency_list or end not in graph.adjacency_list:
         return None, None
@@ -139,7 +164,7 @@ def bellman_ford(graph: Graph, start: str, end: str) -> Tuple[Optional[float], O
             continue
         for v, wt in graph.get_neighbors(u):
             if distances[u] + wt < distances[v]:
-                return None, None
+                return _shortest_simple_path(graph, start, end)
 
     if distances[end] == float('inf'):
         return None, None
