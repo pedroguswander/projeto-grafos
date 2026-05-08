@@ -1,8 +1,8 @@
-# # 🛩️ Projeto Grafos - Algoritmo de Dijkstra
+# Projeto Grafos - Algoritmo de Dijkstra
 
 Uma aplicação completa para visualização e cálculo de caminhos mais curtos em grafos de aeroportos brasileiros usando o algoritmo de Dijkstra implementado manualmente.
 
-## 🚀 Funcionalidades
+## Funcionalidades
 
 - **Visualização Interativa**: Grafo interativo dos aeroportos brasileiros
 - **Seleção por Clique**: Clique nos aeroportos para selecionar origem e destino
@@ -15,23 +15,49 @@ Uma aplicação completa para visualização e cálculo de caminhos mais curtos 
 
 ```
 projeto-grafos/
-├── src/                    # Backend Python
-│   ├── graphs/            # Módulos do grafo
-│   │   ├── graph.py       # Estrutura do grafo
-│   │   ├── algorithms.py  # Dijkstra implementado manualmente
-│   │   └── io.py          # Carregamento de dados
-│   ├── api.py             # API REST Flask
-│   └── solve.py           # Script de cálculo
-├── frontend/              # Frontend React
-│   ├── src/
-│   │   ├── App.jsx        # Interface principal
-│   │   └── App.css        # Estilos
-│   └── package.json
-├── data/                  # Dados dos aeroportos
-│   ├── aeroportos_data.csv
-│   ├── adjacencias_aeroportos.csv
-│   └── rotas.csv
-└── requirements.txt       # Dependências Python
+├── data/                        # Dados dos aeroportos
+├── frontend/                    # Frontend React (Vite)
+│   ├── node_modules/
+│   ├── public/
+│   └── src/
+│       ├── assets/
+│       ├── Dashboard/
+│       ├── airport-ego-panel-horizontal.css
+│       ├── AirportTooltip.css
+│       ├── AirportTooltip.jsx
+│       ├── App.css
+│       ├── App.jsx
+│       ├── DataBase.css
+│       ├── DataBase.jsx
+│       ├── GlobalMetrics.css
+│       ├── GlobalMetrics.jsx
+│       ├── Home.css
+│       ├── Home.jsx
+│       ├── index.css
+│       ├── main.jsx
+│       ├── Regras.css
+│       ├── Regras.jsx
+│       └── SearchBar.css
+│   ├── .gitignore
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── README.md
+│   └── vite.config.js
+├── out/
+├── src/                         # Backend Python
+│   └── graphs/
+│       ├── api.py
+│       ├── cli.py
+│       ├── solve.py
+│       └── viz.py
+├── tests/
+├── venv/
+├── build.cmd
+├── build.ps1
+├── README.md
+└── requirements.txt
 ```
 
 ## 🧪 Como Executar os Testes
