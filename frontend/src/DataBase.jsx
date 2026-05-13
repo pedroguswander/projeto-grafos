@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import './DataBase.css';
-
 import aviaoCru from './assets/Aviao/aviao cru.png';
 import asasImg from './assets/Aviao/azas.png';
 import caldaImg from './assets/Aviao/calda.png';
@@ -54,7 +53,24 @@ export default function DataBase({ onBack }) {
       <div className="database-shell">
         <div className="database-topbar">
           <button className="database-back-btn" onClick={onBack} type="button">
-            ← Voltar
+            <span className="database-back-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M15 6L9 12L15 18"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <span className="database-back-text">Voltar</span>
           </button>
         </div>
 
@@ -112,7 +128,6 @@ export default function DataBase({ onBack }) {
                   className="database-image"
                 />
 
-                {/* Frente */}
                 <button
                   type="button"
                   className="plane-hotspot hotspot-frente"
@@ -120,7 +135,6 @@ export default function DataBase({ onBack }) {
                   aria-label="Selecionar frente"
                 />
 
-                {/* Meio */}
                 <button
                   type="button"
                   className="plane-hotspot hotspot-meio-1"
@@ -146,7 +160,6 @@ export default function DataBase({ onBack }) {
                   aria-label="Selecionar meio"
                 />
 
-                {/* Asas */}
                 <button
                   type="button"
                   className="plane-hotspot hotspot-asa-1"
@@ -166,7 +179,6 @@ export default function DataBase({ onBack }) {
                   aria-label="Selecionar asas"
                 />
 
-                {/* Turbinas */}
                 <button
                   type="button"
                   className="plane-hotspot hotspot-turbina-1"
@@ -180,7 +192,6 @@ export default function DataBase({ onBack }) {
                   aria-label="Selecionar turbinas"
                 />
 
-                {/* Calda */}
                 <button
                   type="button"
                   className="plane-hotspot hotspot-calda"
