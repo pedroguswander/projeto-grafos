@@ -22,8 +22,6 @@ def _dir(g: Graph, src: str, dst: str, w: float) -> None:
     g.adjacency_list[src].append((dst, w))
 
 
-# ── Case (i): negative weights, no negative cycle ────────────────────────────
-
 def test_positive_weights_baseline():
     g = _make_graph("A", "B", "C")
     _dir(g, "A", "B", 3)
@@ -35,7 +33,6 @@ def test_positive_weights_baseline():
 
 
 def test_negative_weight_shorter_path():
-    # A→B(5), A→C(10), B→C(-3): A→B→C = 2 beats A→C = 10
     g = _make_graph("A", "B", "C")
     _dir(g, "A", "B", 5)
     _dir(g, "A", "C", 10)
@@ -47,7 +44,6 @@ def test_negative_weight_shorter_path():
 
 
 def test_negative_weight_direct_is_still_shorter():
-    # A→B(5), A→C(1), B→C(-3): A→C = 1 beats A→B→C = 2
     g = _make_graph("A", "B", "C")
     _dir(g, "A", "B", 5)
     _dir(g, "A", "C", 1)
@@ -58,11 +54,7 @@ def test_negative_weight_direct_is_still_shorter():
     assert path == ["A", "C"]
 
 
-# ── Case (ii): negative cycle → fallback returns shortest simple path ─────────
-
 def test_negative_cycle_returns_simple_path():
-    # A→B(1), B→C(-3), C→B(1): cycle B↔C has weight -2
-    # Shortest simple path A→C ignoring the cycle: A→B→C = -2
     g = _make_graph("A", "B", "C")
     _dir(g, "A", "B", 1)
     _dir(g, "B", "C", -3)
@@ -72,13 +64,9 @@ def test_negative_cycle_returns_simple_path():
     assert cost == -2
     assert path == ["A", "B", "C"]
 
-
-# ── Edge cases ────────────────────────────────────────────────────────────────
-
 def test_unreachable_destination():
     g = _make_graph("A", "B", "C")
     _dir(g, "A", "B", 1)
-    # C has no incoming edges from A or B
 
     cost, path = bellman_ford(g, "A", "C")
     assert cost is None
