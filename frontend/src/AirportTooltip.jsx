@@ -1,5 +1,4 @@
 import React from 'react'
-import './AirportTooltip.css'
 
 export default function AirportTooltip({ airport, region, grau, ordem_ego, tamanho_ego, densidade_ego }) {
   if (!airport) return null

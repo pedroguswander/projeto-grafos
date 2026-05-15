@@ -4,7 +4,6 @@ import { Network } from 'vis-network/standalone'
 
 import logo from './assets/logo/logo_branca_isolada.png'
 import AirportTooltip from './AirportTooltip'
-import './airport-ego-panel-horizontal.css'
 
 function App({ onNavigate }) {
   const [startAirport, setStartAirport] = useState('')

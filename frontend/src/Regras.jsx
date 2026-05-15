@@ -1,4 +1,3 @@
-import './Regras.css';
 import pdfRegras from './assets/Regra de pesos.pdf';
 
 export default function Regras({ onBack }) {

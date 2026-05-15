@@ -4,6 +4,7 @@ API REST para o grafo de aeroportos usando Flask.
 """
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from collections import Counter   # <-- CORREÇÃO: importar Counter
 import sys
 import os
 import csv
@@ -29,6 +30,14 @@ def get_data_dir():
     está na raiz do projeto.
     """
     return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+
+
+def get_etn_data_dir():
+    """
+    Retorna o diretório de dados ETN (data/ETN).
+    CORREÇÃO: função estava faltando no arquivo original.
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'ETN'))
 
 
 def load_csv_as_dict_list(file_path):
@@ -300,6 +309,74 @@ def get_graph_data():
         'edges': edges
     })
 
+# --- Endpoints da Parte 2 (Processando CSVs em data/ETN) ---
+
+@app.route('/api/dashboard-stats', methods=['GET'])
+def get_dashboard_stats():
+    etn_dir = get_etn_data_dir()
+
+    # Caminhos dos arquivos baseados na imagem: vertices.csv e arestas.csv
+    vertices_path = os.path.join(etn_dir, 'vertices.csv')
+    arestas_path = os.path.join(etn_dir, 'arestas.csv')
+
+    if not os.path.exists(vertices_path):
+        return jsonify({'error': f'Arquivo vertices.csv não encontrado em {etn_dir}'}), 404
+    if not os.path.exists(arestas_path):
+        return jsonify({'error': f'Arquivo arestas.csv não encontrado em {etn_dir}'}), 404
+
+    # 1. Carregar Dados
+    vertices = load_csv_as_dict_list(vertices_path)
+    arestas = load_csv_as_dict_list(arestas_path)
+
+    # 2. Total de Vértices
+    total_v = len(vertices)
+
+    # 3. Total de Arestas e Peso Médio
+    total_e = len(arestas)
+    pesos = []
+    for a in arestas:
+        try:
+            valor_peso = float(a.get('peso') or a.get('weight') or 0)
+            pesos.append(valor_peso)
+        except ValueError:
+            continue
+
+    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
+
+    # 4. Grau Médio
+    grau_medio = round((total_e * 2) / total_v, 2) if total_v > 0 else 0
+
+    # 5. Distribuição por Região (D_Region)
+    regioes = [v.get('D_Region') for v in vertices if v.get('D_Region')]
+    contagem_regiao = Counter(regioes)
+    dist_regiao = [{"nome": k, "valor": v} for k, v in sorted(contagem_regiao.items(), key=lambda x: x[1], reverse=True)]
+
+    # 6. Distribuição de Graus
+    portos_nas_rotas = []
+    for a in arestas:
+        portos_nas_rotas.append(a.get('origem') or a.get('from'))
+        portos_nas_rotas.append(a.get('destino') or a.get('to'))
+
+    graus_por_porto = Counter(filter(None, portos_nas_rotas))
+    frequencia_graus = Counter(graus_por_porto.values())
+    dist_graus = [{"grau": k, "quantidade": v} for k, v in sorted(frequencia_graus.items())]
+
+    # 7. Top 10 Hubs (portos com maior grau)
+    top_vertices_raw = graus_por_porto.most_common(10)
+    top_vertices = [{"nome": nome, "grau": grau} for nome, grau in top_vertices_raw]
+
+    return jsonify({
+        "totalV": total_v,
+        "totalE": total_e,
+        "pesoMedio": peso_medio,
+        "grauMedio": grau_medio,
+        "distribuicaoRegiao": dist_regiao,
+        "distribuicaoGraus": dist_graus,
+        "topVertices": top_vertices   # <-- também retorna top hubs calculados dinamicamente
+    })
+
 
 if __name__ == '__main__':
+    # CORREÇÃO: Flask usa python api.py ou flask run, NÃO uvicorn
+    # uvicorn é para FastAPI/ASGI — Flask é WSGI
     app.run(debug=True, host='0.0.0.0', port=5000)
