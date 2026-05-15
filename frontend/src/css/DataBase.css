@@ -1,0 +1,465 @@
+.database-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(77, 163, 255, 0.14), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(77, 163, 255, 0.08), transparent 20%),
+    linear-gradient(180deg, #07111d 0%, #0b1b2d 100%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.database-shell {
+  width: 100%;
+  max-width: 1200px;
+  padding: 2rem 3vw;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 28px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-sizing: border-box;
+}
+
+.database-topbar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.2rem;
+}
+
+/* botão voltar igual ao outro */
+.database-back-btn {
+  appearance: none;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem 0.5rem 0.5rem;
+  border-radius: 999px;
+  color: #eaf2fb;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition:
+    transform 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    color 0.22s ease;
+}
+
+.database-back-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.065);
+  border-color: rgba(77, 163, 255, 0.28);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(77, 163, 255, 0.08);
+  color: #ffffff;
+}
+
+.database-back-btn:active {
+  transform: translateY(0);
+}
+
+.database-back-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(77, 163, 255, 0.95), rgba(124, 92, 255, 0.95));
+  box-shadow:
+    0 10px 18px rgba(77, 163, 255, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  transition:
+    transform 0.22s ease,
+    filter 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.database-back-btn:hover .database-back-icon {
+  transform: translateX(-1px);
+  filter: brightness(1.05);
+  box-shadow:
+    0 14px 22px rgba(77, 163, 255, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.database-back-text {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 0.94rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  padding-right: 0.2rem;
+}
+
+.database-header {
+  margin-bottom: 1.8rem;
+  text-align: center;
+}
+
+.database-title {
+  color: #f5f9ff;
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin: 0 0 0.7rem 0;
+  line-height: 1.05;
+}
+
+.database-desc {
+  color: #a9bfd4;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0 auto;
+  max-width: 760px;
+}
+
+.database-content {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.4rem;
+  align-items: stretch;
+}
+
+.database-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  padding: 1.35rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-sizing: border-box;
+}
+
+.database-controls {
+  display: flex;
+  flex-direction: column;
+}
+
+.database-panel-title {
+  color: #f5f9ff;
+  font-size: 1.08rem;
+  font-weight: 900;
+  margin: 0 0 0.4rem 0;
+}
+
+.database-panel-text {
+  color: #9bb3ca;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin: 0 0 1.1rem 0;
+}
+
+.database-label {
+  display: block;
+  color: #dbe8f4;
+  font-size: 0.88rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.database-select {
+  width: 100%;
+  height: 50px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 19, 32, 0.88);
+  color: #f5f9ff;
+  padding: 0 1rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.database-select:focus {
+  border-color: rgba(77, 163, 255, 0.32);
+  box-shadow: 0 0 0 4px rgba(77, 163, 255, 0.12);
+}
+
+.database-info-card {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(77, 163, 255, 0.08);
+  border: 1px solid rgba(77, 163, 255, 0.14);
+}
+
+.database-info-label {
+  display: block;
+  color: #8fbbea;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.database-info-title {
+  display: block;
+  color: #ffffff;
+  font-size: 1.12rem;
+  font-weight: 900;
+  margin-bottom: 0.35rem;
+}
+
+.database-info-desc {
+  color: #c8d7e6;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.database-viewer {
+  display: flex;
+  flex-direction: column;
+}
+
+.database-image-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.database-image-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #dce8f4;
+  font-size: 0.8rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  white-space: nowrap;
+}
+
+.database-image-frame {
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(5, 13, 23, 0.72), rgba(10, 21, 36, 0.9));
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem;
+  overflow: hidden;
+  min-height: 560px;
+  box-sizing: border-box;
+}
+
+.database-clickable-plane {
+  position: relative;
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.database-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.3));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* HOTSPOTS CAMUFLADOS */
+.plane-hotspot {
+  position: absolute;
+  appearance: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.plane-hotspot:hover,
+.plane-hotspot:focus,
+.plane-hotspot:active {
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.plane-hotspot::after,
+.plane-hotspot::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Frente */
+.hotspot-frente {
+  left: 9%;
+  top: 66%;
+  width: 18%;
+  height: 26%;
+}
+
+/* Meio */
+.hotspot-meio-1 {
+  left: 26.5%;
+  top: 61.5%;
+  width: 8.5%;
+  height: 13%;
+}
+
+.hotspot-meio-2 {
+  left: 32%;
+  top: 54.5%;
+  width: 15.5%;
+  height: 13%;
+}
+
+.hotspot-meio-3 {
+  left: 44.5%;
+  top: 47%;
+  width: 8.5%;
+  height: 14%;
+}
+
+.hotspot-meio-4 {
+  left: 40%;
+  top: 50.5%;
+  width: 10.2%;
+  height: 3.6%;
+}
+
+/* Asas */
+.hotspot-asa-1 {
+  left: 42%;
+  top: 63%;
+  width: 47%;
+  height: 17%;
+}
+
+.hotspot-asa-2 {
+  left: 56%;
+  top: 80%;
+  width: 33%;
+  height: 8%;
+}
+
+.hotspot-asa-3 {
+  left: 29%;
+  top: 7%;
+  width: 12%;
+  height: 46%;
+}
+
+/* Turbinas */
+.hotspot-turbina-1 {
+  left: 21.5%;
+  top: 45%;
+  width: 8.5%;
+  height: 13%;
+}
+
+.hotspot-turbina-2 {
+  left: 45%;
+  top: 80.2%;
+  width: 10.2%;
+  height: 11.2%;
+}
+
+/* Calda */
+.hotspot-calda {
+  left: 53%;
+  top: 8%;
+  width: 41%;
+  height: 49%;
+}
+
+@media (max-width: 980px) {
+  .database-content {
+    grid-template-columns: 1fr;
+  }
+
+  .database-image-frame {
+    min-height: 460px;
+  }
+}
+
+@media (max-width: 768px) {
+  .database-page {
+    padding: 1rem;
+  }
+
+  .database-shell {
+    padding: 1.25rem;
+    border-radius: 22px;
+  }
+
+  .database-topbar {
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .database-title {
+    font-size: 1.95rem;
+  }
+
+  .database-desc {
+    font-size: 0.94rem;
+  }
+
+  .database-back-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .database-image-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .database-image-frame {
+    padding: 1rem;
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 640px) {
+  .database-panel {
+    padding: 1.1rem;
+  }
+
+  .database-image-frame {
+    min-height: 320px;
+  }
+}

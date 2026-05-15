@@ -1,0 +1,238 @@
+.database-etn-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(38, 194, 129, 0.14), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(38, 194, 129, 0.08), transparent 20%),
+    linear-gradient(180deg, #081c16 0%, #103328 100%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.database-etn-shell {
+  width: 100%;
+  max-width: 1200px;
+  padding: 2rem 3vw;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(38, 194, 129, 0.13);
+  border-radius: 28px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(38, 194, 129, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-sizing: border-box;
+}
+
+.database-etn-topbar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.2rem;
+}
+
+.database-etn-back-btn {
+  appearance: none;
+  border: none;
+  outline: none;
+  background: rgba(38, 194, 129, 0.04);
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem 0.5rem 0.5rem;
+  border-radius: 999px;
+  color: #eaf2fb;
+  border: 1px solid rgba(38, 194, 129, 0.08);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(38, 194, 129, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition:
+    transform 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    color 0.22s ease;
+}
+
+.database-etn-back-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(38, 194, 129, 0.065);
+  border-color: #26c281;
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.26),
+    0 0 0 1px #26c281;
+  color: #ffffff;
+}
+
+.database-etn-back-btn:active {
+  transform: translateY(0);
+}
+
+.database-etn-back-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #26c281 95%, #1a5c49 95%);
+  box-shadow:
+    0 10px 18px rgba(38, 194, 129, 0.22),
+    inset 0 1px 0 rgba(38, 194, 129, 0.16);
+  transition:
+    transform 0.22s ease,
+    filter 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.database-etn-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.database-etn-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #26c281;
+  margin-bottom: 0.3rem;
+  letter-spacing: -0.03em;
+}
+
+.database-etn-desc {
+  color: #b6e2d0;
+  font-size: 1.13rem;
+  margin-bottom: 0.5rem;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.database-etn-content {
+  display: flex;
+  gap: 2.2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.database-etn-panel {
+  background: rgba(38, 194, 129, 0.04);
+  border-radius: 18px;
+  padding: 1.2rem 1.3rem;
+  min-width: 260px;
+  max-width: 340px;
+  box-shadow: 0 4px 18px rgba(38, 194, 129, 0.08);
+  border: 1px solid rgba(38, 194, 129, 0.13);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+}
+
+.database-etn-panel-title {
+  color: #26c281;
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+
+.database-etn-panel-text {
+  color: #7fd6b2;
+  font-size: 0.98rem;
+  margin-bottom: 0.7rem;
+}
+
+.database-etn-label {
+  color: #b6e2d0;
+  font-size: 0.97rem;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+.database-etn-select {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1.5px solid #26c281;
+  background: #0e2a22;
+  color: #eaf2fb;
+  font-size: 1rem;
+  font-family: inherit;
+  margin-bottom: 0.5rem;
+  margin-top: 0.2rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.database-etn-select:focus {
+  border-color: #7fd6b2;
+}
+
+.database-etn-image-panel {
+  align-items: center;
+  justify-content: center;
+  min-width: 320px;
+  max-width: 420px;
+  text-align: center;
+  background: rgba(38, 194, 129, 0.06);
+  border: 1px solid rgba(38, 194, 129, 0.13);
+}
+
+.database-etn-image {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 0.7rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(38, 194, 129, 0.13);
+}
+
+.database-etn-image-desc {
+  color: #b6e2d0;
+  font-size: 1.04rem;
+  margin-bottom: 0.2rem;
+}
+
+@media (max-width: 900px) {
+  .database-etn-content {
+    flex-direction: column;
+    gap: 1.2rem;
+    align-items: center;
+  }
+  .database-etn-panel {
+    min-width: 220px;
+    max-width: 100%;
+  }
+  .database-etn-image-panel {
+    min-width: 220px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .database-etn-page {
+    padding: 0.7rem;
+  }
+  .database-etn-shell {
+    padding: 1.1rem 0.5rem;
+  }
+  .database-etn-title {
+    font-size: 1.4rem;
+  }
+  .database-etn-panel {
+    padding: 0.7rem 0.5rem;
+  }
+  .database-etn-image {
+    max-width: 98vw;
+  }
+}
