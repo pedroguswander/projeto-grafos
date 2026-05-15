@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import './DataBase.css';
 import aviaoCru from './assets/Aviao/aviao cru.png';
 import asasImg from './assets/Aviao/azas.png';
 import caldaImg from './assets/Aviao/calda.png';

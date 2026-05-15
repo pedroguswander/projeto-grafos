@@ -1,8 +1,18 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import './index.css';
-import './App.css';
-import './SearchBar.css';
+import './css/index.css';
+import './css/App.css';
+import './css/SearchBar.css';
+import './css/AirportTooltip.css'
+import './css/HomeETN.css'
+import './css/Splash.css'
+import './css/DataBase.css'
+import './css/GlobalMetrics.css'
+import './css/Home.css'
+import './css/Regras.css'
+import './css/airport-ego-panel-horizontal.css'
+import './css/DataBaseETN.css'
+import './css/DashboardETN.css'
 import App from './App.jsx';
 import Home from './Home.jsx';
 import Regras from './Regras.jsx';
@@ -12,6 +22,7 @@ import DataBase from './DataBase.jsx';
 import DataBaseETN from './DataBaseETN.jsx';
 import Splash from './Splash.jsx';
 import HomeETN from './HomeETN.jsx';
+import { DashboardETN } from './Dashboard/DashboardETN.jsx';
 
 
 
@@ -36,6 +47,7 @@ function Root() {
   if (screen === 'home') return <Home onNavigate={handleNavigate} />;
   if (screen === 'home-etn') return <HomeETN onNavigate={handleNavigate} />;
   if (screen === 'dashboard') return <Dashboard onBack={() => setScreen(lastHome)} />;
+  if (screen === 'dashboard-etn') return <DashboardETN onBack={() => setScreen(lastHome)} />;
   if (screen === 'requisitos') {
     return (
       <div
