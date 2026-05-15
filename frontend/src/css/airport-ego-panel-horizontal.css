@@ -1,0 +1,55 @@
+.airport-ego-panel-horizontal {
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(77, 163, 255, 0.10);
+  padding: 1.1rem 1.4rem 0.7rem 1.4rem;
+  color: var(--text);
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 220px;
+  max-width: 100%;
+}
+.ego-block-title {
+  font-size: 1.13rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.7rem;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+}
+.ego-block-city {
+  color: var(--muted);
+  font-size: 1.01rem;
+  font-weight: 600;
+  margin-left: 0.5em;
+}
+.ego-block-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2em 2.2em;
+  width: 100%;
+  margin-bottom: 0.2rem;
+}
+.ego-block-item {
+  font-size: 0.98rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  min-width: 120px;
+}
+.ego-block-item span {
+  color: var(--muted);
+  font-weight: 600;
+  margin-right: 0.3em;
+}
+.ego-block-item strong {
+  color: #fff;
+  font-weight: 700;
+  margin-left: 0.2em;
+  letter-spacing: 0.01em;
+}
