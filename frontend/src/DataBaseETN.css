@@ -1,3 +1,217 @@
+/* Hotspots navio estilo ETN */
+.database-etn-clickable-ship {
+  position: relative;
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.ship-hotspot {
+  position: absolute;
+  appearance: none;
+  border: none;
+  outline: none;
+    background: transparent !important; /* hotspot totalmente invisível */
+  transition: background 0.18s, outline 0.18s, opacity 0.18s;
+  box-shadow: none;
+  border-radius: 0;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  z-index: 2;
+}
+
+
+  /* Remove qualquer efeito visual no hover/focus/active */
+  .ship-hotspot:hover,
+  .ship-hotspot:focus,
+  .ship-hotspot:active {
+    background: transparent !important;
+    outline: none !important;
+    border-radius: 0 !important;
+  }
+
+/* Quando só o selecionado deve aparecer */
+.ship-hotspot--only-selected {
+  opacity: 0;
+  pointer-events: none;
+}
+.ship-hotspot--selected {
+  opacity: 1 !important;
+  background: rgba(38, 194, 129, 0.18) !important;
+  outline: 2.5px solid #26c281 !important;
+  border-radius: 8px;
+  pointer-events: auto;
+  z-index: 3;
+}
+
+/* Hotspot áreas do navio (ajuste conforme imagem) */
+.hotspot-navio-frente {
+  left: 7%;
+  top: 58%;
+  width: 21%;
+  height: 30%;
+}
+
+.hotspot-navio-frente2 {
+  left: 23%;
+  top: 69%;
+  width: 10%;
+  height: 13%;
+}
+
+.hotspot-navio-meio {
+  left: 28%;
+  top: 48%;
+  width: 24%;
+  height: 21%;
+}
+.hotspot-navio-meio2 {
+  left: 33%;
+  top: 69%;
+  width: 15%;
+  height: 8%;
+}
+.hotspot-navio-meio3 {
+  left: 47%;
+  top: 54%;
+  width: 11%;
+  height: 14%;
+}
+.hotspot-navio-meio4 {
+  left: 38%;
+  top: 43%;
+  width: 11%;
+  height: 14%;
+}
+.hotspot-navio-cauda {
+  left: 72%;
+  top: 18%;
+  width: 25%;
+  height: 25%;
+}
+.hotspot-navio-cauda2 {
+  left: 58%;
+  top: 48%;
+  width: 11%;
+  height: 12%;
+}
+.hotspot-navio-cauda3 {
+  left: 68%;
+  top: 37%;
+  width: 7%;
+  height: 12%;
+}
+.hotspot-navio-cauda4 {
+  left: 52%;
+  top: 42%;
+  width: 7%;
+  height: 10%;
+}
+.hotspot-navio-torre {
+  left: 45%;
+  top: 6%;
+  width: 26%;
+  height: 25%;
+}
+
+.hotspot-navio-torre2 {
+  left: 49%;
+  top: 30%;
+  width: 19%;
+  height: 11%;
+}
+
+.hotspot-navio-torre3 {
+  left: 61%;
+  top: 40%;
+  width: 7%;
+  height: 8%;
+}
+.hotspot-navio-botes {
+  left: 53%;
+  top: 66%;
+  width: 23%;
+  height: 21%;
+}
+.hotspot-navio-botes2 {
+  left: 60%;
+  top: 61%;
+  width: 13%;
+  height: 9%;
+}
+.hotspot-navio-carga-superior {
+  left: 5%;
+  top: 15%;
+  width: 39%;
+  height: 27%;
+}
+
+.hotspot-navio-carga-superior2 {
+  left: 5%;
+  top: 38%;
+  width: 21%;
+  height: 19%;
+}
+
+.hotspot-navio-carga-superior3 {
+  left: 26%;
+  top: 37%;
+  width: 9%;
+  height: 10%;
+}
+
+.hotspot-navio-carga-inferior {
+  left: 80%;
+  top: 44%;
+  width: 20%;
+  height: 30%;
+}
+.hotspot-navio-carga-inferior2 {
+  left: 74%;
+  top: 50%;
+  width: 20%;
+  height: 30%;
+}
+
+/* Destaque da área selecionada (verde ETN) */
+.database-etn-image {
+  position: relative;
+  z-index: 1;
+}
+
+.ship-hotspot[aria-label*="Selecionar "] {
+  transition: outline 0.18s, background 0.18s;
+}
+
+.database-etn-info-card {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(38, 194, 129, 0.08);
+  border: 1px solid rgba(38, 194, 129, 0.14);
+}
+.database-etn-info-label {
+  display: block;
+  color: #7fd6b2;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+.database-etn-info-title {
+  display: block;
+  color: #26c281;
+  font-size: 1.12rem;
+  font-weight: 900;
+  margin-bottom: 0.35rem;
+}
+.database-etn-info-desc {
+  color: #b6e2d0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
+}
 .database-etn-page {
   min-height: 100vh;
   width: 100%;
