@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import './DataBaseETN.css';
+import './css/DataBaseETN.css';
 import navioCru from './assets/navio/navio-cru.png';
 import navioFrente from './assets/navio/navio-frente.png';
 import navioMeio from './assets/navio/navio-meio.png';

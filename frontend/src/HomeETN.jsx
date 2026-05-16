@@ -41,9 +41,8 @@ export default function HomeETN({ onNavigate }) {
               </button>
             </div>
           </div>
-
           <div className="hub-bottom-etn">
-            <button className="hub-card-etn hub-card-bottom-etn" onClick={() => onNavigate('')}>
+            <button className="hub-card-etn hub-card-bottom-etn" onClick={() => onNavigate('database-etn')}>
               <span className="hub-card-title-etn">DATA BASE</span>
               <span className="hub-card-sub-etn">Base de dados operacional</span>
             </button>
