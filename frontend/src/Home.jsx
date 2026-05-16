@@ -1,5 +1,4 @@
 import logo from './assets/logo/logo_branca_completa.png';
-import './Home.css';
 
 export default function Home({ onNavigate }) {
   return (

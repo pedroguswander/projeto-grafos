@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
-import './GlobalMetrics.css';
+
 
 const GEO_URL =
   'https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson';

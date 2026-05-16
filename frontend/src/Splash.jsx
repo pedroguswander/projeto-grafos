@@ -1,5 +1,4 @@
 import React from 'react';
-import './Splash.css';
 import logoCompleta from './assets/logo/logo_branca_completa.png';
 import logoCompletaEtn from './assets/logo-2/logo-branca-completa2.png';
 
