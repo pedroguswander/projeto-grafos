@@ -944,10 +944,11 @@ function App({ onNavigate }) {
         <div className="header-top-actions">
           <button
             onClick={handleGoBack}
-            className="back-button fancy-back-button"
+            className="declaracaoia-back-button"
             type="button"
+            title="Voltar"
           >
-            <span className="back-button-icon" aria-hidden="true">
+            <span className="declaracaoia-back-icon" aria-hidden="true">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -964,7 +965,7 @@ function App({ onNavigate }) {
                 />
               </svg>
             </span>
-            <span className="back-button-text">Voltar</span>
+            <span className="declaracaoia-back-text">Voltar</span>
           </button>
         </div>
 

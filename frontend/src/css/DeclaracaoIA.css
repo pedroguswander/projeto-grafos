@@ -1,4 +1,4 @@
-.regras-bg {
+.declaracaoia-bg {
   min-height: 100vh;
   width: 100%;
   padding: 2rem;
@@ -13,7 +13,7 @@
   overflow-y: auto;
 }
 
-.regras-container {
+.declaracaoia-container {
   width: 100%;
   max-width: 1200px;
   padding: 2rem 3vw;
@@ -29,19 +29,19 @@
   box-sizing: border-box;
 }
 
-.regras-top-actions {
+.declaracaoia-top-actions {
   width: 100%;
   display: flex;
   justify-content: flex-end;
   margin-bottom: 1.2rem;
 }
 
-.regras-header {
+.declaracaoia-header {
   margin-bottom: 1.8rem;
   text-align: center;
 }
 
-.regras-title {
+.declaracaoia-title {
   color: #f5f9ff;
   font-size: 2.4rem;
   font-weight: 900;
@@ -50,7 +50,7 @@
   line-height: 1.05;
 }
 
-.regras-subtitle {
+.declaracaoia-subtitle {
   color: #a9bfd4;
   font-size: 1rem;
   line-height: 1.7;
@@ -58,7 +58,7 @@
   max-width: 760px;
 }
 
-.regras-actions {
+.declaracaoia-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -68,8 +68,8 @@
   margin-bottom: 2rem;
 }
 
-/* botão voltar */
-.regras-back-button {
+/* botão voltar igual ao de Regras */
+.declaracaoia-back-button {
   appearance: none;
   border: none;
   outline: none;
@@ -96,7 +96,7 @@
     color 0.22s ease;
 }
 
-.regras-back-button:hover {
+.declaracaoia-back-button:hover {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.065);
   border-color: rgba(77, 163, 255, 0.22);
@@ -106,11 +106,11 @@
   color: #ffffff;
 }
 
-.regras-back-button:active {
+.declaracaoia-back-button:active {
   transform: translateY(0);
 }
 
-.regras-back-icon {
+.declaracaoia-back-icon {
   width: 38px;
   height: 38px;
   flex-shrink: 0;
@@ -129,7 +129,7 @@
     box-shadow 0.22s ease;
 }
 
-.regras-back-button:hover .regras-back-icon {
+.declaracaoia-back-button:hover .declaracaoia-back-icon {
   transform: translateX(-1px);
   filter: brightness(1.08);
   box-shadow:
@@ -137,7 +137,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-.regras-back-text {
+.declaracaoia-back-text {
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
@@ -148,7 +148,7 @@
 }
 
 /* botões de ação */
-.regras-action-btn {
+.declaracaoia-action-btn {
   text-decoration: none;
   border-radius: 14px;
   padding: 0.95rem 1.25rem;
@@ -170,11 +170,11 @@
   box-sizing: border-box;
 }
 
-.regras-action-btn:hover {
+.declaracaoia-action-btn:hover {
   transform: translateY(-1px);
 }
 
-.regras-action-btn.primary {
+.declaracaoia-action-btn.primary {
   background: linear-gradient(135deg, #4da3ff, #7c5cff);
   color: #ffffff;
   border: none;
@@ -182,19 +182,19 @@
   filter: brightness(1.04);
 }
 
-.regras-action-btn.primary:hover {
+.declaracaoia-action-btn.primary:hover {
   box-shadow: 0 14px 28px rgba(77, 163, 255, 0.24);
   filter: brightness(1.03);
 }
 
-.regras-action-btn.secondary {
+.declaracaoia-action-btn.secondary {
   background: rgba(255, 255, 255, 0.07);
   color: #e8eef7;
   border: 1.5px solid rgba(255, 255, 255, 0.13);
   box-shadow: 0 4px 18px rgba(77, 163, 255, 0.06);
 }
 
-.regras-action-btn.secondary:hover {
+.declaracaoia-action-btn.secondary:hover {
   background: rgba(255, 255, 255, 0.13);
   color: #4da3ff;
   border-color: #4da3ff;
@@ -223,50 +223,50 @@
 }
 
 @media (max-width: 768px) {
-  .regras-bg {
+  .declaracaoia-bg {
     padding: 1rem;
   }
 
-  .regras-container {
+  .declaracaoia-container {
     padding: 1.25rem;
     border-radius: 22px;
   }
 
-  .regras-top-actions {
+  .declaracaoia-top-actions {
     justify-content: center;
     margin-bottom: 1rem;
   }
 
-  .regras-title {
+  .declaracaoia-title {
     font-size: 1.95rem;
   }
 
-  .regras-subtitle {
+  .declaracaoia-subtitle {
     font-size: 0.94rem;
   }
 
-  .regras-actions {
+  .declaracaoia-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .regras-back-button,
-  .regras-action-btn {
+  .declaracaoia-back-button,
+  .declaracaoia-action-btn {
     width: 100%;
     justify-content: center;
   }
 
-  .regras-back-button {
+  .declaracaoia-back-button {
     gap: 0.65rem;
     padding: 0.42rem 0.58rem 0.42rem 0.42rem;
   }
 
-  .regras-back-icon {
+  .declaracaoia-back-icon {
     width: 34px;
     height: 34px;
   }
 
-  .regras-back-text {
+  .declaracaoia-back-text {
     font-size: 0.88rem;
   }
 

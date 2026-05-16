@@ -222,11 +222,13 @@ export default function DataBase({ onBack }) {
 
   const carregarWorkbook = async (arquivo) => {
     const response = await fetch(arquivo, { cache: 'no-store' });
+
     if (!response.ok) {
       throw new Error(`Falha ao carregar arquivo (${response.status})`);
     }
 
     const contentType = response.headers.get('content-type') || '';
+
     if (
       contentType.includes('text/html') ||
       contentType.includes('application/json')
@@ -237,6 +239,7 @@ export default function DataBase({ onBack }) {
     }
 
     const arrayBuffer = await response.arrayBuffer();
+
     return XLSX.read(arrayBuffer, {
       type: 'array',
     });
@@ -257,6 +260,7 @@ export default function DataBase({ onBack }) {
 
   const extrairAba = (workbook, nomeAba) => {
     const sheet = workbook.Sheets[nomeAba];
+
     if (!sheet) {
       throw new Error(`A aba "${nomeAba}" não foi encontrada.`);
     }
@@ -395,92 +399,92 @@ export default function DataBase({ onBack }) {
             </div>
 
             <div className="plane-stage">
-  <div className="plane-image-wrap">
-    <img
-      src={imagemAtual.src}
-      alt={imagemAtual.label}
-      className="database-image"
-    />
+              <div className="plane-image-wrap">
+                <img
+                  src={imagemAtual.src}
+                  alt={imagemAtual.label}
+                  className="database-image"
+                />
 
-    <button
-      type="button"
-      className="plane-hotspot hotspot-frente"
-      onClick={() => handleSelecionarParte('frente')}
-      aria-label="Selecionar frente"
-      title="Frente"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-meio-1"
-      onClick={() => handleSelecionarParte('meio')}
-      aria-label="Selecionar meio"
-      title="Meio"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-meio-2"
-      onClick={() => handleSelecionarParte('meio')}
-      aria-label="Selecionar meio"
-      title="Meio"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-meio-3"
-      onClick={() => handleSelecionarParte('meio')}
-      aria-label="Selecionar meio"
-      title="Meio"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-asa-1"
-      onClick={() => handleSelecionarParte('asas')}
-      aria-label="Selecionar asas"
-      title="Asas"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-asa-2"
-      onClick={() => handleSelecionarParte('asas')}
-      aria-label="Selecionar asas"
-      title="Asas"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-asa-3"
-      onClick={() => handleSelecionarParte('asas')}
-      aria-label="Selecionar asas"
-      title="Asas"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-asa-4"
-      onClick={() => handleSelecionarParte('asas')}
-      aria-label="Selecionar asas"
-      title="Asas"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-turbina-1"
-      onClick={() => handleSelecionarParte('turbinas')}
-      aria-label="Selecionar turbinas"
-      title="Turbinas"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-turbina-2"
-      onClick={() => handleSelecionarParte('turbinas')}
-      aria-label="Selecionar turbinas"
-      title="Turbinas"
-    />
-    <button
-      type="button"
-      className="plane-hotspot hotspot-calda"
-      onClick={() => handleSelecionarParte('calda')}
-      aria-label="Selecionar calda"
-      title="Calda"
-    />
-  </div>
-</div>
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-frente"
+                  onClick={() => handleSelecionarParte('frente')}
+                  aria-label="Selecionar frente"
+                  title="Frente"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-meio-1"
+                  onClick={() => handleSelecionarParte('meio')}
+                  aria-label="Selecionar meio"
+                  title="Meio"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-meio-2"
+                  onClick={() => handleSelecionarParte('meio')}
+                  aria-label="Selecionar meio"
+                  title="Meio"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-meio-3"
+                  onClick={() => handleSelecionarParte('meio')}
+                  aria-label="Selecionar meio"
+                  title="Meio"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-asa-1"
+                  onClick={() => handleSelecionarParte('asas')}
+                  aria-label="Selecionar asas"
+                  title="Asas"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-asa-2"
+                  onClick={() => handleSelecionarParte('asas')}
+                  aria-label="Selecionar asas"
+                  title="Asas"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-asa-3"
+                  onClick={() => handleSelecionarParte('asas')}
+                  aria-label="Selecionar asas"
+                  title="Asas"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-asa-4"
+                  onClick={() => handleSelecionarParte('asas')}
+                  aria-label="Selecionar asas"
+                  title="Asas"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-turbina-1"
+                  onClick={() => handleSelecionarParte('turbinas')}
+                  aria-label="Selecionar turbinas"
+                  title="Turbinas"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-turbina-2"
+                  onClick={() => handleSelecionarParte('turbinas')}
+                  aria-label="Selecionar turbinas"
+                  title="Turbinas"
+                />
+                <button
+                  type="button"
+                  className="plane-hotspot hotspot-calda"
+                  onClick={() => handleSelecionarParte('calda')}
+                  aria-label="Selecionar calda"
+                  title="Calda"
+                />
+              </div>
+            </div>
           </section>
 
           <section className="database-card top-info-card">
@@ -563,11 +567,16 @@ export default function DataBase({ onBack }) {
           <section className="database-card table-card">
             <div className="table-preview-title-wrap">
               <h2
-                    className="table-preview-title"
-                    style={{ margin: '4px 0 20px 0', fontSize: '1.5rem', color: '#f4f8ff', fontWeight: '900' }}
-                  >
-                    Prévia da Planilha
-                  </h2>
+                className="table-preview-title"
+                style={{
+                  margin: '4px 0 20px 0',
+                  fontSize: '1.5rem',
+                  color: '#f4f8ff',
+                  fontWeight: '900',
+                }}
+              >
+                Prévia da Planilha
+              </h2>
             </div>
 
             {abas.length > 1 && (
@@ -621,6 +630,7 @@ export default function DataBase({ onBack }) {
                       ))}
                     </tr>
                   </thead>
+
                   <tbody>
                     {bodyRows.map((row, rowIndex) => (
                       <tr key={rowIndex}>
@@ -643,6 +653,7 @@ export default function DataBase({ onBack }) {
                 Exibindo uma amostra inicial da planilha selecionada
                 {abaAtual ? ` • Aba: ${abaAtual}` : ''}.
               </span>
+
               <button
                 type="button"
                 className="details-btn"
@@ -668,6 +679,7 @@ export default function DataBase({ onBack }) {
               <h2>{planilha?.nome}</h2>
               <p className="modal-subtitle">{planilha?.objetivo}</p>
             </div>
+
             <button
               type="button"
               className="modal-close-btn"
@@ -706,6 +718,7 @@ export default function DataBase({ onBack }) {
                     ))}
                   </tr>
                 </thead>
+
                 <tbody>
                   {detalheRows.map((row, rowIndex) => (
                     <tr key={rowIndex}>
