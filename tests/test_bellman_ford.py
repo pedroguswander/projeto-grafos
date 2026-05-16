@@ -3,18 +3,18 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
-from src.graphs.graph import Graph, Airport
-from src.graphs.algorithms import bellman_ford
+from parte2.src.graphs.graph import Graph, Port
+from parte2.src.graphs.algorithms import bellman_ford
 
 
-def _airport(code: str) -> Airport:
-    return Airport(code=code, name=code, city=code, country="BR", latitude=0.0, longitude=0.0)
+def _port(code: str) -> Port:
+    return Port(code=code, name=code, country="BR", region="BR", latitude=0.0, longitude=0.0)
 
 
 def _make_graph(*codes: str) -> Graph:
     g = Graph()
     for c in codes:
-        g.add_airport(_airport(c))
+        g.add_port(_port(c))
     return g
 
 
@@ -27,9 +27,10 @@ def test_positive_weights_baseline():
     _dir(g, "A", "B", 3)
     _dir(g, "B", "C", 4)
 
-    cost, path = bellman_ford(g, "A", "C")
+    cost, path, has_cycle = bellman_ford(g, "A", "C")
     assert cost == 7
     assert path == ["A", "B", "C"]
+    assert has_cycle == False
 
 
 def test_negative_weight_shorter_path():
@@ -38,9 +39,10 @@ def test_negative_weight_shorter_path():
     _dir(g, "A", "C", 10)
     _dir(g, "B", "C", -3)
 
-    cost, path = bellman_ford(g, "A", "C")
+    cost, path, has_cycle = bellman_ford(g, "A", "C")
     assert cost == 2
     assert path == ["A", "B", "C"]
+    assert has_cycle == False
 
 
 def test_negative_weight_direct_is_still_shorter():
@@ -49,26 +51,29 @@ def test_negative_weight_direct_is_still_shorter():
     _dir(g, "A", "C", 1)
     _dir(g, "B", "C", -3)
 
-    cost, path = bellman_ford(g, "A", "C")
+    cost, path, has_cycle = bellman_ford(g, "A", "C")
     assert cost == 1
     assert path == ["A", "C"]
+    assert has_cycle == False
 
 
-def test_negative_cycle_returns_simple_path():
+def test_negative_cycle_detected():
     g = _make_graph("A", "B", "C")
     _dir(g, "A", "B", 1)
     _dir(g, "B", "C", -3)
     _dir(g, "C", "B", 1)
 
-    cost, path = bellman_ford(g, "A", "C")
-    assert cost == -2
-    assert path == ["A", "B", "C"]
+    cost, path, has_cycle = bellman_ford(g, "A", "C")
+    assert has_cycle == True
+    assert cost is None
+    assert path is None
+
 
 def test_unreachable_destination():
     g = _make_graph("A", "B", "C")
     _dir(g, "A", "B", 1)
 
-    cost, path = bellman_ford(g, "A", "C")
+    cost, path, has_cycle = bellman_ford(g, "A", "C")
     assert cost is None
     assert path is None
 
@@ -77,6 +82,6 @@ def test_node_not_in_graph():
     g = _make_graph("A", "B")
     _dir(g, "A", "B", 1)
 
-    cost, path = bellman_ford(g, "A", "Z")
+    cost, path, has_cycle = bellman_ford(g, "A", "Z")
     assert cost is None
     assert path is None
