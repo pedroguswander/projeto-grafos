@@ -1,11 +1,14 @@
+
 import React, { useMemo, useState } from 'react';
 import './DataBaseETN.css';
-import aviaoCru from './assets/Aviao/aviao cru.png';
-import asasImg from './assets/Aviao/azas.png';
-import caldaImg from './assets/Aviao/calda.png';
-import frenteImg from './assets/Aviao/frente.png';
-import meioImg from './assets/Aviao/meio.png';
-import turbinasImg from './assets/Aviao/turbinas.png';
+import navioCru from './assets/navio/navio-cru.png';
+import navioFrente from './assets/navio/navio-frente.png';
+import navioMeio from './assets/navio/navio-meio.png';
+import navioCauda from './assets/navio/navio-cauda.png';
+import navioTorre from './assets/navio/navio-torre.png';
+import navioBotes from './assets/navio/navio-botes.png';
+import navioCargaSuperior from './assets/navio/navio-carga-superior.png';
+import navioCargaInferior from './assets/navio/navio-carga-inferior.png';
 
 export default function DataBaseETN({ onBack }) {
   const [parteSelecionada, setParteSelecionada] = useState('base');
@@ -13,34 +16,44 @@ export default function DataBaseETN({ onBack }) {
   const imagens = useMemo(
     () => ({
       base: {
-        label: 'Avião cru',
-        src: aviaoCru,
-        desc: 'Visualização base da aeronave.',
+        label: 'Navio cru',
+        src: navioCru,
+        desc: 'Visualização base do navio.',
       },
       frente: {
         label: 'Frente',
-        src: frenteImg,
-        desc: 'Seção frontal da aeronave.',
+        src: navioFrente,
+        desc: 'Seção frontal do navio.',
       },
       meio: {
         label: 'Meio',
-        src: meioImg,
-        desc: 'Parte central da fuselagem.',
+        src: navioMeio,
+        desc: 'Parte central do navio.',
       },
-      asas: {
-        label: 'Asas',
-        src: asasImg,
-        desc: 'Estrutura lateral responsável pela sustentação.',
+      cauda: {
+        label: 'Cauda',
+        src: navioCauda,
+        desc: 'Parte traseira do navio.',
       },
-      turbinas: {
-        label: 'Turbinas',
-        src: turbinasImg,
-        desc: 'Sistema de propulsão da aeronave.',
+      torre: {
+        label: 'Torre',
+        src: navioTorre,
+        desc: 'Torre de comando e navegação.',
       },
-      calda: {
-        label: 'Calda',
-        src: caldaImg,
-        desc: 'Parte traseira da aeronave.',
+      botes: {
+        label: 'Botes',
+        src: navioBotes,
+        desc: 'Botes salva-vidas e acessórios.',
+      },
+      cargaSuperior: {
+        label: 'Carga Superior',
+        src: navioCargaSuperior,
+        desc: 'Área de carga superior do navio.',
+      },
+      cargaInferior: {
+        label: 'Carga Inferior',
+        src: navioCargaInferior,
+        desc: 'Área de carga inferior do navio.',
       },
     }),
     []
@@ -75,10 +88,9 @@ export default function DataBaseETN({ onBack }) {
         </div>
 
         <div className="database-etn-header">
-          <h1 className="database-etn-title">Estrutura do Avião</h1>
+          <h1 className="database-etn-title">Estrutura do Navio</h1>
           <p className="database-etn-desc">
-            Selecione uma parte específica da aeronave pelo menu ou clicando
-            diretamente sobre a imagem interativa.
+            Selecione uma parte específica do navio pelo menu ou clicando diretamente sobre a imagem interativa.
           </p>
         </div>
 
@@ -86,37 +98,72 @@ export default function DataBaseETN({ onBack }) {
           <div className="database-etn-panel database-etn-controls">
             <h2 className="database-etn-panel-title">Seleção de componente</h2>
             <p className="database-etn-panel-text">
-              Escolha qual parte do avião deseja visualizar.
+              Escolha qual parte do navio deseja visualizar.
             </p>
 
-            <label htmlFor="parte-aviao-etn" className="database-etn-label">
-              Parte do avião
+            <label htmlFor="parte-navio-etn" className="database-etn-label">
+              Parte do navio
             </label>
 
             <select
-              id="parte-aviao-etn"
+              id="parte-navio-etn"
               className="database-etn-select"
               value={parteSelecionada}
               onChange={(e) => setParteSelecionada(e.target.value)}
             >
-              <option value="base">Avião cru</option>
+              <option value="base">Navio cru</option>
               <option value="frente">Frente</option>
               <option value="meio">Meio</option>
-              <option value="asas">Asas</option>
-              <option value="turbinas">Turbinas</option>
-              <option value="calda">Calda</option>
+              <option value="cauda">Cauda</option>
+              <option value="torre">Torre</option>
+              <option value="botes">Botes</option>
+              <option value="cargaSuperior">Carga Superior</option>
+              <option value="cargaInferior">Carga Inferior</option>
             </select>
+
+            <div className="database-etn-info-card">
+              <span className="database-etn-info-label">Selecionado</span>
+              <strong className="database-etn-info-title">{imagemAtual.label}</strong>
+              <p className="database-etn-info-desc">{imagemAtual.desc}</p>
+            </div>
           </div>
 
-          <div className="database-etn-panel database-etn-image-panel">
-            <img
-              src={imagemAtual.src}
-              alt={imagemAtual.label}
-              className="database-etn-image"
-            />
-            <div className="database-etn-image-desc">
-              <strong>{imagemAtual.label}</strong>
-              <div>{imagemAtual.desc}</div>
+          <div className="database-etn-panel database-etn-viewer">
+            <div className="database-etn-image-head">
+              <h2 className="database-etn-panel-title">Mapa clicável</h2>
+              <span className="database-etn-image-tag">{imagemAtual.label}</span>
+            </div>
+
+            <div className="database-etn-image-frame">
+              <div className="database-etn-clickable-ship">
+                <img
+                  src={imagemAtual.src}
+                  alt={imagemAtual.label}
+                  className="database-etn-image"
+                />
+
+                {/* Hotspots para seleção das áreas do navio */}
+                <button type="button" className="ship-hotspot hotspot-navio-frente" onClick={() => setParteSelecionada('frente')} aria-label="Selecionar frente" />
+                <button type="button" className="ship-hotspot hotspot-navio-frente2" onClick={() => setParteSelecionada('frente')} aria-label="Selecionar frente" />
+                <button type="button" className="ship-hotspot hotspot-navio-meio" onClick={() => setParteSelecionada('meio')} aria-label="Selecionar meio" />
+                <button type="button" className="ship-hotspot hotspot-navio-meio2" onClick={() => setParteSelecionada('meio')} aria-label="Selecionar meio" />
+                <button type="button" className="ship-hotspot hotspot-navio-meio3" onClick={() => setParteSelecionada('meio')} aria-label="Selecionar meio" />
+                <button type="button" className="ship-hotspot hotspot-navio-meio4" onClick={() => setParteSelecionada('meio')} aria-label="Selecionar meio" />
+                <button type="button" className="ship-hotspot hotspot-navio-cauda" onClick={() => setParteSelecionada('cauda')} aria-label="Selecionar cauda" />
+                <button type="button" className="ship-hotspot hotspot-navio-cauda2" onClick={() => setParteSelecionada('cauda')} aria-label="Selecionar cauda" />
+                <button type="button" className="ship-hotspot hotspot-navio-cauda3" onClick={() => setParteSelecionada('cauda')} aria-label="Selecionar cauda" />
+                <button type="button" className="ship-hotspot hotspot-navio-cauda4" onClick={() => setParteSelecionada('cauda')} aria-label="Selecionar cauda" />
+                <button type="button" className="ship-hotspot hotspot-navio-torre" onClick={() => setParteSelecionada('torre')} aria-label="Selecionar torre" />
+                <button type="button" className="ship-hotspot hotspot-navio-torre2" onClick={() => setParteSelecionada('torre')} aria-label="Selecionar torre" />
+                <button type="button" className="ship-hotspot hotspot-navio-torre3" onClick={() => setParteSelecionada('torre')} aria-label="Selecionar torre" />
+                <button type="button" className="ship-hotspot hotspot-navio-botes" onClick={() => setParteSelecionada('botes')} aria-label="Selecionar botes" />
+                <button type="button" className="ship-hotspot hotspot-navio-botes2" onClick={() => setParteSelecionada('botes')} aria-label="Selecionar botes" />
+                <button type="button" className="ship-hotspot hotspot-navio-carga-superior" onClick={() => setParteSelecionada('cargaSuperior')} aria-label="Selecionar carga superior" />
+                <button type="button" className="ship-hotspot hotspot-navio-carga-superior2" onClick={() => setParteSelecionada('cargaSuperior')} aria-label="Selecionar carga superior" />
+                <button type="button" className="ship-hotspot hotspot-navio-carga-superior3" onClick={() => setParteSelecionada('cargaSuperior')} aria-label="Selecionar carga superior" />
+                <button type="button" className="ship-hotspot hotspot-navio-carga-inferior" onClick={() => setParteSelecionada('cargaInferior')} aria-label="Selecionar carga inferior" />
+                <button type="button" className="ship-hotspot hotspot-navio-carga-inferior2" onClick={() => setParteSelecionada('cargaInferior')} aria-label="Selecionar carga inferior" />
+              </div>
             </div>
           </div>
         </div>
