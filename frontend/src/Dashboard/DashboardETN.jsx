@@ -46,7 +46,7 @@ const SkeletonChart = ({ height = 280 }) => (
   </div>
 )
 
-export const DashboardETN = () => {
+export const DashboardETN = ({ onBack }) => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -78,6 +78,14 @@ export const DashboardETN = () => {
     <div className="dashboard-container">
       {/* HEADER */}
       <div className="dashboard-header">
+        <button className="home-back-button" onClick={onBack} type="button" title="Voltar">
+          <span className="home-back-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+              <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span className="home-back-text">Voltar</span>
+        </button>
         <div className="logo-2">
           <img src={logoCompleta} alt="" />
         </div>

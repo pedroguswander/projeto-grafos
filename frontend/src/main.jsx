@@ -48,7 +48,7 @@ function Root() {
     }
   };
 
-  if (screen === 'splash') return <Splash onNavigate={setScreen} />;
+  if (screen === 'splash') return <Splash onNavigate={handleNavigate} />;
   if (screen === 'home') return <Home onNavigate={handleNavigate} />;
   if (screen === 'home-etn') return <HomeETN onNavigate={handleNavigate} />;
   if (screen === 'dashboard') return <Dashboard onBack={() => setScreen(lastHome)} />;

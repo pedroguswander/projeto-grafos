@@ -44,6 +44,19 @@ export default function HomeETN({ onNavigate }) {
           filter: 'brightness(0.55) blur(0.5px)',
         }}
       />
+      <button
+        className="home-back-button home-back-floating"
+        onClick={() => onNavigate('splash')}
+        type="button"
+        title="Voltar"
+      >
+        <span className="home-back-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+            <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <span className="home-back-text">Voltar</span>
+      </button>
       {/* Conteúdo original sobreposto */}
       <div className="home-etn-content" style={{ position: 'relative', zIndex: 1 }}>
         <img src={logoCompletaEtn} alt="Logo ETN" className="main-logo-etn" />
