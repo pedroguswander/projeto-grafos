@@ -3,7 +3,7 @@
 /* Container Principal - Removido fundo branco e integrado ao App */
 .dashboard-container {
   min-height: 100vh;
-  background: transparent; /* Deixa o fundo gradiente do body aparecer */
+  background-color: rgba(38, 194, 129, 0.04);
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   padding: 32px 36px;
   box-sizing: border-box;
