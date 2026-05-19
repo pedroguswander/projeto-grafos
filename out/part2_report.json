@@ -2,7 +2,7 @@
   "BFS": [
     {
       "source BFS 1": "GUGUM",
-      "tempo": 0.0010059000051114708,
+      "tempo": 0.00037399999564513564,
       "camadas": {
         "0": [
           "GUGUM"
@@ -260,7 +260,7 @@
     },
     {
       "source BFS 2": "CLPUQ",
-      "tempo": 0.0004067999980179593,
+      "tempo": 0.00037140000495128334,
       "camadas": {
         "0": [
           "CLPUQ"
@@ -518,7 +518,7 @@
     },
     {
       "source BFS 3": "PABLB",
-      "tempo": 0.00023040000814944506,
+      "tempo": 0.00027350000164005905,
       "camadas": {
         "0": [
           "PABLB"
@@ -778,7 +778,7 @@
   "DFS": [
     {
       "source DFS 1": "JPYOK",
-      "tempo": 0.006265600008191541,
+      "tempo": 0.005523100000573322,
       "ordem": 235,
       "ciclos": 1215,
       "arestas": {
@@ -10509,7 +10509,7 @@
     },
     {
       "source DFS 2": "SGSIN",
-      "tempo": 0.012338599990471266,
+      "tempo": 0.007323900004848838,
       "ordem": 235,
       "ciclos": 1215,
       "arestas": {
@@ -20240,7 +20240,7 @@
     },
     {
       "source DFS 3": "BRVIX",
-      "tempo": 0.009144499999820255,
+      "tempo": 0.008604000002378598,
       "ordem": 235,
       "ciclos": 1215,
       "arestas": {
@@ -29974,7 +29974,7 @@
     {
       "source": "GUGUM",
       "target": "ARPUD",
-      "tempo": 0.0023077000078046694,
+      "tempo": 0.0012335000064922497,
       "custo": 473750.75999999995,
       "tamanho_caminho": 4,
       "caminho": [
@@ -29989,7 +29989,7 @@
     {
       "source": "GUGUM",
       "target": "AUMEL",
-      "tempo": 0.0015673000016249716,
+      "tempo": 0.0009396000095875934,
       "custo": 190643.51,
       "tamanho_caminho": 3,
       "caminho": [
@@ -30003,7 +30003,7 @@
     {
       "source": "GUGUM",
       "target": "AUSYD",
-      "tempo": 0.0009397999965585768,
+      "tempo": 0.0008639000006951392,
       "custo": 159406.71000000002,
       "tamanho_caminho": 3,
       "caminho": [
@@ -30017,7 +30017,7 @@
     {
       "source": "GUGUM",
       "target": "BRPNG",
-      "tempo": 0.0014155999961076304,
+      "tempo": 0.001239199991687201,
       "custo": 567319.19,
       "tamanho_caminho": 4,
       "caminho": [
@@ -30032,7 +30032,7 @@
     {
       "source": "GUGUM",
       "target": "BRSSZ",
-      "tempo": 0.0006380999984685332,
+      "tempo": 0.0009857999975793064,
       "custo": null,
       "tamanho_caminho": null,
       "caminho": null,
@@ -30042,23 +30042,47 @@
   ],
   "BELLMAN-FORD": [
     {
-      "descricao": "Grafo ETN par 1",
+      "descricao": "Subgrafo positivo (sem arestas negativas)",
       "source": "GUGUM",
       "target": "ARPUD",
-      "tempo": 0.515923600003589,
-      "custo": null,
-      "tamanho_caminho": null,
-      "caminho": null,
-      "tem_ciclo_negativo": true
+      "tempo": 0.011302700004307553,
+      "custo": 473750.75999999995,
+      "tamanho_caminho": 4,
+      "caminho": [
+        "GUGUM",
+        "NCNOU",
+        "CLPUQ",
+        "ARPUD"
+      ],
+      "eh_subgrafo": true,
+      "tem_peso_negativo": false,
+      "tem_ciclo_negativo": false
     },
     {
-      "descricao": "Grafo ETN par 2",
+      "descricao": "Subgrafo com aresta negativa, sem ciclo negativo",
+      "source": "AUSYD",
+      "target": "NCNOU",
+      "tempo": 0.012230200009071268,
+      "custo": -14029.4,
+      "tamanho_caminho": 2,
+      "caminho": [
+        "AUSYD",
+        "NCNOU"
+      ],
+      "eh_subgrafo": true,
+      "tem_peso_negativo": true,
+      "tem_ciclo_negativo": false
+    },
+    {
+      "descricao": "Grafo completo (ciclo negativo detectado)",
       "source": "GUGUM",
-      "target": "AUMEL",
-      "tempo": 0.5358868000039365,
+      "target": "ARPUD",
+      "tempo": 0.5357338000030722,
       "custo": null,
       "tamanho_caminho": null,
       "caminho": null,
+      "eh_subgrafo": false,
+      "tem_peso_negativo": true,
       "tem_ciclo_negativo": true
     }
   ]

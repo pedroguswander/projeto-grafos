@@ -87,6 +87,17 @@ def _build_non_negative_subgraph(graph) -> Graph:
     return subgraph
 
 
+def _build_subgraph_no_cycle(graph) -> Graph:
+    subgraph = Graph()
+    subgraph.ports = dict(graph.ports)
+    for u, neighbors in graph.adjacency_list.items():
+        if u == "NCNOU":
+            subgraph.adjacency_list[u] = []
+            continue
+        subgraph.adjacency_list[u] = list(neighbors)
+    return subgraph
+
+
 def _run_dijkstra(graph, src: str, dst: str, eh_subgrafo: bool) -> dict:
     print(f"\n[DIJKSTRA] {src} -> {dst} | subgrafo={eh_subgrafo}")
     tracemalloc.start()
@@ -109,7 +120,7 @@ def _run_dijkstra(graph, src: str, dst: str, eh_subgrafo: bool) -> dict:
     }
 
 
-def _run_bellman_ford(graph, src: str, dst: str, descricao: str) -> dict:
+def _run_bellman_ford(graph, src: str, dst: str, descricao: str, eh_subgrafo: bool) -> dict:
     print(f"\n[BELLMAN-FORD] {descricao} | {src} -> {dst}")
     tracemalloc.start()
     t0 = time.perf_counter()
@@ -127,6 +138,8 @@ def _run_bellman_ford(graph, src: str, dst: str, descricao: str) -> dict:
         "custo": cost,
         "tamanho_caminho": len(path) if path else None,
         "caminho": path,
+        "eh_subgrafo": eh_subgrafo,
+        "tem_peso_negativo": _has_negative_edges(graph),
         "tem_ciclo_negativo": has_cycle,
     }
 
@@ -159,9 +172,15 @@ def test_generate_part2_report():
     )
 
     print("\n--- BELLMAN-FORD ---")
+    subgrafo_pos = _build_non_negative_subgraph(graph)
+    subgrafo_neg = _build_subgraph_no_cycle(graph)
     bellman_results = [
-        _run_bellman_ford(graph, src, dst, f"Grafo ETN par {i}")
-        for i, (src, dst) in enumerate(pairs_2, 1)
+        _run_bellman_ford(subgrafo_pos, "GUGUM", "ARPUD",
+                          "Subgrafo positivo (sem arestas negativas)", eh_subgrafo=True),
+        _run_bellman_ford(subgrafo_neg, "AUSYD", "NCNOU",
+                          "Subgrafo com aresta negativa, sem ciclo negativo", eh_subgrafo=True),
+        _run_bellman_ford(graph, "GUGUM", "ARPUD",
+                          "Grafo completo (ciclo negativo detectado)", eh_subgrafo=False),
     ]
 
     report = {
