@@ -10,7 +10,7 @@
   appearance: none;
   border: none;
   outline: none;
-    background: transparent !important; /* hotspot totalmente invisível */
+  background: transparent !important; /* hotspot totalmente invisível */
   transition: background 0.18s, outline 0.18s, opacity 0.18s;
   box-shadow: none;
   border-radius: 0;
