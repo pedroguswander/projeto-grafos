@@ -6,6 +6,7 @@ import time
 import tracemalloc
 import json
 
+from parte2.src.graphs.graph import Graph
 from parte2.src.graphs.io import load_graph_from_csvs
 from parte2.src.graphs.algorithms import bfs, dfs, dijkstra, bellman_ford
 
@@ -70,8 +71,24 @@ def _run_dfs(graph, source: str, label: str) -> dict:
     }
 
 
-def _run_dijkstra(graph, src: str, dst: str) -> dict:
-    print(f"\n[DIJKSTRA] {src} -> {dst}")
+def _has_negative_edges(graph) -> bool:
+    return any(
+        w < 0
+        for neighbors in graph.adjacency_list.values()
+        for _, w in neighbors
+    )
+
+
+def _build_non_negative_subgraph(graph) -> Graph:
+    subgraph = Graph()
+    subgraph.ports = dict(graph.ports)
+    for node, neighbors in graph.adjacency_list.items():
+        subgraph.adjacency_list[node] = [(nb, w) for nb, w in neighbors if w >= 0]
+    return subgraph
+
+
+def _run_dijkstra(graph, src: str, dst: str, eh_subgrafo: bool) -> dict:
+    print(f"\n[DIJKSTRA] {src} -> {dst} | subgrafo={eh_subgrafo}")
     tracemalloc.start()
     t0 = time.perf_counter()
     cost, path = dijkstra(graph, src, dst)
@@ -87,6 +104,8 @@ def _run_dijkstra(graph, src: str, dst: str) -> dict:
         "custo": cost,
         "tamanho_caminho": len(path) if path else None,
         "caminho": path,
+        "eh_subgrafo": eh_subgrafo,
+        "tem_peso_negativo": _has_negative_edges(graph),
     }
 
 
@@ -133,7 +152,11 @@ def test_generate_part2_report():
     dfs_results = [_run_dfs(graph, src, f"source DFS {i}") for i, src in enumerate(dfs_sources, 1)]
 
     print("\n--- DIJKSTRA ---")
-    dijkstra_results = [_run_dijkstra(graph, src, dst) for src, dst in pairs_5]
+    subgraph = _build_non_negative_subgraph(graph)
+    dijkstra_results = (
+        [_run_dijkstra(subgraph, src, dst, eh_subgrafo=True)  for src, dst in pairs_5[:4]] +
+        [_run_dijkstra(graph,    src, dst, eh_subgrafo=False) for src, dst in pairs_5[4:]]
+    )
 
     print("\n--- BELLMAN-FORD ---")
     bellman_results = [
