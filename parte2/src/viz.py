@@ -123,7 +123,68 @@ def plot_tempos_algoritmos(report_path: Path) -> None:
         _save(fig, "parte2_exp_02_tempos_algoritmos.png")
 
 
+_NOTA_BFS_VS_DFS = (
+    "Cada barra representa uma execução a partir de uma fonte diferente — mesmas 3 fontes para BFS e DFS.\n"
+    "BFS é iterativo: um loop com única lookup em set por vizinho. "
+    "DFS é recursivo e classifica cada aresta (tree/back/forward/cross),\n"
+    "executando 5–6 operações de dict por aresta; em um grafo denso de 1764 arestas o custo acumula ~10–40× sobre o BFS.\n"
+    "Gestalt — Similaridade: cor única por algoritmo agrupa visualmente as barras sem rótulo extra; "
+    "Continuidade: barra horizontal guia o olhar do rótulo ao valor numérico."
+)
+
+
+def plot_bfs_vs_dfs(report_path: Path) -> None:
+    with open(report_path, encoding="utf-8") as f:
+        report = json.load(f)
+
+    entries = []
+    for alg, cor in [("BFS", _CORES_ALGORITMO["BFS"]), ("DFS", _CORES_ALGORITMO["DFS"])]:
+        for i, e in enumerate(report[alg], 1):
+            fonte = e.get(f"source {alg} {i}", f"#{i}")
+            entries.append((f"{alg} · {fonte}", e["tempo"], cor, alg))
+
+    entries.sort(key=lambda x: x[1])
+    labels = [e[0] for e in entries]
+    values = [e[1] for e in entries]
+    cores  = [e[2] for e in entries]
+
+    with plt.rc_context(_PLT_STYLE):
+        fig, ax = plt.subplots(figsize=(9, 5))
+        container = ax.barh(labels, values, color=cores, edgecolor="white", linewidth=0.8)
+
+        ax.set_xscale("log")
+        ax.xaxis.set_major_formatter(ticker.LogFormatterSciNotation())
+        ax.set_xlim(right=max(values) * 30)
+
+        ax.bar_label(
+            container,
+            labels=[f"{v:.2e} s" for v in values],
+            padding=6,
+            fontsize=9,
+        )
+
+        ax.set_xlabel("Tempo de execução (s) — escala logarítmica")
+        ax.set_ylabel("Algoritmo · Fonte")
+        ax.set_title("BFS vs DFS — tempo de execução por fonte (ETN)")
+
+        patches = [
+            mpatches.Patch(color=_CORES_ALGORITMO["BFS"], label="BFS"),
+            mpatches.Patch(color=_CORES_ALGORITMO["DFS"], label="DFS"),
+        ]
+        ax.legend(handles=patches, loc="lower right", fontsize=9)
+
+        fig.text(
+            0.5, -0.14,
+            _NOTA_BFS_VS_DFS,
+            ha="center", fontsize=8, style="italic", color="#444",
+        )
+        fig.tight_layout()
+        _save(fig, "parte2_exp_03_bfs_vs_dfs.png")
+
+
 if __name__ == "__main__":
     ctx = _carregar_metricas()
     plot_distribuicao_graus(ctx)
-    plot_tempos_algoritmos(ROOT / "out" / "part2_report.json")
+    report_path = ROOT / "out" / "part2_report.json"
+    plot_tempos_algoritmos(report_path)
+    plot_bfs_vs_dfs(report_path)
