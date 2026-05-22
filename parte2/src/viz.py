@@ -63,7 +63,7 @@ def plot_distribuicao_graus(ctx: dict) -> None:
             ha="center", fontsize=9, style="italic", color="#444",
         )
         fig.tight_layout()
-        _save(fig, "exp_01_distribuicao_graus.png")
+        _save(fig, "part2_exp_01_distribuicao_graus.png")
 
 
 _CORES_ALGORITMO = {

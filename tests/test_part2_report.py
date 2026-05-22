@@ -88,13 +88,22 @@ def _build_non_negative_subgraph(graph) -> Graph:
 
 
 def _build_subgraph_no_cycle(graph) -> Graph:
+    nodes = list(graph.adjacency_list.keys())
+    dist = {n: 0 for n in nodes}
+    for _ in range(len(nodes) - 1):
+        for u in nodes:
+            for v, w in graph.adjacency_list.get(u, []):
+                if dist[u] + w < dist[v]:
+                    dist[v] = dist[u] + w
+    in_neg_cycle = set()
+    for u in nodes:
+        for v, w in graph.adjacency_list.get(u, []):
+            if dist[u] + w < dist[v]:
+                in_neg_cycle.add(u)
     subgraph = Graph()
     subgraph.ports = dict(graph.ports)
-    for u, neighbors in graph.adjacency_list.items():
-        if u == "NCNOU":
-            subgraph.adjacency_list[u] = []
-            continue
-        subgraph.adjacency_list[u] = list(neighbors)
+    for u in nodes:
+        subgraph.adjacency_list[u] = [] if u in in_neg_cycle else list(graph.adjacency_list.get(u, []))
     return subgraph
 
 
@@ -154,7 +163,7 @@ def test_generate_part2_report():
 
     top_nodes = _top_nodes_by_degree(graph, 10)
     bfs_sources = top_nodes[:3]
-    dfs_sources = top_nodes[3:6]
+    dfs_sources = top_nodes[:3]
     pairs_5 = _direct_pairs(graph, top_nodes, 5)
     pairs_2 = _direct_pairs(graph, top_nodes, 2)
 
@@ -174,12 +183,14 @@ def test_generate_part2_report():
     print("\n--- BELLMAN-FORD ---")
     subgrafo_pos = _build_non_negative_subgraph(graph)
     subgrafo_neg = _build_subgraph_no_cycle(graph)
+    bf_pair_pos = _direct_pairs(subgrafo_pos, _top_nodes_by_degree(subgrafo_pos, 10), 1)[0]
+    bf_pair_neg = _direct_pairs(subgrafo_neg, _top_nodes_by_degree(subgrafo_neg, 10), 1)[0]
     bellman_results = [
-        _run_bellman_ford(subgrafo_pos, "GUGUM", "ARPUD",
+        _run_bellman_ford(subgrafo_pos, bf_pair_pos[0], bf_pair_pos[1],
                           "Subgrafo positivo (sem arestas negativas)", eh_subgrafo=True),
-        _run_bellman_ford(subgrafo_neg, "AUSYD", "NCNOU",
+        _run_bellman_ford(subgrafo_neg, bf_pair_neg[0], bf_pair_neg[1],
                           "Subgrafo com aresta negativa, sem ciclo negativo", eh_subgrafo=True),
-        _run_bellman_ford(graph, "GUGUM", "ARPUD",
+        _run_bellman_ford(graph, pairs_2[0][0], pairs_2[0][1],
                           "Grafo completo (ciclo negativo detectado)", eh_subgrafo=False),
     ]
 

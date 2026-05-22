@@ -32,7 +32,7 @@ class Graph:
 
     def load_ports(self, filepath: str):
         with open(filepath, encoding="utf-8") as f:
-            reader = csv.DictReader(f, delimiter="\t")
+            reader = csv.DictReader(f, delimiter=",")
             for row in reader:
                 port = Port(
                     code=row["UNLocode"],
