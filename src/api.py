@@ -1,382 +1,369 @@
 #!/usr/bin/env python3
-"""
-API REST para o grafo de aeroportos usando Flask.
-"""
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from collections import Counter   # <-- CORREÇÃO: importar Counter
-import sys
-import os
-import csv
+from collections import Counter
+import sys, os, csv, json
 
-# Adicionar o diretório src ao path para importar os módulos
 sys.path.insert(0, os.path.dirname(__file__))
-
-from graphs.graph import Graph
 from graphs.algorithms import dijkstra
-from graphs.io import load_graph_from_csvs, load_pairs_from_csv
+from graphs.io import load_graph_from_csvs
 
 app = Flask(__name__)
-CORS(app)  # Habilitar CORS para o frontend
+CORS(app)
 
-# Carregar o grafo globalmente
 graph = None
+BASE = os.path.dirname(os.path.abspath(__file__))
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
-def get_data_dir():
-    """
-    Retorna o diretório de dados.
-    Ajustado para a estrutura mostrada, onde a pasta `data`
-    está na raiz do projeto.
-    """
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+def data_path(*parts):
+    return os.path.abspath(os.path.join(BASE, '..', 'data', *parts))
 
+def read_csv(path):
+    with open(path, encoding='utf-8') as f:
+        return list(csv.DictReader(f))
 
-def get_etn_data_dir():
-    """
-    Retorna o diretório de dados ETN (data/ETN).
-    CORREÇÃO: função estava faltando no arquivo original.
-    """
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'ETN'))
-
-
-def load_csv_as_dict_list(file_path):
-    """Lê um CSV e retorna lista de dicionários."""
-    data = []
-    with open(file_path, mode='r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            data.append(row)
-    return data
-
-
-def load_global_graph():
+def load_graph():
     global graph
     if graph is None:
-        data_dir = get_data_dir()
-        graph = load_graph_from_csvs(data_dir)
+        graph = load_graph_from_csvs(data_path())
     return graph
 
+def airport_info(airport):
+    return {'code': airport.code, 'name': airport.name, 'city': airport.city}
 
-def calculate_path_cost(g, path):
-    """Calcula o custo total de um caminho."""
-    if not path or len(path) < 2:
-        return 0
+def csv_endpoint(filename):
+    path = data_path(filename)
+    if not os.path.exists(path):
+        return jsonify({'error': f'{filename} não encontrado'}), 404
+    return jsonify(read_csv(path))
 
-    total_cost = 0
+# ── Grafo ─────────────────────────────────────────────────────────────────────
 
-    for i in range(len(path) - 1):
-        current_node = path[i]
-        next_node = path[i + 1]
-        found = False
-
-        for neighbor, distance in g.adjacency_list.get(current_node, []):
-            if neighbor == next_node:
-                total_cost += distance
-                found = True
-                break
-
-        if not found:
-            return None
-
-    return total_cost
-
-
-def find_top_routes(g, start, end, limit=20, max_depth=8):
-    """
-    Encontra várias rotas possíveis entre start e end.
-    Retorna as melhores rotas ordenadas por custo.
-    """
-    routes = []
-
-    def dfs(current, target, visited, path, cost):
-        if len(path) > max_depth:
-            return
-
-        if current == target:
-            routes.append({
-                'path': list(path),
-                'cost': cost,
-                'connections': max(len(path) - 2, 0)
-            })
-            return
-
-        for neighbor, distance in g.adjacency_list.get(current, []):
-            if neighbor not in visited:
-                visited.add(neighbor)
-                path.append(neighbor)
-
-                dfs(
-                    neighbor,
-                    target,
-                    visited,
-                    path,
-                    cost + distance
-                )
-
-                path.pop()
-                visited.remove(neighbor)
-
-    visited = set([start])
-    dfs(start, end, visited, [start], 0)
-
-    # remover duplicadas
-    unique_routes = []
-    seen = set()
-
-    for route in routes:
-        key = tuple(route['path'])
-        if key not in seen:
-            seen.add(key)
-            unique_routes.append(route)
-
-    # ordenar por custo e depois por tamanho do caminho
-    unique_routes.sort(key=lambda r: (r['cost'], len(r['path'])))
-
-    return unique_routes[:limit]
-
-
-@app.route('/api/airports', methods=['GET'])
+@app.route('/api/airports')
 def get_airports():
-    """Retorna lista de todos os aeroportos."""
-    g = load_global_graph()
-    airports = []
+    g = load_graph()
+    return jsonify([{
+        'code': a.code, 'name': a.name, 'city': a.city,
+        'country': a.country, 'latitude': a.latitude, 'longitude': a.longitude
+    } for a in g.airports.values()])
 
-    for code, airport in g.airports.items():
-        airports.append({
-            'code': airport.code,
-            'name': airport.name,
-            'city': airport.city,
-            'country': airport.country,
-            'latitude': airport.latitude,
-            'longitude': airport.longitude
-        })
-
-    return jsonify(airports)
-
-
-@app.route('/api/routes', methods=['GET'])
+@app.route('/api/routes')
 def get_routes():
-    """Retorna lista de todas as rotas/conexões."""
-    g = load_global_graph()
-    routes = []
+    g = load_graph()
+    return jsonify([
+        {'from': src, 'to': dst, 'distance': dist}
+        for src, neighbors in g.adjacency_list.items()
+        for dst, dist in neighbors
+    ])
 
-    for from_code, neighbors in g.adjacency_list.items():
-        for to_code, distance in neighbors:
-            routes.append({
-                'from': from_code,
-                'to': to_code,
-                'distance': distance
-            })
-
-    return jsonify(routes)
-
-
-@app.route('/api/aeroportos-data', methods=['GET'])
+@app.route('/api/aeroportos-data')
 def get_aeroportos_data():
-    """Retorna dados de cidade e região por aeroporto."""
-    data_dir = get_data_dir()
-    file_path = os.path.join(data_dir, 'aeroportos_data.csv')
+    return csv_endpoint('aeroportos_data.csv')
 
-    if not os.path.exists(file_path):
-        return jsonify({'error': 'Arquivo aeroportos_data.csv não encontrado'}), 404
-
-    data = load_csv_as_dict_list(file_path)
-    return jsonify(data)
-
-
-@app.route('/api/ego-aeroportos', methods=['GET'])
+@app.route('/api/ego-aeroportos')
 def get_ego_aeroportos():
-    """Retorna métricas ego dos aeroportos."""
-    data_dir = get_data_dir()
-    file_path = os.path.join(data_dir, 'ego_aeroportos.csv')
+    return csv_endpoint('ego_aeroportos.csv')
 
-    if not os.path.exists(file_path):
-        return jsonify({'error': 'Arquivo ego_aeroportos.csv não encontrado'}), 404
+@app.route('/api/ego-regiao')
+def get_ego_regiao():
+    return csv_endpoint('ego_regiao.csv')
 
-    data = load_csv_as_dict_list(file_path)
-    return jsonify(data)
-
+@app.route('/api/graph-data')
+def get_graph_data():
+    g = load_graph()
+    nodes = [{'id': c, 'label': f"{c}\n{a.city}", 'title': f"{a.name} - {a.city}"}
+             for c, a in g.airports.items()]
+    seen, edges = set(), []
+    for src, neighbors in g.adjacency_list.items():
+        for dst, dist in neighbors:
+            key = tuple(sorted([src, dst]))
+            if key not in seen:
+                seen.add(key)
+                edges.append({'from': src, 'to': dst, 'label': str(dist),
+                               'title': f"Distância: {dist}", 'weight': dist})
+    return jsonify({'nodes': nodes, 'edges': edges})
 
 @app.route('/api/dijkstra', methods=['POST'])
 def calculate_dijkstra():
-    """Calcula o caminho mais curto entre dois aeroportos e retorna top rotas possíveis."""
-    data = request.get_json()
-    start = data.get('start')
-    end = data.get('end')
-
+    body = request.get_json()
+    start, end = body.get('start'), body.get('end')
     if not start or not end:
-        return jsonify({'error': 'Parâmetros start e end são obrigatórios'}), 400
+        return jsonify({'error': 'start e end são obrigatórios'}), 400
 
-    g = load_global_graph()
+    g = load_graph()
     cost, path = dijkstra(g, start, end)
+    if cost is None:
+        return jsonify({'success': False, 'message': f'Sem caminho entre {start} e {end}'})
 
-    if cost is None or path is None:
-        return jsonify({
-            'success': False,
-            'message': f'Não foi possível encontrar um caminho entre {start} e {end}'
-        })
+    def enrich(codes):
+        return [airport_info(g.get_airport(c)) for c in codes if g.get_airport(c)]
 
-    # Melhor rota
-    path_info = []
-    for code in path:
-        airport = g.get_airport(code)
-        if airport:
-            path_info.append({
-                'code': airport.code,
-                'name': airport.name,
-                'city': airport.city
-            })
+    def find_routes(limit=20, max_depth=8):
+        routes = []
+        def dfs(cur, visited, path, cost):
+            if len(path) > max_depth:
+                return
+            if cur == end:
+                routes.append({'path': list(path), 'cost': cost,
+                                'connections': max(len(path) - 2, 0)})
+                return
+            for nb, dist in g.adjacency_list.get(cur, []):
+                if nb not in visited:
+                    visited.add(nb); path.append(nb)
+                    dfs(nb, visited, path, cost + dist)
+                    path.pop(); visited.remove(nb)
+        dfs(start, {start}, [start], 0)
+        seen, unique = set(), []
+        for r in routes:
+            k = tuple(r['path'])
+            if k not in seen:
+                seen.add(k); unique.append(r)
+        return sorted(unique, key=lambda r: (r['cost'], len(r['path'])))[:limit]
 
-    # Top rotas possíveis
-    top_routes_raw = find_top_routes(g, start, end, limit=20, max_depth=8)
-    top_routes = []
+    top = [{'path': r['path'], 'cost': r['cost'], 'connections': r['connections'],
+            'path_info': enrich(r['path'])} for r in find_routes()]
 
-    for route in top_routes_raw:
-        route_path_info = []
-        for code in route['path']:
-            airport = g.get_airport(code)
-            if airport:
-                route_path_info.append({
-                    'code': airport.code,
-                    'name': airport.name,
-                    'city': airport.city
-                })
+    return jsonify({'success': True, 'cost': cost, 'path': path,
+                    'path_info': enrich(path), 'connections': max(len(path) - 2, 0),
+                    'topRoutes': top})
 
-        top_routes.append({
-            'path': route['path'],
-            'cost': route['cost'],
-            'connections': route['connections'],
-            'path_info': route_path_info
-        })
+# ── Dashboard ETN ─────────────────────────────────────────────────────────────
+
+@app.route('/api/dashboard-stats')
+def get_dashboard_stats():
+    etn = data_path('ETN')
+    vpath, apath = os.path.join(etn, 'vertices.csv'), os.path.join(etn, 'arestas.csv')
+    if not os.path.exists(vpath):
+        return jsonify({'error': f'vertices.csv não encontrado em {etn}'}), 404
+    if not os.path.exists(apath):
+        return jsonify({'error': f'arestas.csv não encontrado em {etn}'}), 404
+
+    vertices, arestas = read_csv(vpath), read_csv(apath)
+    total_v, total_e = len(vertices), len(arestas)
+
+    pesos = [float(a.get('peso') or a.get('weight') or 0)
+             for a in arestas if (a.get('peso') or a.get('weight'))]
+    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
+    grau_medio = round((total_e * 2) / total_v, 2) if total_v else 0
+
+    regioes = Counter(v['D_Region'] for v in vertices if v.get('D_Region'))
+    dist_regiao = [{'nome': k, 'valor': v}
+                   for k, v in sorted(regioes.items(), key=lambda x: x[1], reverse=True)]
+
+    endpoints = [a.get('origem') or a.get('from') for a in arestas] + \
+                [a.get('destino') or a.get('to') for a in arestas]
+    graus = Counter(filter(None, endpoints))
+    dist_graus = [{'grau': k, 'quantidade': v}
+                  for k, v in sorted(Counter(graus.values()).items())]
 
     return jsonify({
-        'success': True,
-        'cost': cost,
-        'path': path,
-        'path_info': path_info,
-        'connections': max(len(path) - 2, 0),
-        'topRoutes': top_routes
+        'totalV': total_v, 'totalE': total_e,
+        'pesoMedio': peso_medio, 'grauMedio': grau_medio,
+        'distribuicaoRegiao': dist_regiao, 'distribuicaoGraus': dist_graus,
+        'topVertices': [{'nome': n, 'grau': g} for n, g in graus.most_common(10)]
     })
 
-@app.route('/api/ego-regiao', methods=['GET'])
-def get_ego_regiao():
-    """Retorna métricas ego por região."""
-    data_dir = get_data_dir()
-    file_path = os.path.join(data_dir, 'ego_regiao.csv')
-    if not os.path.exists(file_path):
-        return jsonify({'error': 'Arquivo ego_regiao.csv não encontrado'}), 404
-    data = load_csv_as_dict_list(file_path)
+# ── Relatório Parte 2 ─────────────────────────────────────────────────────────
+
+def _report_candidates():
+    return [
+        os.path.join(BASE, '..', 'out', 'part2_report.json'),
+        os.path.join(BASE, 'part2_report.json'),
+        os.path.join(BASE, '..', 'data', 'part2_report.json'),
+        os.path.join(BASE, '..', 'part2_report.json'),
+        os.path.join(BASE, 'data', 'part2_report.json'),
+    ]
+
+def load_report():
+    for p in _report_candidates():
+        r = os.path.abspath(p)
+        if os.path.exists(r):
+            with open(r, encoding='utf-8') as f:
+                return json.load(f)
+    return None
+
+def require_report():
+    """Retorna (report, None) ou (None, error_response)."""
+    r = load_report()
+    if r is None:
+        return None, (jsonify({'error': 'part2_report.json não encontrado'}), 404)
+    return r, None
+
+def source_key(item):
+    k = next((k for k in item if k.startswith('source')), None)
+    return item.get(k) if k else None
+
+def filter_by(data, **kwargs):
+    for key, val in kwargs.items():
+        if val is not None:
+            data = [d for d in data if d.get(key) == val]
+    return data
+
+# ── Diagnóstico ───────────────────────────────────────────────────────────────
+
+@app.route('/api/report/debug')
+def debug_report():
+    found = None
+    candidates = []
+    for p in _report_candidates():
+        r = os.path.abspath(p)
+        exists = os.path.exists(r)
+        candidates.append({'path': r, 'exists': exists})
+        if exists and not found:
+            found = r
+    return jsonify({'found': found is not None, 'used_path': found,
+                    'candidates_checked': candidates, 'api_dir': BASE})
+
+# ── BFS / DFS ─────────────────────────────────────────────────────────────────
+
+@app.route('/api/report/bfs')
+def get_report_bfs():
+    report, err = require_report()
+    if err: return err
+    items = report.get('BFS', [])
+    src_filter = request.args.get('source')
+    if src_filter:
+        items = [i for i in items if any(v == src_filter for v in i.values() if isinstance(v, str))]
+    return jsonify([{
+        'source': source_key(i), 'tempo_segundos': i.get('tempo'),
+        'total_vertices': i.get('ordem'),
+        'num_camadas': len(i.get('camadas', {})), 'camadas': i.get('camadas', {})
+    } for i in items])
+
+@app.route('/api/report/dfs')
+def get_report_dfs():
+    report, err = require_report()
+    if err: return err
+    items = report.get('DFS', [])
+    src_filter = request.args.get('source')
+    if src_filter:
+        items = [i for i in items if any(v == src_filter for v in i.values() if isinstance(v, str))]
+    return jsonify([{
+        'source': source_key(i), 'tempo_segundos': i.get('tempo'),
+        'total_vertices': i.get('ordem'), 'ciclos': i.get('ciclos'),
+        'arestas_tree': len(i.get('arestas', {}).get('tree', [])),
+        'arestas_back': len(i.get('arestas', {}).get('back', [])),
+        'arestas_cross': len(i.get('arestas', {}).get('cross', [])),
+        'arestas_detalhe': i.get('arestas', {})
+    } for i in items])
+
+# ── Dijkstra / Bellman-Ford ───────────────────────────────────────────────────
+
+@app.route('/api/report/dijkstra')
+def get_report_dijkstra():
+    report, err = require_report()
+    if err: return err
+    data = filter_by(report.get('DIJKSTRA', []),
+                     source=request.args.get('source'),
+                     target=request.args.get('target'))
+    if request.args.get('apenas_validos') == 'true':
+        data = [d for d in data if d.get('custo') is not None]
     return jsonify(data)
 
-@app.route('/api/graph-data', methods=['GET'])
-def get_graph_data():
-    """Retorna dados completos do grafo para visualização."""
-    g = load_global_graph()
+@app.route('/api/report/bellman-ford')
+def get_report_bellman_ford():
+    report, err = require_report()
+    if err: return err
+    data = filter_by(report.get('BELLMAN-FORD', []),
+                     source=request.args.get('source'),
+                     target=request.args.get('target'))
+    for flag in ('tem_peso_negativo', 'tem_ciclo_negativo'):
+        if request.args.get(flag) is not None:
+            val = request.args.get(flag).lower() == 'true'
+            data = [d for d in data if d.get(flag) == val]
+    return jsonify(data)
 
-    # Nós (aeroportos)
-    nodes = []
-    for code, airport in g.airports.items():
-        nodes.append({
-            'id': code,
-            'label': f"{code}\n{airport.city}",
-            'title': f"{airport.name} - {airport.city}",
-            'group': 'airport',
-            'city': airport.city
+# ── Comparações ───────────────────────────────────────────────────────────────
+
+@app.route('/api/report/comparacao/bfs-dfs')
+def comparar_bfs_dfs():
+    report, err = require_report()
+    if err: return err
+
+    bfs_map = {source_key(i): i for i in report.get('BFS', [])}
+    dfs_map = {source_key(i): i for i in report.get('DFS', [])}
+
+    comparacoes = []
+    for src in sorted(set(bfs_map) & set(dfs_map)):
+        b, d = bfs_map[src], dfs_map[src]
+        comparacoes.append({
+            'source': src,
+            'bfs': {'tempo_segundos': b.get('tempo'), 'total_vertices': b.get('ordem'),
+                    'num_camadas': len(b.get('camadas', {}))},
+            'dfs': {'tempo_segundos': d.get('tempo'), 'total_vertices': d.get('ordem'),
+                    'ciclos': d.get('ciclos'),
+                    'arestas_tree': len(d.get('arestas', {}).get('tree', [])),
+                    'arestas_back': len(d.get('arestas', {}).get('back', []))},
+            'delta_tempo_ms': round((d.get('tempo', 0) - b.get('tempo', 0)) * 1000, 4),
+            'mais_rapido': 'BFS' if b.get('tempo', 0) < d.get('tempo', 0) else 'DFS'
+        })
+    return jsonify({'total_comparacoes': len(comparacoes), 'comparacoes': comparacoes})
+
+@app.route('/api/report/comparacao/dijkstra-bellman')
+def comparar_dijkstra_bellman():
+    report, err = require_report()
+    if err: return err
+
+    def key(i): return (i.get('source'), i.get('target'))
+    dmap = {key(i): i for i in report.get('DIJKSTRA', [])}
+    bmap = {key(i): i for i in report.get('BELLMAN-FORD', [])}
+
+    comparacoes = []
+    for par in sorted(set(dmap) & set(bmap)):
+        d, b = dmap[par], bmap[par]
+        comparacoes.append({
+            'source': par[0], 'target': par[1],
+            'dijkstra': {
+                'tempo_segundos': d.get('tempo'), 'custo': d.get('custo'),
+                'tamanho_caminho': d.get('tamanho_caminho'), 'caminho': d.get('caminho'),
+                'eh_subgrafo': d.get('eh_subgrafo'), 'tem_peso_negativo': d.get('tem_peso_negativo')
+            },
+            'bellman_ford': {
+                'tempo_segundos': b.get('tempo'), 'custo': b.get('custo'),
+                'tamanho_caminho': b.get('tamanho_caminho'), 'caminho': b.get('caminho'),
+                'eh_subgrafo': b.get('eh_subgrafo'), 'tem_peso_negativo': b.get('tem_peso_negativo'),
+                'tem_ciclo_negativo': b.get('tem_ciclo_negativo'), 'descricao': b.get('descricao')
+            },
+            'custo_identico': d.get('custo') == b.get('custo') if None not in (d.get('custo'), b.get('custo')) else None,
+            'delta_tempo_ms': round((b.get('tempo', 0) - d.get('tempo', 0)) * 1000, 4),
+            'mais_rapido': 'Dijkstra' if d.get('tempo', 0) < b.get('tempo', 0) else 'Bellman-Ford'
         })
 
-    # Arestas (rotas) - evitar duplicidade (ida/volta)
-    edges = []
-    seen = set()
-
-    for from_code, neighbors in g.adjacency_list.items():
-        for to_code, distance in neighbors:
-            key = tuple(sorted([from_code, to_code]))
-            if key in seen:
-                continue
-
-            seen.add(key)
-            edges.append({
-                'from': from_code,
-                'to': to_code,
-                'label': str(distance),
-                'title': f"Distância: {distance}",
-                'weight': distance
-            })
-
     return jsonify({
-        'nodes': nodes,
-        'edges': edges
+        'total_comparacoes': len(comparacoes), 'comparacoes': comparacoes,
+        'apenas_dijkstra': [{**dmap[k], 'nota': 'apenas_dijkstra'} for k in set(dmap) - set(bmap)],
+        'apenas_bellman_ford': [{**bmap[k], 'nota': 'apenas_bellman_ford'} for k in set(bmap) - set(dmap)]
     })
 
-# --- Endpoints da Parte 2 (Processando CSVs em data/ETN) ---
+# ── Resumo ────────────────────────────────────────────────────────────────────
 
-@app.route('/api/dashboard-stats', methods=['GET'])
-def get_dashboard_stats():
-    etn_dir = get_etn_data_dir()
+@app.route('/api/report/resumo')
+def get_report_resumo():
+    report, err = require_report()
+    if err: return err
 
-    # Caminhos dos arquivos baseados na imagem: vertices.csv e arestas.csv
-    vertices_path = os.path.join(etn_dir, 'vertices.csv')
-    arestas_path = os.path.join(etn_dir, 'arestas.csv')
+    def stats(items, key='tempo'):
+        vals = [i.get(key, 0) for i in items]
+        return {'total': len(vals), 'media': round(sum(vals)/len(vals), 6) if vals else None,
+                'total_s': round(sum(vals), 6)}
 
-    if not os.path.exists(vertices_path):
-        return jsonify({'error': f'Arquivo vertices.csv não encontrado em {etn_dir}'}), 404
-    if not os.path.exists(arestas_path):
-        return jsonify({'error': f'Arquivo arestas.csv não encontrado em {etn_dir}'}), 404
+    def path_stats(items):
+        validos = [i for i in items if i.get('custo') is not None]
+        s = stats(items)
+        s.update({'validos': len(validos), 'invalidos': len(items) - len(validos),
+                  'custo_medio': round(sum(i['custo'] for i in validos)/len(validos), 2) if validos else None})
+        return s
 
-    # 1. Carregar Dados
-    vertices = load_csv_as_dict_list(vertices_path)
-    arestas = load_csv_as_dict_list(arestas_path)
-
-    # 2. Total de Vértices
-    total_v = len(vertices)
-
-    # 3. Total de Arestas e Peso Médio
-    total_e = len(arestas)
-    pesos = []
-    for a in arestas:
-        try:
-            valor_peso = float(a.get('peso') or a.get('weight') or 0)
-            pesos.append(valor_peso)
-        except ValueError:
-            continue
-
-    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
-
-    # 4. Grau Médio
-    grau_medio = round((total_e * 2) / total_v, 2) if total_v > 0 else 0
-
-    # 5. Distribuição por Região (D_Region)
-    regioes = [v.get('D_Region') for v in vertices if v.get('D_Region')]
-    contagem_regiao = Counter(regioes)
-    dist_regiao = [{"nome": k, "valor": v} for k, v in sorted(contagem_regiao.items(), key=lambda x: x[1], reverse=True)]
-
-    # 6. Distribuição de Graus
-    portos_nas_rotas = []
-    for a in arestas:
-        portos_nas_rotas.append(a.get('origem') or a.get('from'))
-        portos_nas_rotas.append(a.get('destino') or a.get('to'))
-
-    graus_por_porto = Counter(filter(None, portos_nas_rotas))
-    frequencia_graus = Counter(graus_por_porto.values())
-    dist_graus = [{"grau": k, "quantidade": v} for k, v in sorted(frequencia_graus.items())]
-
-    # 7. Top 10 Hubs (portos com maior grau)
-    top_vertices_raw = graus_por_porto.most_common(10)
-    top_vertices = [{"nome": nome, "grau": grau} for nome, grau in top_vertices_raw]
-
+    bfs = report.get('BFS', [])
+    dfs = report.get('DFS', [])
     return jsonify({
-        "totalV": total_v,
-        "totalE": total_e,
-        "pesoMedio": peso_medio,
-        "grauMedio": grau_medio,
-        "distribuicaoRegiao": dist_regiao,
-        "distribuicaoGraus": dist_graus,
-        "topVertices": top_vertices   # <-- também retorna top hubs calculados dinamicamente
+        'BFS': stats(bfs),
+        'DFS': {**stats(dfs), 'ciclos_medio': round(sum(i.get('ciclos',0) for i in dfs)/len(dfs), 2) if dfs else None},
+        'DIJKSTRA': path_stats(report.get('DIJKSTRA', [])),
+        'BELLMAN_FORD': {**path_stats(report.get('BELLMAN-FORD', [])),
+                         'com_ciclo_negativo': sum(1 for i in report.get('BELLMAN-FORD', []) if i.get('tem_ciclo_negativo'))}
     })
-
 
 if __name__ == '__main__':
-    # CORREÇÃO: Flask usa python api.py ou flask run, NÃO uvicorn
-    # uvicorn é para FastAPI/ASGI — Flask é WSGI
     app.run(debug=True, host='0.0.0.0', port=5000)

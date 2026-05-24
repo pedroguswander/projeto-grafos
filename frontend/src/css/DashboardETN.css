@@ -2,7 +2,6 @@
 
 /* Container Principal - Removido fundo branco e integrado ao App */
 .dashboard-container {
-  min-height: 100vh;
   background-color: rgba(38, 194, 129, 0.04);
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   padding: 32px 36px;
@@ -15,7 +14,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center; /* Alinhado ao centro para a logo */
-  margin-bottom: 32px;
 }
 
 .header-title-container {
