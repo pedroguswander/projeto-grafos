@@ -164,6 +164,61 @@ def get_dashboard_stats():
         'topVertices': [{'nome': n, 'grau': g} for n, g in graus.most_common(10)]
     })
 
+# ── Dashboard Aeroportos ──────────────────────────────────────────────────────
+
+@app.route('/api/dashboard-stats/aeroportos')
+def get_dashboard_stats_aeroportos():
+    g = load_graph()
+
+    # Contagens base
+    total_v = len(g.airports)
+    all_edges = [(src, dst, dist)
+                 for src, neighbors in g.adjacency_list.items()
+                 for dst, dist in neighbors]
+    # Grafo não-dirigido: conta cada aresta uma vez
+    seen, unique_edges = set(), []
+    for src, dst, dist in all_edges:
+        key = tuple(sorted([src, dst]))
+        if key not in seen:
+            seen.add(key)
+            unique_edges.append((src, dst, dist))
+    total_e = len(unique_edges)
+
+    # Peso médio (distância média por rota)
+    pesos = [dist for _, _, dist in unique_edges if dist]
+    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
+
+    # Grau médio
+    grau_medio = round((total_e * 2) / total_v, 2) if total_v else 0
+
+    # Grau de cada vértice
+    graus = Counter()
+    for src, neighbors in g.adjacency_list.items():
+        graus[src] += len(neighbors)
+
+    # Distribuição de graus: {grau → quantidade de aeroportos com esse grau}
+    dist_graus = [{'grau': k, 'quantidade': v}
+                  for k, v in sorted(Counter(graus.values()).items())]
+
+    # Top 10 hubs por grau
+    top_vertices = [{'nome': code, 'grau': deg}
+                    for code, deg in graus.most_common(10)]
+
+    # Distribuição por país
+    paises = Counter(a.country for a in g.airports.values() if getattr(a, 'country', None))
+    dist_regiao = [{'nome': k, 'valor': v}
+                   for k, v in sorted(paises.items(), key=lambda x: x[1], reverse=True)]
+
+    return jsonify({
+        'totalV': total_v,
+        'totalE': total_e,
+        'pesoMedio': peso_medio,
+        'grauMedio': grau_medio,
+        'distribuicaoGraus': dist_graus,
+        'topVertices': top_vertices,
+        'distribuicaoRegiao': dist_regiao,
+    })
+
 # ── Relatório Parte 2 ─────────────────────────────────────────────────────────
 
 def _report_candidates():
