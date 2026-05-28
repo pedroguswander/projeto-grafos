@@ -219,6 +219,177 @@ def get_dashboard_stats_aeroportos():
         'distribuicaoRegiao': dist_regiao,
     })
 
+# ── Filtros ETN ───────────────────────────────────────────────────────────────
+
+@app.route('/api/dashboard-stats/etn/filtros')
+def get_etn_filtros():
+    """Retorna as opções disponíveis de Região e País para os selects do dashboard."""
+    etn = data_path('ETN')
+    vpath = os.path.join(etn, 'vertices.csv')
+    if not os.path.exists(vpath):
+        return jsonify({'error': 'vertices.csv não encontrado'}), 404
+    vertices = read_csv(vpath)
+    regioes = sorted(set(v['D_Region'] for v in vertices if v.get('D_Region')))
+    # monta mapa região → países para filtro dependente
+    mapa = {}
+    for v in vertices:
+        r = v.get('D_Region', '')
+        c = v.get('Country', '')
+        if r and c:
+            mapa.setdefault(r, set()).add(c)
+    mapa_sorted = {r: sorted(ps) for r, ps in sorted(mapa.items())}
+    return jsonify({'regioes': regioes, 'paises_por_regiao': mapa_sorted})
+
+@app.route('/api/dashboard-stats/etn/filtrado')
+def get_etn_filtrado():
+    """Retorna stats ETN filtrados por ?regiao=&pais="""
+    etn = data_path('ETN')
+    vpath, apath = os.path.join(etn, 'vertices.csv'), os.path.join(etn, 'arestas.csv')
+    if not os.path.exists(vpath) or not os.path.exists(apath):
+        return jsonify({'error': 'arquivos ETN não encontrados'}), 404
+
+    vertices = read_csv(vpath)
+    arestas  = read_csv(apath)
+
+    regiao = request.args.get('regiao')
+    pais   = request.args.get('pais')
+
+    # filtra vértices
+    if regiao:
+        vertices = [v for v in vertices if v.get('D_Region') == regiao]
+    if pais:
+        vertices = [v for v in vertices if v.get('Country') == pais]
+
+    codigos = set(v['UNLocode'] for v in vertices)
+
+    # filtra arestas cujos dois extremos estão no conjunto filtrado
+    arestas = [a for a in arestas
+               if (a.get('origem') or a.get('from', '')) in codigos
+               and (a.get('destino') or a.get('to', '')) in codigos]
+
+    total_v = len(vertices)
+    total_e = len(arestas)
+
+    pesos = [float(a.get('peso') or a.get('weight') or 0)
+             for a in arestas if (a.get('peso') or a.get('weight'))]
+    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
+    grau_medio = round((total_e * 2) / total_v, 2) if total_v else 0
+
+    regioes_count = Counter(v['D_Region'] for v in vertices if v.get('D_Region'))
+    dist_regiao = [{'nome': k, 'valor': v}
+                   for k, v in sorted(regioes_count.items(), key=lambda x: x[1], reverse=True)]
+
+    endpoints = [a.get('origem') or a.get('from') for a in arestas] + \
+                [a.get('destino') or a.get('to') for a in arestas]
+    graus = Counter(filter(None, endpoints))
+    dist_graus = [{'grau': k, 'quantidade': v}
+                  for k, v in sorted(Counter(graus.values()).items())]
+
+    return jsonify({
+        'totalV': total_v, 'totalE': total_e,
+        'pesoMedio': peso_medio, 'grauMedio': grau_medio,
+        'distribuicaoRegiao': dist_regiao, 'distribuicaoGraus': dist_graus,
+        'topVertices': [{'nome': n, 'grau': g} for n, g in graus.most_common(10)]
+    })
+
+# ── Filtros Aeroportos ────────────────────────────────────────────────────────
+
+@app.route('/api/dashboard-stats/aeroportos/filtros')
+def get_aeroportos_filtros():
+    """Retorna países disponíveis + range de grau e distância."""
+    g = load_graph()
+    paises = sorted(set(
+        getattr(a, 'country', None) for a in g.airports.values()
+        if getattr(a, 'country', None)
+    ))
+    graus = Counter()
+    for src, neighbors in g.adjacency_list.items():
+        graus[src] += len(neighbors)
+    all_dists = [dist for neighbors in g.adjacency_list.values() for _, dist in neighbors if dist]
+    return jsonify({
+        'paises': paises,
+        'grau_min': min(graus.values()) if graus else 0,
+        'grau_max': max(graus.values()) if graus else 0,
+        'dist_min': round(min(all_dists)) if all_dists else 0,
+        'dist_max': round(max(all_dists)) if all_dists else 0,
+    })
+
+@app.route('/api/dashboard-stats/aeroportos/filtrado')
+def get_aeroportos_filtrado():
+    """Retorna stats de aeroportos com ?pais=&grau_min=&grau_max=&dist_min=&dist_max="""
+    g = load_graph()
+
+    pais     = request.args.get('pais')
+    grau_min = request.args.get('grau_min', type=int)
+    grau_max = request.args.get('grau_max', type=int)
+    dist_min = request.args.get('dist_min', type=float)
+    dist_max = request.args.get('dist_max', type=float)
+
+    # grau de cada vértice (sem filtro de país ainda)
+    graus_full = Counter()
+    for src, neighbors in g.adjacency_list.items():
+        graus_full[src] += len(neighbors)
+
+    # filtra aeroportos por país e/ou grau
+    codigos = set()
+    for code, airport in g.airports.items():
+        if pais and getattr(airport, 'country', None) != pais:
+            continue
+        g_val = graus_full.get(code, 0)
+        if grau_min is not None and g_val < grau_min:
+            continue
+        if grau_max is not None and g_val > grau_max:
+            continue
+        codigos.add(code)
+
+    # filtra arestas
+    all_edges = []
+    seen = set()
+    for src, neighbors in g.adjacency_list.items():
+        if src not in codigos:
+            continue
+        for dst, dist in neighbors:
+            if dst not in codigos:
+                continue
+            if dist_min is not None and dist < dist_min:
+                continue
+            if dist_max is not None and dist > dist_max:
+                continue
+            key = tuple(sorted([src, dst]))
+            if key not in seen:
+                seen.add(key)
+                all_edges.append((src, dst, dist))
+
+    total_v = len(codigos)
+    total_e = len(all_edges)
+    pesos = [d for _, _, d in all_edges if d]
+    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
+    grau_medio = round((total_e * 2) / total_v, 2) if total_v else 0
+
+    graus = Counter()
+    for src, dst, _ in all_edges:
+        graus[src] += 1
+        graus[dst] += 1
+
+    dist_graus = [{'grau': k, 'quantidade': v}
+                  for k, v in sorted(Counter(graus.values()).items())]
+    top_vertices = [{'nome': code, 'grau': deg} for code, deg in graus.most_common(10)]
+
+    paises_count = Counter(
+        getattr(g.airports[c], 'country', 'N/A')
+        for c in codigos if c in g.airports
+    )
+    dist_regiao = [{'nome': k, 'valor': v}
+                   for k, v in sorted(paises_count.items(), key=lambda x: x[1], reverse=True)]
+
+    return jsonify({
+        'totalV': total_v, 'totalE': total_e,
+        'pesoMedio': peso_medio, 'grauMedio': grau_medio,
+        'distribuicaoGraus': dist_graus,
+        'topVertices': top_vertices,
+        'distribuicaoRegiao': dist_regiao,
+    })
+
 # ── Relatório Parte 2 ─────────────────────────────────────────────────────────
 
 def _report_candidates():

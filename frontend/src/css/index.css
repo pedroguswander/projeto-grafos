@@ -110,3 +110,16 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Força a cor do texto e fundo das opções no menu suspenso */
+select option {
+  background-color: #1e293b !important; /* Cor de fundo escura */
+  color: #ffffff !important;           /* Cor do texto branca */
+  padding: 10px;
+}
+
+/* Opcional: Garante que o select não herde opacidades estranhas */
+.filter-select select {
+  color: #ffffff !important;
+  background-color: #0f172a !important;
+}
