@@ -10,6 +10,7 @@ import navioBotes from './assets/navio/navio-botes.png';
 import navioCargaSuperior from './assets/navio/navio-carga-superior.png';
 import navioCargaInferior from './assets/navio/navio-carga-inferior.png';
 
+// TODO: Plotly - Usar para gerar mapas
 export default function DataBaseETN({ onBack }) {
   const [parteSelecionada, setParteSelecionada] = useState('base');
 
