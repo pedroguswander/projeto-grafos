@@ -26,6 +26,59 @@ const PALETTE = [
   "#0f172a", // azul escuro
   "#94a3b8"  // cinza claro
 ]
+// ── FilterBar ETN ─────────────────────────────────────────────────────────────
+
+const Select = ({ label, value, onChange, options, disabled }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 160 }}>
+    <label style={{ fontSize: 10, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      disabled={disabled}
+      style={{
+        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 8, color: "#e2e8f0", fontSize: 12, fontWeight: 600,
+        padding: "7px 10px", cursor: disabled ? "not-allowed" : "pointer", outline: "none",
+        opacity: disabled ? 0.4 : 1,
+      }}
+    >
+      <option value="">Todos</option>
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
+  </div>
+)
+
+const FilterBar = ({ filtros, regiao, setRegiao, pais, setPais, onClear, hasFilter }) => {
+  const paisOptions = regiao && filtros?.paises_por_regiao?.[regiao]
+    ? filtros.paises_por_regiao[regiao]
+    : Object.values(filtros?.paises_por_regiao || {}).flat().filter((v, i, a) => a.indexOf(v) === i).sort()
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap",
+      padding: "14px 18px", borderRadius: 12, margin: "0 0 20px",
+      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+      "marginTop": 50
+    }}>
+      <Select className= "filter-select" label="Região" value={regiao} onChange={v => { setRegiao(v); setPais("") }} options={filtros?.regioes || []} />
+      <Select className= "filter-select" label="País" value={pais} onChange={setPais} options={paisOptions} disabled={!filtros} />
+      {hasFilter && (
+        <button onClick={onClear} style={{
+          alignSelf: "flex-end", padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)",
+          background: "transparent", color: "#9ca3af", fontSize: 12, fontWeight: 600, cursor: "pointer"
+        }}>
+          Limpar filtros
+        </button>
+      )}
+      {hasFilter && (
+        <span style={{ alignSelf: "flex-end", fontSize: 11, color: "#d97706", fontWeight: 600, padding: "7px 0" }}>
+          ● Filtro ativo
+        </span>
+      )}
+    </div>
+  )
+}
+
 // ── Componentes auxiliares ────────────────────────────────────────────────────
 
 const KPICard = ({ title, value, sub, accent, loading }) => (
@@ -141,12 +194,26 @@ export const DashboardETN = ({ onBack }) => {
   const [spinning, setSpinning] = useState(false)
   const [view, setView]         = useState("chart")
 
+  // ── Filtros
+  const [filtros, setFiltros]   = useState(null)
+  const [regiao, setRegiao]     = useState("")
+  const [pais, setPais]         = useState("")
+  const hasFilter = !!(regiao || pais)
+
+  const buildStatsUrl = () => {
+    if (!hasFilter) return `${API}/api/dashboard-stats`
+    const p = new URLSearchParams()
+    if (regiao) p.set('regiao', regiao)
+    if (pais)   p.set('pais', pais)
+    return `${API}/api/dashboard-stats/etn/filtrado?${p}`
+  }
+
   const fetchAll = async () => {
     setSpinning(true)
     setError(null)
     setBfsErr(null)
     const [statsRes, bfsRes] = await Promise.allSettled([
-      fetch(`${API}/api/dashboard-stats`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
+      fetch(buildStatsUrl()).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
       fetch(`${API}/api/report/comparacao/bfs-dfs`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
     ])
     if (statsRes.status === 'fulfilled') setStats(statsRes.value)
@@ -157,7 +224,16 @@ export const DashboardETN = ({ onBack }) => {
     setSpinning(false)
   }
 
-  useEffect(() => { fetchAll() }, [])
+  // carrega opções de filtro uma vez
+  useEffect(() => {
+    fetch(`${API}/api/dashboard-stats/etn/filtros`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setFiltros(data) })
+      .catch(() => {})
+  }, [])
+
+  // re-fetch quando filtro muda
+  useEffect(() => { fetchAll() }, [regiao, pais])
 
   const d = stats || {}
   const comparacoes = bfsDfs?.comparacoes || []
@@ -189,6 +265,15 @@ export const DashboardETN = ({ onBack }) => {
       </div>
 
       {error && <ErrorBanner msg={error} />}
+
+      {/* Filtros */}
+      <FilterBar
+        filtros={filtros}
+        regiao={regiao} setRegiao={setRegiao}
+        pais={pais} setPais={setPais}
+        hasFilter={hasFilter}
+        onClear={() => { setRegiao(""); setPais("") }}
+      />
 
       {/* KPIs */}
       <div className="kpi-grid">
