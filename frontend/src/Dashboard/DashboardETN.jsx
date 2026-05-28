@@ -4,19 +4,36 @@ import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import logoCompleta from "../assets/logo-2/logo-branca-completa2.png"
 
 const API = "http://localhost:5000"
-const PALETTE = ["#1e40af", "#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626", "#9333ea", "#0d9488"]
-
+const PALETTE = [
+  "#ffffff", // branco
+  "#0e4821", // preto
+  "#ef4444", // vermelho
+  "#f97316", // laranja
+  "#facc15", // amarelo
+  "#22c55e", // verde
+  "#14b8a6", // turquesa
+  "#06b6d4", // ciano
+  "#3b82f6", // azul
+  "#6366f1", // índigo
+  "#8b5cf6", // violeta
+  "#a855f7", // roxo
+  "#ec4899", // rosa
+  "#d946ef", // magenta
+  "#84cc16", // lima
+  "#f43f5e", // rosa forte
+  "#78716c", // marrom/cinza
+  "#eab308", // dourado
+  "#0f172a", // azul escuro
+  "#94a3b8"  // cinza claro
+]
 // ── Componentes auxiliares ────────────────────────────────────────────────────
 
-const KPICard = ({ title, value, sub, icon: Icon, accent, loading }) => (
+const KPICard = ({ title, value, sub, accent, loading }) => (
   <div className="kpi-card">
     <div>
       <p className="kpi-title">{title}</p>
       {loading ? <div className="skeleton-pulse" /> : <p className="kpi-value">{value}</p>}
       {sub && <p className="kpi-sub">{sub}</p>}
-    </div>
-    <div className="kpi-icon-wrapper" style={{ background: accent + "18", color: accent }}>
-      <Icon size={22} />
     </div>
   </div>
 )
@@ -175,10 +192,10 @@ export const DashboardETN = ({ onBack }) => {
 
       {/* KPIs */}
       <div className="kpi-grid">
-        <KPICard loading={loading} title="Vértices (Portos)" value={d.totalV?.toLocaleString("pt-BR")} icon={Anchor} accent="#1e40af" />
-        <KPICard loading={loading} title="Arestas (Rotas)" value={d.totalE?.toLocaleString("pt-BR")} icon={GitBranch} accent="#7c3aed" />
-        <KPICard loading={loading} title="Grau Médio" value={d.grauMedio != null ? Number(d.grauMedio).toFixed(2) : "—"} icon={Activity} accent="#059669" sub="conexões por porto" />
-        <KPICard loading={loading} title="Peso Médio" value={d.pesoMedio?.toLocaleString("pt-BR")} icon={Weight} accent="#d97706" sub="por aresta" />
+        <KPICard loading={loading} title="Vértices (Portos)" value={d.totalV?.toLocaleString("pt-BR")} accent="#1e40af" />
+        <KPICard loading={loading} title="Arestas (Rotas)" value={d.totalE?.toLocaleString("pt-BR")} accent="#7c3aed" />
+        <KPICard loading={loading} title="Grau Médio" value={d.grauMedio != null ? Number(d.grauMedio).toFixed(2) : "—"} accent="#059669" sub="conexões por porto" />
+        <KPICard loading={loading} title="Peso Médio" value={d.pesoMedio?.toLocaleString("pt-BR")} accent="#d97706" sub="por aresta" />
       </div>
 
       {/* Gráficos linha 1 */}
@@ -225,26 +242,34 @@ export const DashboardETN = ({ onBack }) => {
       {/* Distribuição por Região */}
       <div className="chart-card">
         <div className="chart-header"><h3 className="chart-title">Distribuição por Região</h3></div>
-        {loading ? <Skeleton height={220} /> : (
-          <div className="pie-container">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={(d.distribuicaoRegiao || []).slice(0, 8)} dataKey="valor" nameKey="nome" innerRadius={55} outerRadius={90} paddingAngle={3}>
-                  {(d.distribuicaoRegiao || []).slice(0, 8).map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {(d.distribuicaoRegiao || []).slice(0, 8).map((r, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 3, background: PALETTE[i % PALETTE.length] }} />
-                  <span style={{ fontSize: 13, color: "#fff", flex: 1 }}>{r.nome}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700 }}>{r.valor}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {loading ? <Skeleton height={260} /> : (
+          <ResponsiveContainer width="100%" height={Math.max(260, (d.distribuicaoRegiao || []).slice(0, 10).length * 36)}>
+            <BarChart
+              data={(d.distribuicaoRegiao || []).slice(0, 10)}
+              layout="vertical"
+              margin={{ top: 4, right: 60, left: 8, bottom: 4 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+              <XAxis type="number" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+              <YAxis
+                dataKey="nome"
+                type="category"
+                width={130}
+                tick={{ fontSize: 12, fill: "#e2e8f0", fontWeight: 500 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                content={<ChartTooltip suffix=" portos" />}
+              />
+              <Bar dataKey="valor" radius={[0, 6, 6, 0]} maxBarSize={22} label={{ position: "right", fill: "#9ca3af", fontSize: 11, fontWeight: 700 }}>
+                {(d.distribuicaoRegiao || []).slice(0, 10).map((_, i) => (
+                  <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         )}
       </div>
 
@@ -256,14 +281,13 @@ export const DashboardETN = ({ onBack }) => {
             {bfsDfs && <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.5 }}>{bfsDfs.total_comparacoes} nós comparados</p>}
           </div>
           <div style={{ display: "flex", gap: 4, marginLeft: "auto", background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: 3 }}>
-            {[{ id: "chart", Icon: BarChart2 }, { id: "table", Icon: Activity }].map(({ id, Icon }) => (
+            {[{ id: "chart" }, { id: "table" }].map(({ id }) => (
               <button key={id} onClick={() => setView(id)} style={{
                 display: "flex", alignItems: "center", gap: 5, padding: "5px 12px",
                 borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
                 background: view === id ? "rgba(255,255,255,0.12)" : "transparent",
                 color: view === id ? "#e2e8f0" : "#6b7280"
               }}>
-                <Icon size={13} />{id === "chart" ? "Gráfico" : "Tabela"}
               </button>
             ))}
           </div>
@@ -279,14 +303,11 @@ export const DashboardETN = ({ onBack }) => {
         {bfsDfs && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, margin: "12px 0 20px" }}>
             {[
-              { label: "BFS mais rápido", value: bfsWins, color: "#0891b2", Icon: Zap },
-              { label: "DFS mais rápido", value: dfsWins, color: "#7c3aed", Icon: Zap },
-              { label: "Δ médio", value: `${avgDelta} ms`, color: "#d97706", Icon: Clock },
-            ].map(({ label, value, color, Icon }) => (
+              { label: "BFS mais rápido", value: bfsWins, color: "#0891b2" },
+              { label: "DFS mais rápido", value: dfsWins, color: "#7c3aed" },
+              { label: "Δ médio", value: `${avgDelta} ms`, color: "#d97706"},
+            ].map(({ label, value, color }) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: color + "20", color }}>
-                  <Icon size={15} />
-                </div>
                 <div>
                   <p style={{ margin: 0, fontSize: 10, opacity: 0.5, fontWeight: 600 }}>{label}</p>
                   <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color }}>{value}</p>
@@ -315,6 +336,9 @@ export const DashboardETN = ({ onBack }) => {
           )
         )}
       </div>
+      
+
+      {/* Isights */}
     </div>
   )
 }
