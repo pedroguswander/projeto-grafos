@@ -60,8 +60,8 @@ const FilterBar = ({ filtros, regiao, setRegiao, pais, setPais, onClear, hasFilt
       background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
       "marginTop": 50
     }}>
-      <Select className= "filter-select" label="Região" value={regiao} onChange={v => { setRegiao(v); setPais("") }} options={filtros?.regioes || []} />
-      <Select className= "filter-select" label="País" value={pais} onChange={setPais} options={paisOptions} disabled={!filtros} />
+      <Select className="filter-select" label="Região" value={regiao} onChange={v => { setRegiao(v); setPais("") }} options={filtros?.regioes || []} />
+      <Select className="filter-select" label="País" value={pais} onChange={setPais} options={paisOptions} disabled={!filtros} />
       {hasFilter && (
         <button onClick={onClear} style={{
           alignSelf: "flex-end", padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)",
@@ -186,25 +186,25 @@ const ComparisonTable = ({ rows }) => (
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export const DashboardETN = ({ onBack }) => {
-  const [stats, setStats]       = useState(null)
-  const [bfsDfs, setBfsDfs]     = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
-  const [bfsErr, setBfsErr]     = useState(null)
+  const [stats, setStats] = useState(null)
+  const [bfsDfs, setBfsDfs] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [bfsErr, setBfsErr] = useState(null)
   const [spinning, setSpinning] = useState(false)
-  const [view, setView]         = useState("chart")
+  const [view, setView] = useState("chart")
 
   // ── Filtros
-  const [filtros, setFiltros]   = useState(null)
-  const [regiao, setRegiao]     = useState("")
-  const [pais, setPais]         = useState("")
+  const [filtros, setFiltros] = useState(null)
+  const [regiao, setRegiao] = useState("")
+  const [pais, setPais] = useState("")
   const hasFilter = !!(regiao || pais)
 
   const buildStatsUrl = () => {
     if (!hasFilter) return `${API}/api/dashboard-stats`
     const p = new URLSearchParams()
     if (regiao) p.set('regiao', regiao)
-    if (pais)   p.set('pais', pais)
+    if (pais) p.set('pais', pais)
     return `${API}/api/dashboard-stats/etn/filtrado?${p}`
   }
 
@@ -229,7 +229,7 @@ export const DashboardETN = ({ onBack }) => {
     fetch(`${API}/api/dashboard-stats/etn/filtros`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setFiltros(data) })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   // re-fetch quando filtro muda
@@ -299,7 +299,38 @@ export const DashboardETN = ({ onBack }) => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="grau" tick={{ fontSize: 11, fill: "#9ca3af" }} />
                 <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <Tooltip content={<ChartTooltip prefix="Grau " />} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+
+                    const data = payload[0].payload
+
+                    return (
+                      <div className="custom-tooltip" style={{ maxWidth: 260 }}>
+                        <p style={{ margin: 0, fontWeight: 700 }}>
+                          Grau {label}
+                        </p>
+
+                        <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.7 }}>
+                          {data.quantidade} vértices
+                        </p>
+
+                        <div
+                          style={{
+                            maxHeight: 160,
+                            overflowY: "auto",
+                            fontSize: 11,
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {data.vertices?.map((v, i) => (
+                            <div key={i}>• {v}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  }}
+                />
                 <Area type="monotone" dataKey="quantidade" stroke="#7c3aed" strokeWidth={2} fill="url(#gradGrau)" dot={{ r: 3, fill: "#7c3aed" }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -390,7 +421,7 @@ export const DashboardETN = ({ onBack }) => {
             {[
               { label: "BFS mais rápido", value: bfsWins, color: "#0891b2" },
               { label: "DFS mais rápido", value: dfsWins, color: "#7c3aed" },
-              { label: "Δ médio", value: `${avgDelta} ms`, color: "#d97706"},
+              { label: "Δ médio", value: `${avgDelta} ms`, color: "#d97706" },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <div>
@@ -421,7 +452,7 @@ export const DashboardETN = ({ onBack }) => {
           )
         )}
       </div>
-      
+
 
       {/* Isights */}
     </div>

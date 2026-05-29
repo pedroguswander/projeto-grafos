@@ -204,7 +204,7 @@ export const Dashboard = ({ onBack }) => {
     || (ranges && distRange[1] < ranges.dist_max))
 
   const buildStatsUrl = useCallback(() => {
-    if (!hasFilter) return `${API}/api/dashboard-stats/aeroportos`
+    if (!hasFilter) return `${API}/api/dashboard-stats/aeroportos/filtrado`
     const p = new URLSearchParams()
     if (pais) p.set('pais', pais)
     if (ranges && grauRange[0] > ranges.grau_min) p.set('grau_min', grauRange[0])
@@ -317,7 +317,38 @@ export const Dashboard = ({ onBack }) => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="grau" tick={{ fontSize: 11, fill: "#9ca3af" }} />
                 <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <Tooltip content={<ChartTooltip prefix="Grau " />} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+
+                    const data = payload[0].payload
+
+                    return (
+                      <div className="custom-tooltip" style={{ maxWidth: 260 }}>
+                        <p style={{ margin: 0, fontWeight: 700 }}>
+                          Grau {label}
+                        </p>
+
+                        <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.7 }}>
+                          {data.quantidade} vértices
+                        </p>
+
+                        <div
+                          style={{
+                            maxHeight: 160,
+                            overflowY: "auto",
+                            fontSize: 11,
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {data.vertices?.map((v, i) => (
+                            <div key={i}>• {v}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  }}
+                />
                 <Area type="monotone" dataKey="quantidade" stroke="#7c3aed" strokeWidth={2} fill="url(#gradGrauAero)" dot={{ r: 3, fill: "#7c3aed" }} />
               </AreaChart>
             </ResponsiveContainer>
