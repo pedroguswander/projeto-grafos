@@ -3,6 +3,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import time
+import statistics
 import tracemalloc
 import json
 
@@ -12,6 +13,8 @@ from parte2.src.graphs.algorithms import bfs, dfs, dijkstra, bellman_ford
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ETN")
 OUT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out", "part2_report.json")
+
+N_RUNS = 10
 
 
 def _top_nodes_by_degree(graph, n: int):
@@ -35,14 +38,21 @@ def _direct_pairs(graph, sources, count: int):
 
 def _run_bfs(graph, source: str, label: str) -> dict:
     print(f"\n[BFS] Fonte: {source}")
+
     tracemalloc.start()
-    t0 = time.perf_counter()
     result = bfs(graph, source)
-    t1 = time.perf_counter()
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    elapsed = t1 - t0
-    print(f"  tempo: {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | camadas: {len(result['camadas'])} | nos_visitados: {result['ordem']}")
+
+    times = []
+    for _ in range(N_RUNS):
+        t0 = time.perf_counter()
+        bfs(graph, source)
+        t1 = time.perf_counter()
+        times.append(t1 - t0)
+    elapsed = statistics.median(times)
+
+    print(f"  tempo(mediana): {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | camadas: {len(result['camadas'])} | nos_visitados: {result['ordem']}")
     return {
         label: source,
         "tempo": elapsed,
@@ -53,14 +63,21 @@ def _run_bfs(graph, source: str, label: str) -> dict:
 
 def _run_dfs(graph, source: str, label: str) -> dict:
     print(f"\n[DFS] Fonte: {source}")
+
     tracemalloc.start()
-    t0 = time.perf_counter()
     result = dfs(graph, source)
-    t1 = time.perf_counter()
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    elapsed = t1 - t0
-    print(f"  tempo: {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | nos_visitados: {result['ordem']} | ciclos: {result['ciclos']}")
+
+    times = []
+    for _ in range(N_RUNS):
+        t0 = time.perf_counter()
+        dfs(graph, source)
+        t1 = time.perf_counter()
+        times.append(t1 - t0)
+    elapsed = statistics.median(times)
+
+    print(f"  tempo(mediana): {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | nos_visitados: {result['ordem']} | ciclos: {result['ciclos']}")
     print(f"  arestas -> tree: {len(result['arestas']['tree'])} | back: {len(result['arestas']['back'])} | forward: {len(result['arestas']['forward'])} | cross: {len(result['arestas']['cross'])}")
     return {
         label: source,
@@ -109,14 +126,21 @@ def _build_subgraph_no_cycle(graph) -> Graph:
 
 def _run_dijkstra(graph, src: str, dst: str, eh_subgrafo: bool) -> dict:
     print(f"\n[DIJKSTRA] {src} -> {dst} | subgrafo={eh_subgrafo}")
+
     tracemalloc.start()
-    t0 = time.perf_counter()
     cost, path = dijkstra(graph, src, dst)
-    t1 = time.perf_counter()
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    elapsed = t1 - t0
-    print(f"  tempo: {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | custo: {cost} | tamanho: {len(path) if path else None}")
+
+    times = []
+    for _ in range(N_RUNS):
+        t0 = time.perf_counter()
+        dijkstra(graph, src, dst)
+        t1 = time.perf_counter()
+        times.append(t1 - t0)
+    elapsed = statistics.median(times)
+
+    print(f"  tempo(mediana): {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | custo: {cost} | tamanho: {len(path) if path else None}")
     return {
         "source": src,
         "target": dst,
@@ -131,14 +155,21 @@ def _run_dijkstra(graph, src: str, dst: str, eh_subgrafo: bool) -> dict:
 
 def _run_bellman_ford(graph, src: str, dst: str, descricao: str, eh_subgrafo: bool) -> dict:
     print(f"\n[BELLMAN-FORD] {descricao} | {src} -> {dst}")
+
     tracemalloc.start()
-    t0 = time.perf_counter()
     cost, path, has_cycle = bellman_ford(graph, src, dst)
-    t1 = time.perf_counter()
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    elapsed = t1 - t0
-    print(f"  tempo: {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | custo: {cost} | ciclo_negativo: {has_cycle}")
+
+    times = []
+    for _ in range(N_RUNS):
+        t0 = time.perf_counter()
+        bellman_ford(graph, src, dst)
+        t1 = time.perf_counter()
+        times.append(t1 - t0)
+    elapsed = statistics.median(times)
+
+    print(f"  tempo(mediana): {elapsed:.6f}s | memoria_pico: {peak / 1024:.2f} KB | custo: {cost} | ciclo_negativo: {has_cycle}")
     return {
         "descricao": descricao,
         "source": src,
@@ -161,11 +192,8 @@ def test_generate_part2_report():
     n_routes = sum(len(v) for v in graph.adjacency_list.values())
     print(f"Grafo carregado: {n_ports} portos, {n_routes} rotas")
 
-    top_nodes = _top_nodes_by_degree(graph, 10)
-    bfs_sources = top_nodes[:3]
-    dfs_sources = top_nodes[:3]
-    pairs_5 = _direct_pairs(graph, top_nodes, 5)
-    pairs_2 = _direct_pairs(graph, top_nodes, 2)
+    bfs_sources = ["AEJEA", "CNYTN", "CAMTR"]
+    dfs_sources = ["AEJEA", "CNYTN", "CAMTR"]
 
     print("\n--- BFS ---")
     bfs_results = [_run_bfs(graph, src, f"source BFS {i}") for i, src in enumerate(bfs_sources, 1)]
@@ -175,9 +203,15 @@ def test_generate_part2_report():
 
     print("\n--- DIJKSTRA ---")
     subgraph = _build_non_negative_subgraph(graph)
+    _DIJKSTRA_SUBGRAPH_PAIRS = [
+        ("HKHKG", "USEWR"),
+        ("SGSIN", "BRSSZ"),
+        ("CLSAI", "LKCMB"),
+        ("LKCMB", "MYPKG"),
+    ]
     dijkstra_results = (
-        [_run_dijkstra(subgraph, src, dst, eh_subgrafo=True)  for src, dst in pairs_5[:4]] +
-        [_run_dijkstra(graph,    src, dst, eh_subgrafo=False) for src, dst in pairs_5[4:]]
+        [_run_dijkstra(subgraph, src, dst, eh_subgrafo=True) for src, dst in _DIJKSTRA_SUBGRAPH_PAIRS] +
+        [_run_dijkstra(graph, "LKCMB", "MYTPP", eh_subgrafo=False)]
     )
 
     print("\n--- BELLMAN-FORD ---")
@@ -185,6 +219,7 @@ def test_generate_part2_report():
     subgrafo_neg = _build_subgraph_no_cycle(graph)
     bf_pair_pos = _direct_pairs(subgrafo_pos, _top_nodes_by_degree(subgrafo_pos, 10), 1)[0]
     bf_pair_neg = _direct_pairs(subgrafo_neg, _top_nodes_by_degree(subgrafo_neg, 10), 1)[0]
+    pairs_2 = _direct_pairs(graph, _top_nodes_by_degree(graph, 10), 2)
     bellman_results = [
         _run_bellman_ford(subgrafo_pos, bf_pair_pos[0], bf_pair_pos[1],
                           "Subgrafo positivo (sem arestas negativas)", eh_subgrafo=True),
