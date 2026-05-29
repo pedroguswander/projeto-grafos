@@ -182,9 +182,83 @@ def plot_bfs_vs_dfs(report_path: Path) -> None:
         _save(fig, "parte2_exp_03_bfs_vs_dfs.png")
 
 
+def plot_dijkstra_tempos(report_path: Path) -> None:
+    with open(report_path, encoding="utf-8") as f:
+        report = json.load(f)
+
+    entries = [
+        (f"{e['source']} → {e['target']}", e["tempo"])
+        for e in report["DIJKSTRA"]
+    ]
+    entries.sort(key=lambda x: x[1])
+    labels = [e[0] for e in entries]
+    values = [e[1] for e in entries]
+    cor = _CORES_ALGORITMO["DIJKSTRA"]
+
+    with plt.rc_context(_PLT_STYLE):
+        fig, ax = plt.subplots(figsize=(9, 5))
+        container = ax.barh(labels, values, color=cor, edgecolor="white", linewidth=0.8)
+
+        ax.set_xscale("log")
+        ax.xaxis.set_major_formatter(ticker.LogFormatterSciNotation())
+        ax.set_xlim(right=max(values) * 30)
+
+        ax.bar_label(
+            container,
+            labels=[f"{v:.2e} s" for v in values],
+            padding=6,
+            fontsize=9,
+        )
+
+        ax.set_xlabel("Tempo de execução (s) — escala logarítmica")
+        ax.set_ylabel("Par origem → destino")
+        ax.set_title("Dijkstra — tempo de execução por par (ETN)")
+
+        fig.tight_layout()
+        _save(fig, "part2_exp_04_dijkstra_tempos.png")
+
+
+def plot_bellman_ford_tempos(report_path: Path) -> None:
+    with open(report_path, encoding="utf-8") as f:
+        report = json.load(f)
+
+    entries = [
+        (f"{e['descricao']}\n{e['source']} → {e['target']}", e["tempo"])
+        for e in report["BELLMAN-FORD"]
+    ]
+    entries.sort(key=lambda x: x[1])
+    labels = [e[0] for e in entries]
+    values = [e[1] for e in entries]
+    cor = _CORES_ALGORITMO["BELLMAN-FORD"]
+
+    with plt.rc_context(_PLT_STYLE):
+        fig, ax = plt.subplots(figsize=(10, 4))
+        container = ax.barh(labels, values, color=cor, edgecolor="white", linewidth=0.8)
+
+        ax.set_xscale("log")
+        ax.xaxis.set_major_formatter(ticker.LogFormatterSciNotation())
+        ax.set_xlim(right=max(values) * 30)
+
+        ax.bar_label(
+            container,
+            labels=[f"{v:.2e} s" for v in values],
+            padding=6,
+            fontsize=9,
+        )
+
+        ax.set_xlabel("Tempo de execução (s) — escala logarítmica")
+        ax.set_ylabel("Caso")
+        ax.set_title("Bellman-Ford — tempo de execução por caso (ETN)")
+
+        fig.tight_layout()
+        _save(fig, "part2_exp_05_bellman_ford_tempos.png")
+
+
 if __name__ == "__main__":
     ctx = _carregar_metricas()
     plot_distribuicao_graus(ctx)
     report_path = ROOT / "out" / "part2_report.json"
     plot_tempos_algoritmos(report_path)
     plot_bfs_vs_dfs(report_path)
+    plot_dijkstra_tempos(report_path)
+    plot_bellman_ford_tempos(report_path)
