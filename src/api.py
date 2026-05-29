@@ -95,6 +95,61 @@ def load_etn():
     return read_csv(vpath), read_csv(apath), None, None
 
 
+# ─── Helpers de Report ─────────────────────────────────────────
+
+def source_key(i):
+    return i.get('source') or i.get('origem') or next(
+        (v for v in i.values() if isinstance(v, str)), None
+    )
+
+def filter_by(items, source=None, target=None):
+    if source:
+        items = [i for i in items if i.get('source') == source]
+    if target:
+        items = [i for i in items if i.get('target') == target]
+    return items
+
+def resultados_comparacoes():
+    return [
+        os.path.join(BASE, '..', 'out', 'part2_report.json'),
+        os.path.join(BASE, 'part2_report.json'),
+        os.path.join(BASE, '..', 'data', 'part2_report.json'),
+        os.path.join(BASE, '..', 'part2_report.json'),
+        os.path.join(BASE, 'data', 'part2_report.json'),
+    ]
+
+def load_report():
+    for p in resultados_comparacoes():
+        r = os.path.abspath(p)
+        if os.path.exists(r):
+            with open(r, encoding='utf-8') as f:
+                return json.load(f)
+    return None
+
+def require_report():
+    report = load_report()
+    if report is None:
+        return None, (jsonify({'error': 'report não encontrado'}), 404)
+    return report, None
+
+def tempo_stats(items):
+    vals = [i.get('tempo', 0) for i in items]
+    return {
+        'total': len(vals),
+        'media': round(sum(vals) / len(vals), 6) if vals else None,
+        'total_s': round(sum(vals), 6),
+    }
+
+def path_stats(items):
+    validos = [i for i in items if i.get('custo') is not None]
+    return {
+        **tempo_stats(items),
+        'validos': len(validos),
+        'invalidos': len(items) - len(validos),
+        'custo_medio': round(sum(i['custo'] for i in validos) / len(validos), 2) if validos else None,
+    }
+
+
 # ─── Grafo ─────────────────────────────────────────────────────
 
 @app.route('/api/airports')
@@ -187,10 +242,7 @@ def calculate_dijkstra():
         unique = [r for r in routes if (k := tuple(r['path'])) not in seen and not seen.add(k)]
         return sorted(unique, key=lambda r: (r['cost'], len(r['path'])))[:limit]
 
-    top = [
-        {**r, 'path_info': enrich(r['path'])}
-        for r in find_routes()
-    ]
+    top = [{**r, 'path_info': enrich(r['path'])} for r in find_routes()]
 
     return jsonify({
         'success': True, 'cost': cost, 'path': path,
@@ -241,10 +293,11 @@ def get_etn_filtrado():
         vertices = [v for v in vertices if v.get('Country') == pais]
 
     codigos = {v['UNLocode'] for v in vertices}
+    # FIX: 'or' inclui arestas onde ao menos um lado pertence ao subgrafo filtrado
     arestas = [
         a for a in arestas
         if get_endpoint(a, 'origem', 'from') in codigos
-        and get_endpoint(a, 'destino', 'to') in codigos
+        or get_endpoint(a, 'destino', 'to') in codigos
     ]
 
     return jsonify(calc_stats(vertices, arestas))
@@ -336,64 +389,9 @@ def get_aeroportos_filtrado():
             for k, v in sorted(paises_count.items(), key=lambda x: x[1], reverse=True)
         ],
     })
-    
-    # ─── Helpers de Report ────────────────────────────────────────
-
-def source_key(i):
-    return i.get('source') or i.get('origem') or next(
-        (v for v in i.values() if isinstance(v, str)), None
-    )
-
-def filter_by(items, source=None, target=None):
-    if source:
-        items = [i for i in items if i.get('source') == source]
-    if target:
-        items = [i for i in items if i.get('target') == target]
-    return items
-
-def require_report():
-    # adapte conforme sua lógica de carregamento do report
-    report = load_report()  # implemente load_report() conforme necessário
-    if report is None:
-        return None, (jsonify({'error': 'report não encontrado'}), 404)
-    return report, None
-
-def tempo_stats(items):
-    vals = [i.get('tempo', 0) for i in items]
-    return {
-        'total': len(vals),
-        'media': round(sum(vals) / len(vals), 6) if vals else None,
-        'total_s': round(sum(vals), 6),
-    }
-
-def path_stats(items):
-    validos = [i for i in items if i.get('custo') is not None]
-    return {
-        **tempo_stats(items),
-        'validos': len(validos),
-        'invalidos': len(items) - len(validos),
-        'custo_medio': round(sum(i['custo'] for i in validos) / len(validos), 2) if validos else None,
-    }
 
 
 # ─── BFS / DFS ─────────────────────────────────────────────────
-
-def resultados_comparacoes():
-    return [
-        os.path.join(BASE, '..', 'out', 'part2_report.json'),
-        os.path.join(BASE, 'part2_report.json'),
-        os.path.join(BASE, '..', 'data', 'part2_report.json'),
-        os.path.join(BASE, '..', 'part2_report.json'),
-        os.path.join(BASE, 'data', 'part2_report.json'),
-    ]
-    
-def load_report():
-    for p in resultados_comparacoes():
-        r = os.path.abspath(p)
-        if os.path.exists(r):
-            with open(r, encoding='utf-8') as f:
-                return json.load(f)
-    return None
 
 @app.route('/api/report/bfs')
 def get_report_bfs():
