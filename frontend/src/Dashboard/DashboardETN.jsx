@@ -397,13 +397,20 @@ export const DashboardETN = ({ onBack }) => {
             {bfsDfs && <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.5 }}>{bfsDfs.total_comparacoes} nós comparados</p>}
           </div>
           <div style={{ display: "flex", gap: 4, marginLeft: "auto", background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: 3 }}>
-            {[{ id: "chart" }, { id: "table" }].map(({ id }) => (
-              <button key={id} onClick={() => setView(id)} style={{
-                display: "flex", alignItems: "center", gap: 5, padding: "5px 12px",
-                borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                background: view === id ? "rgba(255,255,255,0.12)" : "transparent",
-                color: view === id ? "#e2e8f0" : "#6b7280"
-              }}>
+            {/* Adicionamos a propriedade 'label' aqui */}
+            {[{ id: "chart", label: "Gráfico" }, { id: "table", label: "Tabela" }].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5, padding: "5px 12px",
+                  borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                  background: view === id ? "rgba(255,255,255,0.12)" : "transparent",
+                  color: view === id ? "#e2e8f0" : "#6b7280"
+                }}
+              >
+                {/* O texto é renderizado aqui */}
+                {label}
               </button>
             ))}
           </div>

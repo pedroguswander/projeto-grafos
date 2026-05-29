@@ -2,7 +2,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from collections import Counter
-import sys, os, csv
+import sys, os, csv, json
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -335,6 +335,210 @@ def get_aeroportos_filtrado():
             {'nome': k, 'valor': v}
             for k, v in sorted(paises_count.items(), key=lambda x: x[1], reverse=True)
         ],
+    })
+    
+    # ─── Helpers de Report ────────────────────────────────────────
+
+def source_key(i):
+    return i.get('source') or i.get('origem') or next(
+        (v for v in i.values() if isinstance(v, str)), None
+    )
+
+def filter_by(items, source=None, target=None):
+    if source:
+        items = [i for i in items if i.get('source') == source]
+    if target:
+        items = [i for i in items if i.get('target') == target]
+    return items
+
+def require_report():
+    # adapte conforme sua lógica de carregamento do report
+    report = load_report()  # implemente load_report() conforme necessário
+    if report is None:
+        return None, (jsonify({'error': 'report não encontrado'}), 404)
+    return report, None
+
+def tempo_stats(items):
+    vals = [i.get('tempo', 0) for i in items]
+    return {
+        'total': len(vals),
+        'media': round(sum(vals) / len(vals), 6) if vals else None,
+        'total_s': round(sum(vals), 6),
+    }
+
+def path_stats(items):
+    validos = [i for i in items if i.get('custo') is not None]
+    return {
+        **tempo_stats(items),
+        'validos': len(validos),
+        'invalidos': len(items) - len(validos),
+        'custo_medio': round(sum(i['custo'] for i in validos) / len(validos), 2) if validos else None,
+    }
+
+
+# ─── BFS / DFS ─────────────────────────────────────────────────
+
+def resultados_comparacoes():
+    return [
+        os.path.join(BASE, '..', 'out', 'part2_report.json'),
+        os.path.join(BASE, 'part2_report.json'),
+        os.path.join(BASE, '..', 'data', 'part2_report.json'),
+        os.path.join(BASE, '..', 'part2_report.json'),
+        os.path.join(BASE, 'data', 'part2_report.json'),
+    ]
+    
+def load_report():
+    for p in resultados_comparacoes():
+        r = os.path.abspath(p)
+        if os.path.exists(r):
+            with open(r, encoding='utf-8') as f:
+                return json.load(f)
+    return None
+
+@app.route('/api/report/bfs')
+def get_report_bfs():
+    report, err = require_report()
+    if err: return err
+    items = report.get('BFS', [])
+    if src := request.args.get('source'):
+        items = [i for i in items if any(v == src for v in i.values() if isinstance(v, str))]
+    return jsonify([{
+        'source': source_key(i), 'tempo_segundos': i.get('tempo'),
+        'total_vertices': i.get('ordem'),
+        'num_camadas': len(i.get('camadas', {})), 'camadas': i.get('camadas', {}),
+    } for i in items])
+
+@app.route('/api/report/dfs')
+def get_report_dfs():
+    report, err = require_report()
+    if err: return err
+    items = report.get('DFS', [])
+    if src := request.args.get('source'):
+        items = [i for i in items if any(v == src for v in i.values() if isinstance(v, str))]
+    return jsonify([{
+        'source': source_key(i), 'tempo_segundos': i.get('tempo'),
+        'total_vertices': i.get('ordem'), 'ciclos': i.get('ciclos'),
+        'arestas_tree':  len(i.get('arestas', {}).get('tree', [])),
+        'arestas_back':  len(i.get('arestas', {}).get('back', [])),
+        'arestas_cross': len(i.get('arestas', {}).get('cross', [])),
+        'arestas_detalhe': i.get('arestas', {}),
+    } for i in items])
+
+
+# ─── Dijkstra / Bellman-Ford ───────────────────────────────────
+
+@app.route('/api/report/dijkstra')
+def get_report_dijkstra():
+    report, err = require_report()
+    if err: return err
+    data = filter_by(report.get('DIJKSTRA', []),
+                     source=request.args.get('source'),
+                     target=request.args.get('target'))
+    if request.args.get('apenas_validos') == 'true':
+        data = [d for d in data if d.get('custo') is not None]
+    return jsonify(data)
+
+@app.route('/api/report/bellman-ford')
+def get_report_bellman_ford():
+    report, err = require_report()
+    if err: return err
+    data = filter_by(report.get('BELLMAN-FORD', []),
+                     source=request.args.get('source'),
+                     target=request.args.get('target'))
+    for flag in ('tem_peso_negativo', 'tem_ciclo_negativo'):
+        if (val := request.args.get(flag)) is not None:
+            data = [d for d in data if d.get(flag) == (val.lower() == 'true')]
+    return jsonify(data)
+
+
+# ─── Comparações ───────────────────────────────────────────────
+
+@app.route('/api/report/comparacao/bfs-dfs')
+def comparar_bfs_dfs():
+    report, err = require_report()
+    if err: return err
+
+    bfs_map = {source_key(i): i for i in report.get('BFS', [])}
+    dfs_map = {source_key(i): i for i in report.get('DFS', [])}
+
+    comparacoes = []
+    for src in sorted(set(bfs_map) & set(dfs_map)):
+        b, d = bfs_map[src], dfs_map[src]
+        bt, dt = b.get('tempo', 0), d.get('tempo', 0)
+        comparacoes.append({
+            'source': src,
+            'bfs': {'tempo_segundos': bt, 'total_vertices': b.get('ordem'),
+                    'num_camadas': len(b.get('camadas', {}))},
+            'dfs': {'tempo_segundos': dt, 'total_vertices': d.get('ordem'),
+                    'ciclos': d.get('ciclos'),
+                    'arestas_tree': len(d.get('arestas', {}).get('tree', [])),
+                    'arestas_back': len(d.get('arestas', {}).get('back', []))},
+            'delta_tempo_ms': round((dt - bt) * 1000, 4),
+            'mais_rapido': 'BFS' if bt < dt else 'DFS',
+        })
+    return jsonify({'total_comparacoes': len(comparacoes), 'comparacoes': comparacoes})
+
+@app.route('/api/report/comparacao/dijkstra-bellman')
+def comparar_dijkstra_bellman():
+    report, err = require_report()
+    if err: return err
+
+    def pair(i): return (i.get('source'), i.get('target'))
+    dmap = {pair(i): i for i in report.get('DIJKSTRA', [])}
+    bmap = {pair(i): i for i in report.get('BELLMAN-FORD', [])}
+
+    def fmt_d(i): return {
+        'tempo_segundos': i.get('tempo'), 'custo': i.get('custo'),
+        'tamanho_caminho': i.get('tamanho_caminho'), 'caminho': i.get('caminho'),
+        'eh_subgrafo': i.get('eh_subgrafo'), 'tem_peso_negativo': i.get('tem_peso_negativo'),
+    }
+    def fmt_b(i): return {
+        **fmt_d(i),
+        'tem_ciclo_negativo': i.get('tem_ciclo_negativo'), 'descricao': i.get('descricao'),
+    }
+
+    comparacoes = []
+    for par in sorted(set(dmap) & set(bmap)):
+        d, b = dmap[par], bmap[par]
+        dt, bt = d.get('tempo', 0), b.get('tempo', 0)
+        dc, bc = d.get('custo'), b.get('custo')
+        comparacoes.append({
+            'source': par[0], 'target': par[1],
+            'dijkstra': fmt_d(d), 'bellman_ford': fmt_b(b),
+            'custo_identico': (dc == bc) if None not in (dc, bc) else None,
+            'delta_tempo_ms': round((bt - dt) * 1000, 4),
+            'mais_rapido': 'Dijkstra' if dt < bt else 'Bellman-Ford',
+        })
+
+    return jsonify({
+        'total_comparacoes': len(comparacoes), 'comparacoes': comparacoes,
+        'apenas_dijkstra':    [{**dmap[k], 'nota': 'apenas_dijkstra'}    for k in set(dmap) - set(bmap)],
+        'apenas_bellman_ford': [{**bmap[k], 'nota': 'apenas_bellman_ford'} for k in set(bmap) - set(dmap)],
+    })
+
+
+# ─── Resumo ────────────────────────────────────────────────────
+
+@app.route('/api/report/resumo')
+def get_report_resumo():
+    report, err = require_report()
+    if err: return err
+
+    bfs = report.get('BFS', [])
+    dfs = report.get('DFS', [])
+    bf  = report.get('BELLMAN-FORD', [])
+
+    return jsonify({
+        'BFS': tempo_stats(bfs),
+        'DFS': {
+            **tempo_stats(dfs),
+            'ciclos_medio': round(sum(i.get('ciclos', 0) for i in dfs) / len(dfs), 2) if dfs else None,
+        },
+        'DIJKSTRA': path_stats(report.get('DIJKSTRA', [])),
+        'BELLMAN_FORD': {
+            **path_stats(bf),
+            'com_ciclo_negativo': sum(1 for i in bf if i.get('tem_ciclo_negativo')),
+        },
     })
 
 
