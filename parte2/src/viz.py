@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -223,7 +224,7 @@ def plot_bellman_ford_tempos(report_path: Path) -> None:
         report = json.load(f)
 
     entries = [
-        (f"{e['descricao']}\n{e['source']} → {e['target']}", e["tempo"])
+        (f"{textwrap.fill(e['descricao'], width=22)}\n{e['source']} → {e['target']}", e["tempo"])
         for e in report["BELLMAN-FORD"]
     ]
     entries.sort(key=lambda x: x[1])
@@ -232,12 +233,12 @@ def plot_bellman_ford_tempos(report_path: Path) -> None:
     cor = _CORES_ALGORITMO["BELLMAN-FORD"]
 
     with plt.rc_context(_PLT_STYLE):
-        fig, ax = plt.subplots(figsize=(10, 4))
-        container = ax.barh(labels, values, color=cor, edgecolor="white", linewidth=0.8)
+        fig, ax = plt.subplots(figsize=(10, 5))
+        container = ax.bar(labels, values, color=cor, edgecolor="white", linewidth=0.8)
 
-        ax.set_xscale("log")
-        ax.xaxis.set_major_formatter(ticker.LogFormatterSciNotation())
-        ax.set_xlim(right=max(values) * 30)
+        ax.set_yscale("log")
+        ax.yaxis.set_major_formatter(ticker.LogFormatterSciNotation())
+        ax.set_ylim(top=max(values) * 30)
 
         ax.bar_label(
             container,
@@ -246,8 +247,7 @@ def plot_bellman_ford_tempos(report_path: Path) -> None:
             fontsize=9,
         )
 
-        ax.set_xlabel("Tempo de execução (s) — escala logarítmica")
-        ax.set_ylabel("Caso")
+        ax.set_ylabel("Tempo de execução (s) — escala logarítmica")
         ax.set_title("Bellman-Ford — tempo de execução por caso (ETN)")
 
         fig.tight_layout()
