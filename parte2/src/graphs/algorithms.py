@@ -120,6 +120,54 @@ def dfs(graph: Graph, start: str) -> dict:
     }
 
 
+def bfs_find(graph: Graph, start: str, target: str) -> dict:
+    if start not in graph.adjacency_list:
+        return {"nos_visitados": 0, "encontrado": False}
+    if start == target:
+        return {"nos_visitados": 1, "encontrado": True}
+
+    visited = {start}
+    queue = [start]
+    count = 1
+
+    while queue:
+        next_queue: List[str] = []
+        for node in queue:
+            for neighbor, _ in graph.get_neighbors(node):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    count += 1
+                    if neighbor == target:
+                        return {"nos_visitados": count, "encontrado": True}
+                    next_queue.append(neighbor)
+        queue = next_queue
+
+    return {"nos_visitados": count, "encontrado": False}
+
+
+def dfs_find(graph: Graph, start: str, target: str) -> dict:
+    if start not in graph.adjacency_list:
+        return {"nos_visitados": 0, "encontrado": False}
+
+    visited: set = set()
+    stack = [start]
+    count = 0
+
+    while stack:
+        node = stack.pop()
+        if node in visited:
+            continue
+        visited.add(node)
+        count += 1
+        if node == target:
+            return {"nos_visitados": count, "encontrado": True}
+        for neighbor, _ in graph.get_neighbors(node):
+            if neighbor not in visited:
+                stack.append(neighbor)
+
+    return {"nos_visitados": count, "encontrado": False}
+
+
 def _shortest_simple_path(
     graph: Graph, start: str, end: str
 ) -> Tuple[Optional[float], Optional[List[str]]]:

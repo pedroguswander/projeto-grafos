@@ -2,7 +2,7 @@
   "BFS": [
     {
       "source BFS 1": "AEJEA",
-      "tempo": 8.909997995942831e-05,
+      "tempo": 6.474999827332795e-05,
       "camadas": {
         "0": [
           "AEJEA"
@@ -62,7 +62,7 @@
     },
     {
       "source BFS 2": "CNYTN",
-      "tempo": 8.100003469735384e-05,
+      "tempo": 6.384999869624153e-05,
       "camadas": {
         "0": [
           "CNYTN"
@@ -122,7 +122,7 @@
     },
     {
       "source BFS 3": "CAMTR",
-      "tempo": 9.554997086524963e-05,
+      "tempo": 7.159999950090423e-05,
       "camadas": {
         "0": [
           "CAMTR"
@@ -184,7 +184,7 @@
   "DFS": [
     {
       "source DFS 1": "AEJEA",
-      "tempo": 0.0005718499887734652,
+      "tempo": 0.0004228000034345314,
       "ordem": 47,
       "ciclos": 874,
       "arestas": {
@@ -7255,7 +7255,7 @@
     },
     {
       "source DFS 2": "CNYTN",
-      "tempo": 0.0005788999842479825,
+      "tempo": 0.0004054500022903085,
       "ordem": 47,
       "ciclos": 873,
       "arestas": {
@@ -14326,7 +14326,7 @@
     },
     {
       "source DFS 3": "CAMTR",
-      "tempo": 0.0005117999971844256,
+      "tempo": 0.00042655000288505107,
       "ordem": 47,
       "ciclos": 873,
       "arestas": {
@@ -21397,11 +21397,58 @@
       }
     }
   ],
+  "BFS_DFS_FIND": [
+    {
+      "source": "HKHKG",
+      "target": "CNYTN",
+      "descricao": "Vizinho direto (hub -> vizinho imediato)",
+      "bfs": {
+        "tempo": 5.999972927384079e-07,
+        "nos_visitados": 2,
+        "encontrado": true
+      },
+      "dfs": {
+        "tempo": 4.030000127386302e-05,
+        "nos_visitados": 21,
+        "encontrado": true
+      }
+    },
+    {
+      "source": "HKHKG",
+      "target": "BRSSZ",
+      "descricao": "Cruzamento de regiao (hub -> Santos/Brasil)",
+      "bfs": {
+        "tempo": 4.050001734867692e-06,
+        "nos_visitados": 41,
+        "encontrado": true
+      },
+      "dfs": {
+        "tempo": 1.769999653333798e-05,
+        "nos_visitados": 10,
+        "encontrado": true
+      }
+    },
+    {
+      "source": "HKHKG",
+      "target": "CAMTR",
+      "descricao": "Porto de baixo grau (hub -> Montreal/Canada)",
+      "bfs": {
+        "tempo": 1.8100006855092943e-05,
+        "nos_visitados": 47,
+        "encontrado": true
+      },
+      "dfs": {
+        "tempo": 7.6149997767061e-05,
+        "nos_visitados": 43,
+        "encontrado": true
+      }
+    }
+  ],
   "DIJKSTRA": [
     {
       "source": "HKHKG",
       "target": "USEWR",
-      "tempo": 0.00024010002380236983,
+      "tempo": 0.0001877999966382049,
       "custo": 41218.240000000005,
       "tamanho_caminho": 4,
       "caminho": [
@@ -21416,7 +21463,7 @@
     {
       "source": "SGSIN",
       "target": "BRSSZ",
-      "tempo": 0.0002847500145435333,
+      "tempo": 0.00022214999626157805,
       "custo": 54022.48,
       "tamanho_caminho": 5,
       "caminho": [
@@ -21432,7 +21479,7 @@
     {
       "source": "CLSAI",
       "target": "LKCMB",
-      "tempo": 9.310001041740179e-05,
+      "tempo": 7.280000136233866e-05,
       "custo": 65106.32,
       "tamanho_caminho": 4,
       "caminho": [
@@ -21447,7 +21494,7 @@
     {
       "source": "LKCMB",
       "target": "MYPKG",
-      "tempo": 0.0001686000032350421,
+      "tempo": 0.00013505000242730603,
       "custo": 41935.8,
       "tamanho_caminho": 2,
       "caminho": [
@@ -21460,7 +21507,7 @@
     {
       "source": "LKCMB",
       "target": "MYTPP",
-      "tempo": 1.6849982785061002e-05,
+      "tempo": 1.1600001016631722e-05,
       "custo": null,
       "tamanho_caminho": null,
       "caminho": null,
@@ -21473,7 +21520,7 @@
       "descricao": "Subgrafo positivo (sem arestas negativas)",
       "source": "NZAKL",
       "target": "AUBNE",
-      "tempo": 0.0017640000151004642,
+      "tempo": 0.0007223000066005625,
       "custo": 83457.4,
       "tamanho_caminho": 2,
       "caminho": [
@@ -21488,7 +21535,7 @@
       "descricao": "Subgrafo com aresta negativa, sem ciclo negativo",
       "source": "JPYOK",
       "target": "KRPUS",
-      "tempo": 0.00015740000526420772,
+      "tempo": 8.814999455353245e-05,
       "custo": -19934.1,
       "tamanho_caminho": 2,
       "caminho": [
@@ -21503,7 +21550,7 @@
       "descricao": "Grafo completo (ciclo negativo detectado)",
       "source": "LKCMB",
       "target": "INNSA",
-      "tempo": 0.027260900009423494,
+      "tempo": 0.0145288999992772,
       "custo": null,
       "tamanho_caminho": null,
       "caminho": null,

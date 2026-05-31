@@ -183,6 +183,70 @@ def plot_bfs_vs_dfs(report_path: Path) -> None:
         _save(fig, "parte2_exp_03_bfs_vs_dfs.png")
 
 
+_NOTA_BFS_DFS_FIND = (
+    "Busca por nó específico — ambos os algoritmos param ao encontrar o alvo. Sem overhead: BFS sem camadas, DFS sem classificação de arestas.\n"
+    "Hipótese: no grafo ETN (muito denso), qualquer alvo fica a poucos saltos de qualquer hub, então BFS e DFS devem convergir em tempo e nós visitados.\n"
+    "Gestalt — Proximidade: barras do mesmo par agrupadas lado a lado; Similaridade: cor única por algoritmo."
+)
+
+
+def plot_bfs_vs_dfs_find(report_path: Path) -> None:
+    with open(report_path, encoding="utf-8") as f:
+        report = json.load(f)
+
+    entries = report.get("BFS_DFS_FIND", [])
+    if not entries:
+        print("BFS_DFS_FIND não encontrado no relatório — rode os testes primeiro.")
+        return
+
+    labels = [f"{e['source']} → {e['target']}" for e in entries]
+    bfs_tempos = [e["bfs"]["tempo"] for e in entries]
+    dfs_tempos = [e["dfs"]["tempo"] for e in entries]
+    bfs_nos = [e["bfs"]["nos_visitados"] for e in entries]
+    dfs_nos = [e["dfs"]["nos_visitados"] for e in entries]
+
+    x = np.arange(len(labels))
+    width = 0.35
+    cor_bfs = _CORES_ALGORITMO["BFS"]
+    cor_dfs = _CORES_ALGORITMO["DFS"]
+
+    with plt.rc_context(_PLT_STYLE):
+        fig, (ax_t, ax_n) = plt.subplots(1, 2, figsize=(14, 5.5))
+        fig.suptitle("BFS vs DFS — busca por nó específico (sem overhead) · ETN", fontsize=13, fontweight="bold")
+
+        # Painel esquerdo: tempo
+        b1 = ax_t.bar(x - width / 2, bfs_tempos, width, color=cor_bfs, edgecolor="white", linewidth=0.8, label="BFS")
+        b2 = ax_t.bar(x + width / 2, dfs_tempos, width, color=cor_dfs, edgecolor="white", linewidth=0.8, label="DFS")
+        ax_t.set_yscale("log")
+        ax_t.yaxis.set_major_formatter(ticker.LogFormatterSciNotation())
+        ax_t.set_xticks(x)
+        ax_t.set_xticklabels(labels, rotation=10, ha="right", fontsize=9)
+        ax_t.set_ylabel("Tempo de execução (s) — escala log")
+        ax_t.set_title("Tempo até encontrar o nó alvo")
+        ax_t.legend(fontsize=9)
+        ax_t.bar_label(b1, labels=[f"{v:.1e}" for v in bfs_tempos], padding=3, fontsize=8)
+        ax_t.bar_label(b2, labels=[f"{v:.1e}" for v in dfs_tempos], padding=3, fontsize=8)
+
+        # Painel direito: nós visitados
+        b3 = ax_n.bar(x - width / 2, bfs_nos, width, color=cor_bfs, edgecolor="white", linewidth=0.8, label="BFS")
+        b4 = ax_n.bar(x + width / 2, dfs_nos, width, color=cor_dfs, edgecolor="white", linewidth=0.8, label="DFS")
+        ax_n.set_xticks(x)
+        ax_n.set_xticklabels(labels, rotation=10, ha="right", fontsize=9)
+        ax_n.set_ylabel("Nós visitados antes de encontrar o alvo")
+        ax_n.set_title("Nós visitados até encontrar o nó alvo")
+        ax_n.legend(fontsize=9)
+        ax_n.bar_label(b3, padding=3, fontsize=8)
+        ax_n.bar_label(b4, padding=3, fontsize=8)
+
+        fig.text(
+            0.5, -0.05,
+            _NOTA_BFS_DFS_FIND,
+            ha="center", fontsize=8, style="italic", color="#444",
+        )
+        fig.tight_layout()
+        _save(fig, "parte2_exp_06_bfs_vs_dfs_find.png")
+
+
 def plot_dijkstra_tempos(report_path: Path) -> None:
     with open(report_path, encoding="utf-8") as f:
         report = json.load(f)
@@ -260,5 +324,6 @@ if __name__ == "__main__":
     report_path = ROOT / "out" / "part2_report.json"
     plot_tempos_algoritmos(report_path)
     plot_bfs_vs_dfs(report_path)
+    plot_bfs_vs_dfs_find(report_path)
     plot_dijkstra_tempos(report_path)
     plot_bellman_ford_tempos(report_path)

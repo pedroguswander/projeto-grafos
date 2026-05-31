@@ -9,7 +9,7 @@ import json
 
 from parte2.src.graphs.graph import Graph
 from parte2.src.graphs.io import load_graph_from_csvs
-from parte2.src.graphs.algorithms import bfs, dfs, dijkstra, bellman_ford
+from parte2.src.graphs.algorithms import bfs, dfs, dijkstra, bellman_ford, bfs_find, dfs_find
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ETN")
 OUT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out", "part2_report.json")
@@ -86,6 +86,28 @@ def _run_dfs(graph, source: str, label: str) -> dict:
         "ciclos": result["ciclos"],
         "arestas": result["arestas"],
     }
+
+
+def _run_bfs_find(graph, source: str, target: str) -> dict:
+    times = []
+    for _ in range(N_RUNS):
+        t0 = time.perf_counter()
+        result = bfs_find(graph, source, target)
+        t1 = time.perf_counter()
+        times.append(t1 - t0)
+    elapsed = statistics.median(times)
+    return {"tempo": elapsed, "nos_visitados": result["nos_visitados"], "encontrado": result["encontrado"]}
+
+
+def _run_dfs_find(graph, source: str, target: str) -> dict:
+    times = []
+    for _ in range(N_RUNS):
+        t0 = time.perf_counter()
+        result = dfs_find(graph, source, target)
+        t1 = time.perf_counter()
+        times.append(t1 - t0)
+    elapsed = statistics.median(times)
+    return {"tempo": elapsed, "nos_visitados": result["nos_visitados"], "encontrado": result["encontrado"]}
 
 
 def _has_negative_edges(graph) -> bool:
@@ -201,6 +223,27 @@ def test_generate_part2_report():
     print("\n--- DFS ---")
     dfs_results = [_run_dfs(graph, src, f"source DFS {i}") for i, src in enumerate(dfs_sources, 1)]
 
+    print("\n--- BFS vs DFS FIND (sem overhead) ---")
+    _FIND_PAIRS = [
+        ("HKHKG", "CNYTN", "Vizinho direto (hub -> vizinho imediato)"),
+        ("HKHKG", "BRSSZ", "Cruzamento de regiao (hub -> Santos/Brasil)"),
+        ("HKHKG", "CAMTR", "Porto de baixo grau (hub -> Montreal/Canada)"),
+    ]
+    find_results = []
+    for src, tgt, descricao in _FIND_PAIRS:
+        print(f"\n  {src} -> {tgt} | {descricao}")
+        bfs_r = _run_bfs_find(graph, src, tgt)
+        dfs_r = _run_dfs_find(graph, src, tgt)
+        print(f"    BFS: {bfs_r['tempo']:.6f}s | nos={bfs_r['nos_visitados']} | encontrado={bfs_r['encontrado']}")
+        print(f"    DFS: {dfs_r['tempo']:.6f}s | nos={dfs_r['nos_visitados']} | encontrado={dfs_r['encontrado']}")
+        find_results.append({
+            "source": src,
+            "target": tgt,
+            "descricao": descricao,
+            "bfs": bfs_r,
+            "dfs": dfs_r,
+        })
+
     print("\n--- DIJKSTRA ---")
     subgraph = _build_non_negative_subgraph(graph)
     _DIJKSTRA_SUBGRAPH_PAIRS = [
@@ -232,6 +275,7 @@ def test_generate_part2_report():
     report = {
         "BFS": bfs_results,
         "DFS": dfs_results,
+        "BFS_DFS_FIND": find_results,
         "DIJKSTRA": dijkstra_results,
         "BELLMAN-FORD": bellman_results,
     }
