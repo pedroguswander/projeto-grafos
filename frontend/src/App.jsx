@@ -112,8 +112,8 @@ function BrazilMap({ graphData, pathResult, startAirport, endAirport, aeroportos
       lat: edgeMidpointData.map((e) => e.midLat),
       mode: 'markers',
       marker: { size: 12, color: 'rgba(0,0,0,0)', opacity: 0 },
-      customdata: edgeMidpointData.map((e) => [e.from, e.to, e.weight, e.inPath ? 1 : 0]),
-      hoverinfo: 'none',
+      customdata: edgeMidpointData.map((e) => [e.from, e.to, e.weight, e.inPath ? 1 : 0, '__edge__']),
+      hovertemplate: '<extra></extra>',
       showlegend: false,
     }
 
@@ -210,6 +210,8 @@ function BrazilMap({ graphData, pathResult, startAirport, endAirport, aeroportos
 
     const config = { responsive: true, displayModeBar: false, scrollZoom: false }
 
+    const weightHoverTraceIndex = edgeTraces.length
+
     Plotly.react(plotRef.current, [...edgeTraces, weightHoverTrace, ...nodeTraces], layout, config).then(() => {
       // Remove previous listeners to avoid stacking
       plotRef.current.removeAllListeners('plotly_hover')
@@ -219,12 +221,15 @@ function BrazilMap({ graphData, pathResult, startAirport, endAirport, aeroportos
       plotRef.current.on('plotly_hover', (data) => {
         const pt = data.points?.[0]
         if (!pt || !pt.customdata || !Array.isArray(pt.customdata)) return
+        // Só dispara se o ponto pertence exatamente ao weightHoverTrace
+        if (pt.curveNumber !== weightHoverTraceIndex) return
         const [from, to, weight, inPathFlag] = pt.customdata
-        // Only show tooltip for the weightHoverTrace points (they have from/to/weight)
-        if (from === undefined || to === undefined) return
         const event = data.event
         if (!event) return
         const rect = wrapRef.current?.getBoundingClientRect() || { left: 0, top: 0 }
+        // Esconde o hoverlayer nativo só enquanto tooltip de aresta está ativo
+        const hoverLayer = plotRef.current.querySelector('.hoverlayer')
+        if (hoverLayer) hoverLayer.style.visibility = 'hidden'
         setEdgeTooltip({
           x: event.clientX - rect.left,
           y: event.clientY - rect.top,
@@ -236,6 +241,9 @@ function BrazilMap({ graphData, pathResult, startAirport, endAirport, aeroportos
       })
 
       plotRef.current.on('plotly_unhover', () => {
+        // Restaura o hoverlayer nativo ao sair da aresta
+        const hoverLayer = plotRef.current.querySelector('.hoverlayer')
+        if (hoverLayer) hoverLayer.style.visibility = 'visible'
         setEdgeTooltip(null)
       })
 
@@ -1150,7 +1158,7 @@ function App({ onNavigate }) {
     if (currentStart && !currentEnd) { if (nodeId === currentStart) return; setEndAirport(nodeId); return }
     if (!currentStart && currentEnd) { if (nodeId === currentEnd) return; setStartAirport(nodeId) }
   }
-    pathResult?.cost !== undefined && pathResult?.cost !== null
+  const formattedCost = pathResult?.cost !== undefined && pathResult?.cost !== null
       ? Math.trunc(Number(pathResult.cost))
       : ''
 
