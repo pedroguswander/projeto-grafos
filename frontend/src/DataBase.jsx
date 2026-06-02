@@ -492,10 +492,6 @@ export default function DataBase({ onBack }) {
               <div>
                 <h2>Informações da Planilha</h2>
               </div>
-              <div className="sheet-badge">
-                <span>{planilha?.tituloParte} - </span>
-                <strong>{planilha?.nome}</strong>
-              </div>
             </div>
 
             <div className="sheet-tabs">
