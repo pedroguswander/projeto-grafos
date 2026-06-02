@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { RefreshCw, AlertCircle, Loader2, Zap } from "lucide-react"
+import { AlertCircle, Loader2, Zap } from "lucide-react"
 import {
   AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  ScatterChart, Scatter, ZAxis, PieChart, Pie,
 } from "recharts"
 import logoCompleta from "../assets/logo/logo_branca_completa.png"
+import "../css/Dashboard.css"
 
 const API = "http://localhost:5000"
 const PALETTE = ["#1e40af", "#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626", "#0d9488", "#b45309", "#0369a1", "#65a30d"]
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function buildWeightBins(routes, numBins) {
   const entries = routes
@@ -18,10 +18,11 @@ function buildWeightBins(routes, numBins) {
       label: (r.from && r.to) ? `${r.from} – ${r.to}` : null,
     }))
     .filter(e => e.w != null && !isNaN(e.w))
+
   if (!entries.length) return []
 
-  // Se todos os pesos são inteiros, agrupa por valor exato (ignora numBins)
   const allIntegers = entries.every(e => Number.isInteger(e.w))
+
   if (allIntegers) {
     const map = new Map()
     entries.forEach(({ w, label }) => {
@@ -33,17 +34,18 @@ function buildWeightBins(routes, numBins) {
     return Array.from(map.values()).sort((a, b) => a.label - b.label)
   }
 
-  // Caso contrário, usa bins normais
   const weights = entries.map(e => e.w)
   const mn = Math.min(...weights)
   const mx = Math.max(...weights)
   const step = (mx - mn) / numBins || 1
+
   const bins = Array.from({ length: numBins }, (_, i) => ({
     label: parseFloat((mn + i * step).toFixed(2)),
     rangeEnd: parseFloat((mn + (i + 1) * step).toFixed(2)),
     count: 0,
     rotas: [],
   }))
+
   entries.forEach(({ w, label }) => {
     const idx = Math.min(Math.floor((w - mn) / step), numBins - 1)
     if (idx >= 0) {
@@ -51,33 +53,32 @@ function buildWeightBins(routes, numBins) {
       if (label && !bins[idx].rotas.includes(label)) bins[idx].rotas.push(label)
     }
   })
+
   return bins
 }
 
-// ── Componentes auxiliares ────────────────────────────────────────────────────
-
 const KPICard = ({ title, value, sub, loading }) => (
-  <div className="kpi-card">
+  <div className="dashboard-kpi-card">
     <div>
-      <p className="kpi-title">{title}</p>
-      {loading ? <div className="skeleton-pulse" /> : <p className="kpi-value">{value}</p>}
-      {sub && <p className="kpi-sub">{sub}</p>}
+      <p className="dashboard-kpi-title">{title}</p>
+      {loading ? <div className="dashboard-skeleton-pulse" /> : <p className="dashboard-kpi-value">{value}</p>}
+      {sub && <p className="dashboard-kpi-sub">{sub}</p>}
     </div>
   </div>
 )
 
 const Skeleton = ({ height = 280 }) => (
-  <div className="skeleton-chart" style={{ height }}>
-    <Loader2 size={24} color="#9ca3af" className="animate-spin" />
+  <div className="dashboard-skeleton-chart" style={{ height }}>
+    <Loader2 size={24} className="animate-spin dashboard-skeleton-icon" />
   </div>
 )
 
 const ErrorBanner = ({ msg }) => (
-  <div className="error-banner">
+  <div className="dashboard-error-banner">
     <AlertCircle size={18} />
     <div>
-      <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Falha ao conectar com a API</p>
-      <p style={{ margin: "2px 0 0", fontSize: 12, opacity: 0.8 }}>{msg} — Flask rodando em {API}?</p>
+      <p className="dashboard-error-title">Falha ao conectar com a API</p>
+      <p className="dashboard-error-text">{msg} — Flask rodando em {API}?</p>
     </div>
   </div>
 )
@@ -85,10 +86,12 @@ const ErrorBanner = ({ msg }) => (
 const ChartTooltip = ({ active, payload, label, prefix = "", suffix = "" }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="custom-tooltip">
-      <p style={{ margin: 0, opacity: 0.7, fontSize: 11 }}>{prefix}{label}{suffix}</p>
+    <div className="dashboard-custom-tooltip">
+      <p className="dashboard-tooltip-label">{prefix}{label}{suffix}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ margin: "2px 0 0", fontWeight: 700 }}>{p.value.toLocaleString("pt-BR")}</p>
+        <p key={i} className="dashboard-tooltip-value">
+          {Number(p.value).toLocaleString("pt-BR")}
+        </p>
       ))}
     </div>
   )
@@ -98,21 +101,20 @@ const WeightBinTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   const isSingle = d.label === d.rangeEnd || Math.abs(d.label - d.rangeEnd) < 0.01
+
   return (
-    <div className="custom-tooltip" style={{ maxWidth: 260 }}>
-      <p style={{ margin: 0, fontWeight: 700, fontSize: 12 }}>
+    <div className="dashboard-custom-tooltip dashboard-tooltip-wide">
+      <p className="dashboard-tooltip-heading">
         {isSingle
           ? Number(d.label).toLocaleString("pt-BR")
           : `${Number(d.label).toLocaleString("pt-BR")} – ${Number(d.rangeEnd).toLocaleString("pt-BR")}`}
       </p>
       {d.rotas?.length > 0 ? (
-        <div style={{ maxHeight: 160, overflowY: "auto", marginTop: 6, fontSize: 11, lineHeight: 1.6 }}>
-          {d.rotas.map((r, i) => <div key={i}>{"• "}{r}</div>)}
+        <div className="dashboard-tooltip-list">
+          {d.rotas.map((r, i) => <div key={i}>• {r}</div>)}
         </div>
       ) : (
-        <p style={{ margin: "4px 0 0", fontSize: 13 }}>
-          {d.count.toLocaleString("pt-BR")} rotas
-        </p>
+        <p className="dashboard-tooltip-value">{d.count.toLocaleString("pt-BR")} rotas</p>
       )}
     </div>
   )
@@ -121,18 +123,16 @@ const WeightBinTooltip = ({ active, payload }) => {
 const ComparisonTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="custom-tooltip" style={{ minWidth: 180 }}>
-      <p style={{ margin: "0 0 6px", fontWeight: 700, fontSize: 12, borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: 4 }}>
-        Source: {label}
-      </p>
+    <div className="dashboard-custom-tooltip dashboard-comparison-tooltip">
+      <p className="dashboard-comparison-tooltip-title">Source: {label}</p>
       {payload.map((p, i) => (
-        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 16, margin: "3px 0" }}>
-          <span style={{ color: p.color, fontSize: 11, fontWeight: 600 }}>{p.name}</span>
-          <span style={{ fontWeight: 700, fontSize: 12 }}>{(p.value * 1000).toFixed(4)} ms</span>
+        <div key={i} className="dashboard-comparison-row">
+          <span style={{ color: p.color }}>{p.name}</span>
+          <span>{(p.value * 1000).toFixed(4)} ms</span>
         </div>
       ))}
       {payload.length === 2 && (
-        <p style={{ margin: "6px 0 0", fontSize: 10, opacity: 0.6, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 4 }}>
+        <p className="dashboard-comparison-delta">
           Δ {Math.abs((payload[0].value - payload[1].value) * 1000).toFixed(4)} ms
         </p>
       )}
@@ -140,43 +140,73 @@ const ComparisonTooltip = ({ active, payload, label }) => {
   )
 }
 
+const DonutTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null
+  const p = payload[0]
+  return (
+    <div className="dashboard-custom-tooltip">
+      <p className="dashboard-tooltip-heading">{p.name}</p>
+      <p className="dashboard-tooltip-value">{Number(p.value).toLocaleString("pt-BR")}</p>
+    </div>
+  )
+}
+
+const ScatterTimeTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  return (
+    <div className="dashboard-custom-tooltip dashboard-tooltip-wide">
+      <p className="dashboard-tooltip-heading">{d.source}</p>
+      <p className="dashboard-tooltip-label">Grau: {d.grau ?? "—"}</p>
+      <p className="dashboard-tooltip-label">BFS: {(d.bfs * 1000).toFixed(4)} ms</p>
+      <p className="dashboard-tooltip-label">DFS: {(d.dfs * 1000).toFixed(4)} ms</p>
+      <p className="dashboard-tooltip-label">Δ: {d.delta.toFixed(4)} ms</p>
+    </div>
+  )
+}
+
+const DeltaTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="dashboard-custom-tooltip">
+      <p className="dashboard-tooltip-heading">{label}</p>
+      <p className="dashboard-tooltip-value">Δ {Number(payload[0].value).toFixed(4)} ms</p>
+    </div>
+  )
+}
+
 const WinnerBadge = ({ winner }) => {
   const bfs = winner === "BFS"
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700,
-      padding: "2px 8px", borderRadius: 999,
-      background: bfs ? "rgba(8,145,178,0.18)" : "rgba(124,58,237,0.18)",
-      color: bfs ? "#0891b2" : "#7c3aed",
-      border: `1px solid ${bfs ? "#0891b230" : "#7c3aed30"}`,
-    }}>
-      <Zap size={9} />{winner}
+    <span className={`dashboard-winner-badge ${bfs ? "bfs" : "dfs"}`}>
+      <Zap size={10} />
+      {winner}
     </span>
   )
 }
 
 const ComparisonTable = ({ rows }) => (
-  <div style={{ overflowX: "auto", marginTop: 16 }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+  <div className="dashboard-table-wrap">
+    <table className="dashboard-table">
       <thead>
-        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+        <tr>
           {["Source", "BFS (ms)", "Camadas", "DFS (ms)", "Ciclos", "Árv.", "Back", "Δ (ms)", "Mais rápido"].map(h => (
-            <th key={h} style={{ padding: "6px 10px", textAlign: "left", opacity: 0.5, fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
+            <th key={h}>{h}</th>
           ))}
         </tr>
       </thead>
       <tbody>
         {rows.map((row, i) => (
-          <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent" }}>
-            <td style={{ padding: "7px 10px", fontWeight: 700, color: "#e2e8f0" }}>{row.source}</td>
-            <td style={{ padding: "7px 10px", color: "#0891b2", fontWeight: 600 }}>{(row.bfs.tempo_segundos * 1000).toFixed(4)}</td>
-            <td style={{ padding: "7px 10px", opacity: 0.7 }}>{row.bfs.num_camadas}</td>
-            <td style={{ padding: "7px 10px", color: "#7c3aed", fontWeight: 600 }}>{(row.dfs.tempo_segundos * 1000).toFixed(4)}</td>
-            <td style={{ padding: "7px 10px", opacity: 0.7 }}>{row.dfs.ciclos?.toLocaleString("pt-BR")}</td>
-            <td style={{ padding: "7px 10px", opacity: 0.7 }}>{row.dfs.arestas_tree}</td>
-            <td style={{ padding: "7px 10px", opacity: 0.7 }}>{row.dfs.arestas_back}</td>
-            <td style={{ padding: "7px 10px", opacity: 0.7 }}>{Math.abs(row.delta_tempo_ms).toFixed(4)}</td>
-            <td style={{ padding: "7px 10px" }}><WinnerBadge winner={row.mais_rapido} /></td>
+          <tr key={i}>
+            <td className="dashboard-table-strong">{row.source}</td>
+            <td className="dashboard-table-bfs">{(row.bfs.tempo_segundos * 1000).toFixed(4)}</td>
+            <td>{row.bfs.num_camadas}</td>
+            <td className="dashboard-table-dfs">{(row.dfs.tempo_segundos * 1000).toFixed(4)}</td>
+            <td>{row.dfs.ciclos?.toLocaleString("pt-BR")}</td>
+            <td>{row.dfs.arestas_tree}</td>
+            <td>{row.dfs.arestas_back}</td>
+            <td>{Math.abs(row.delta_tempo_ms).toFixed(4)}</td>
+            <td><WinnerBadge winner={row.mais_rapido} /></td>
           </tr>
         ))}
       </tbody>
@@ -184,89 +214,95 @@ const ComparisonTable = ({ rows }) => (
   </div>
 )
 
-// ── FilterBar Aeroportos ──────────────────────────────────────────────────────
-
 const RangeSlider = ({ label, min, max, value, onChange, suffix = "" }) => {
   const pct = (v) => ((v - min) / (max - min)) * 100
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 200 }}>
-      <label style={{ fontSize: 10, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+    <div className="dashboard-range-slider">
+      <label className="dashboard-range-label">
         {label}{" "}
-        <span style={{ color: "#e2e8f0", opacity: 1 }}>
+        <span>
           {value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}{suffix}
         </span>
       </label>
-      <div style={{ position: "relative", height: 20, display: "flex", alignItems: "center" }}>
-        <div style={{ position: "absolute", left: 0, right: 0, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.12)" }} />
-        <div style={{
-          position: "absolute",
-          left: `${pct(value[0])}%`,
-          width: `${pct(value[1]) - pct(value[0])}%`,
-          height: 4, borderRadius: 4,
-          background: "linear-gradient(90deg, #1e40af, #7c3aed)",
-          pointerEvents: "none",
-        }} />
-        <input
-          type="range" min={min} max={max} value={value[0]}
-          onChange={e => onChange([Math.min(+e.target.value, value[1] - 1), value[1]])}
+      <div className="dashboard-range-track-wrap">
+        <div className="dashboard-range-track" />
+        <div
+          className="dashboard-range-track-active"
           style={{
-            position: "absolute", width: "100%", appearance: "none", background: "transparent",
-            pointerEvents: "auto", zIndex: value[0] > max - (max - min) * 0.1 ? 5 : 3,
-            height: 20, margin: 0, padding: 0, cursor: "pointer", accentColor: "#1e40af",
+            left: `${pct(value[0])}%`,
+            width: `${pct(value[1]) - pct(value[0])}%`,
           }}
         />
         <input
-          type="range" min={min} max={max} value={value[1]}
+          type="range"
+          min={min}
+          max={max}
+          value={value[0]}
+          onChange={e => onChange([Math.min(+e.target.value, value[1] - 1), value[1]])}
+          className="dashboard-range-input dashboard-range-input-left"
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value[1]}
           onChange={e => onChange([value[0], Math.max(+e.target.value, value[0] + 1)])}
-          style={{
-            position: "absolute", width: "100%", appearance: "none", background: "transparent",
-            pointerEvents: "auto", zIndex: 4,
-            height: 20, margin: 0, padding: 0, cursor: "pointer", accentColor: "#7c3aed",
-          }}
+          className="dashboard-range-input dashboard-range-input-right"
         />
       </div>
     </div>
   )
 }
 
-const FilterBarAero = ({ ranges, pais, setPais, grauRange, setGrauRange, distRange, setDistRange, onClear, hasFilter }) => {
+const FilterBarAero = ({
+  ranges,
+  pais,
+  setPais,
+  grauRange,
+  setGrauRange,
+  distRange,
+  setDistRange,
+  onClear,
+  hasFilter
+}) => {
   if (!ranges) return null
   return (
-    <div style={{
-      display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap",
-      padding: "14px 18px", borderRadius: 12, margin: "0 0 20px",
-      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-      marginTop: 50,
-    }}>
-      <RangeSlider
-        label="Grau (conexões)"
-        min={ranges.grau_min} max={ranges.grau_max}
-        value={grauRange} onChange={setGrauRange}
-      />
-      <RangeSlider
-        label="Distância da rota (Pesos)"
-        min={ranges.dist_min} max={ranges.dist_max}
-        value={distRange} onChange={setDistRange}
-      />
-      {hasFilter && (
-        <button onClick={onClear} style={{
-          alignSelf: "flex-end", padding: "7px 14px", borderRadius: 8,
-          border: "1px solid rgba(255,255,255,0.15)", background: "transparent",
-          color: "#9ca3af", fontSize: 12, fontWeight: 600, cursor: "pointer",
-        }}>
-          Limpar filtros
-        </button>
-      )}
-      {hasFilter && (
-        <span style={{ alignSelf: "flex-end", fontSize: 11, color: "#d97706", fontWeight: 600, padding: "7px 0" }}>
-          ● Filtro ativo
-        </span>
-      )}
-    </div>
+    <section className="glass-card dashboard-filter-bar">
+      <div className="dashboard-section-header">
+        <div className="dashboard-section-title">Filtros do painel</div>
+        <div className="dashboard-section-subtitle">
+          Ajuste os intervalos para refinar os dados exibidos nos indicadores e gráficos.
+        </div>
+      </div>
+      <div className="dashboard-filter-grid">
+        <RangeSlider
+          label="Grau (conexões)"
+          min={ranges.grau_min}
+          max={ranges.grau_max}
+          value={grauRange}
+          onChange={setGrauRange}
+        />
+        <RangeSlider
+          label="Distância da rota (pesos)"
+          min={ranges.dist_min}
+          max={ranges.dist_max}
+          value={distRange}
+          onChange={setDistRange}
+        />
+        <div className="dashboard-filter-actions">
+          {hasFilter && (
+            <>
+              <button onClick={onClear} className="dashboard-secondary-btn" type="button">
+                Limpar filtros
+              </button>
+              <span className="dashboard-filter-active">● Filtro ativo</span>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
   )
 }
-
-// ── Componente principal ──────────────────────────────────────────────────────
 
 export const Dashboard = ({ onBack }) => {
   const [stats, setStats] = useState(null)
@@ -278,18 +314,18 @@ export const Dashboard = ({ onBack }) => {
   const [spinning, setSpinning] = useState(false)
   const [view, setView] = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
-
-  // ── Filtros
   const [ranges, setRanges] = useState(null)
   const [pais, setPais] = useState("")
   const [grauRange, setGrauRange] = useState([0, 9999])
   const [distRange, setDistRange] = useState([0, 9999999])
 
-  const hasFilter = !!(pais
-    || (ranges && grauRange[0] > ranges.grau_min)
-    || (ranges && grauRange[1] < ranges.grau_max)
-    || (ranges && distRange[0] > ranges.dist_min)
-    || (ranges && distRange[1] < ranges.dist_max))
+  const hasFilter = !!(
+    pais ||
+    (ranges && grauRange[0] > ranges.grau_min) ||
+    (ranges && grauRange[1] < ranges.grau_max) ||
+    (ranges && distRange[0] > ranges.dist_min) ||
+    (ranges && distRange[1] < ranges.dist_max)
+  )
 
   const buildStatsUrl = useCallback(() => {
     const p = new URLSearchParams()
@@ -306,21 +342,34 @@ export const Dashboard = ({ onBack }) => {
     setSpinning(true)
     setError(null)
     setBfsErr(null)
+
     const [statsRes, bfsRes, routesRes] = await Promise.allSettled([
-      fetch(buildStatsUrl()).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
-      fetch(`${API}/api/report/comparacao/bfs-dfs`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
-      fetch(`${API}/api/routes`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
+      fetch(buildStatsUrl()).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      }),
+      fetch(`${API}/api/report/comparacao/bfs-dfs`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      }),
+      fetch(`${API}/api/routes`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      }),
     ])
+
     if (statsRes.status === "fulfilled") setStats(statsRes.value)
     else setError(statsRes.reason.message)
+
     if (bfsRes.status === "fulfilled") setBfsDfs(bfsRes.value)
     else setBfsErr(bfsRes.reason.message)
+
     if (routesRes.status === "fulfilled") setRoutes(routesRes.value)
+
     setLoading(false)
     setSpinning(false)
   }, [buildStatsUrl])
 
-  // carrega ranges uma vez
   useEffect(() => {
     fetch(`${API}/api/dashboard-stats/aeroportos/filtros`)
       .then(r => r.ok ? r.json() : null)
@@ -331,7 +380,7 @@ export const Dashboard = ({ onBack }) => {
           setDistRange([data.dist_min, data.dist_max])
         }
       })
-      .catch(() => { })
+      .catch(() => {})
   }, [])
 
   const debounceRef = useRef(null)
@@ -343,14 +392,20 @@ export const Dashboard = ({ onBack }) => {
 
   const d = stats || {}
   const comparacoes = bfsDfs?.comparacoes || []
-  const chartData = comparacoes.map(r => ({ source: r.source, BFS: r.bfs.tempo_segundos, DFS: r.dfs.tempo_segundos }))
+
+  const chartData = comparacoes.map(r => ({
+    source: r.source,
+    BFS: r.bfs.tempo_segundos,
+    DFS: r.dfs.tempo_segundos
+  }))
+
   const bfsWins = comparacoes.filter(r => r.mais_rapido === "BFS").length
   const dfsWins = comparacoes.filter(r => r.mais_rapido === "DFS").length
+
   const avgDelta = comparacoes.length
     ? (comparacoes.reduce((s, r) => s + Math.abs(r.delta_tempo_ms), 0) / comparacoes.length).toFixed(4)
     : "—"
 
-  // bins do histograma de pesos (filtrado pela distRange ativa)
   const weightBinsData = useMemo(() => {
     const filtered = routes.filter(r => {
       const w = r.distance ?? r.weight ?? r.peso
@@ -364,9 +419,12 @@ export const Dashboard = ({ onBack }) => {
     const vals = routes
       .map(r => r.distance ?? r.weight ?? r.peso)
       .filter(v => v != null && !isNaN(v))
+
     if (!vals.length) return null
+
     const sorted = [...vals].sort((a, b) => a - b)
     const mean = vals.reduce((s, v) => s + v, 0) / vals.length
+
     return {
       min: Math.round(sorted[0]),
       max: Math.round(sorted[sorted.length - 1]),
@@ -375,228 +433,510 @@ export const Dashboard = ({ onBack }) => {
     }
   }, [routes])
 
+  const topVerticesMap = useMemo(() => {
+    const map = new Map()
+    ;(d.topVertices || []).forEach(v => {
+      map.set(v.nome, v.grau)
+    })
+    return map
+  }, [d.topVertices])
+
+  const comparisonScatterData = useMemo(() => {
+    return comparacoes
+      .map((r) => ({
+        source: r.source,
+        grau: topVerticesMap.get(r.source) ?? null,
+        bfs: r.bfs.tempo_segundos,
+        dfs: r.dfs.tempo_segundos,
+        delta: Math.abs(r.delta_tempo_ms),
+        bfsMs: r.bfs.tempo_segundos * 1000,
+        dfsMs: r.dfs.tempo_segundos * 1000,
+      }))
+      .filter(item => item.grau != null)
+  }, [comparacoes, topVerticesMap])
+
+  const comparisonTrendData = useMemo(() => {
+    return [...comparacoes]
+      .sort((a, b) => a.source.localeCompare(b.source))
+      .map((r) => ({
+        source: r.source,
+        BFS: r.bfs.tempo_segundos,
+        DFS: r.dfs.tempo_segundos,
+      }))
+  }, [comparacoes])
+
+  const winnerDonutData = useMemo(() => ([
+    { name: "BFS", value: bfsWins, color: "#0891b2" },
+    { name: "DFS", value: dfsWins, color: "#7c3aed" },
+  ].filter(i => i.value > 0)), [bfsWins, dfsWins])
+
+  const deltaRankingData = useMemo(() => {
+    return [...comparacoes]
+      .map(r => ({
+        source: r.source,
+        delta: Math.abs(r.delta_tempo_ms),
+        winner: r.mais_rapido,
+      }))
+      .sort((a, b) => b.delta - a.delta)
+      .slice(0, 10)
+  }, [comparacoes])
+
+  const routeDistanceProfile = useMemo(() => {
+    const vals = routes
+      .map(r => r.distance ?? r.weight ?? r.peso)
+      .filter(v => v != null && !isNaN(v))
+      .sort((a, b) => a - b)
+
+    if (!vals.length) return []
+
+    const q1 = vals[Math.floor(vals.length * 0.33)]
+    const q2 = vals[Math.floor(vals.length * 0.66)]
+
+    let curtas = 0
+    let medias = 0
+    let longas = 0
+
+    vals.forEach(v => {
+      if (v <= q1) curtas++
+      else if (v <= q2) medias++
+      else longas++
+    })
+
+    return [
+      { name: "Curtas", value: curtas, color: "#1e40af" },
+      { name: "Médias", value: medias, color: "#0891b2" },
+      { name: "Longas", value: longas, color: "#d97706" },
+    ]
+  }, [routes])
+
+  const degreeDistributionAreaData = useMemo(() => {
+    return (d.distribuicaoGraus || []).map(item => ({
+      grau: item.grau,
+      quantidade: item.quantidade,
+    }))
+  }, [d.distribuicaoGraus])
+
   return (
-    <div className="dashboard-container">
-
-      {/* Header */}
-      <div className="dashboard-header">
-        <button className="home-back-button" onClick={onBack} type="button">
-          <span className="home-back-icon">
-            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
-              <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-          <span className="home-back-text">Voltar</span>
-        </button>
-        <div className="logo-2"><img src={logoCompleta} alt="" /></div>
-        <button onClick={fetchAll} disabled={spinning} className="sync-button">
-          <RefreshCw size={15} className={spinning ? "animate-spin" : ""} />
-          {spinning ? "Buscando..." : "Sincronizar"}
-        </button>
-      </div>
-
-      {error && <ErrorBanner msg={error} />}
-
-      {/* Filtros */}
-      <FilterBarAero
-        ranges={ranges}
-        pais={pais} setPais={setPais}
-        grauRange={grauRange} setGrauRange={setGrauRange}
-        distRange={distRange} setDistRange={setDistRange}
-        hasFilter={hasFilter}
-        onClear={() => {
-          setPais("")
-          if (ranges) {
-            setGrauRange([ranges.grau_min, ranges.grau_max])
-            setDistRange([ranges.dist_min, ranges.dist_max])
-          }
-        }}
-      />
-
-      {/* KPIs */}
-      <div className="kpi-grid">
-        <KPICard loading={loading} title="Vértices (Aeroportos)" value={d.totalV?.toLocaleString("pt-BR")} />
-        <KPICard loading={loading} title="Arestas (Rotas)" value={d.totalE?.toLocaleString("pt-BR")} />
-        <KPICard loading={loading} title="Grau Médio" value={d.grauMedio != null ? Number(d.grauMedio).toFixed(2) : "—"} sub="conexões por aeroporto" />
-        <KPICard loading={loading} title="Distância Média" value={d.pesoMedio?.toLocaleString("pt-BR")} sub="por peso" />
-      </div>
-
-      {/* Gráficos linha 1 — Graus + Top Hubs */}
-      <div className="chart-row">
-        <div className="chart-card">
-          <div className="chart-header"><h3 className="chart-title">Distribuição de Graus</h3></div>
-          {loading ? <Skeleton /> : (
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={d.distribuicaoGraus || []}>
-                <defs>
-                  <linearGradient id="gradGrauAero" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.07)" />
-                <XAxis dataKey="grau" tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null
-                    const data = payload[0].payload
-                    return (
-                      <div className="custom-tooltip" style={{ maxWidth: 260 }}>
-                        <p style={{ margin: 0, fontWeight: 700 }}>Grau {label}</p>
-                        <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.7 }}>{data.quantidade} vértices</p>
-                        <div style={{ maxHeight: 160, overflowY: "auto", fontSize: 11, lineHeight: 1.5 }}>
-                          {data.vertices?.map((v, i) => <div key={i}>• {v}</div>)}
-                        </div>
-                      </div>
-                    )
-                  }}
+    <div className="app-modern-bg dashboard-page">
+      <header className="app-modern-header">
+        <div className="header-top-actions">
+          <button
+            onClick={onBack}
+            className="global-metrics-back-button"
+            type="button"
+            title="Voltar"
+          >
+            <span className="global-metrics-back-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M15 6L9 12L15 18"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
-                <Area type="monotone" dataKey="quantidade" stroke="#7c3aed" strokeWidth={2} fill="url(#gradGrauAero)" dot={{ r: 3, fill: "#7c3aed" }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
+              </svg>
+            </span>
+            <span className="global-metrics-back-text">Voltar</span>
+          </button>
         </div>
 
-        <div className="chart-card">
-          <div className="chart-header"><h3 className="chart-title">Top 10 Hubs</h3></div>
-          {loading ? <Skeleton /> : (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={d.topVertices || []} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.07)" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <YAxis dataKey="nome" type="category" width={90} tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <Tooltip content={<ChartTooltip suffix=" conexões" />} />
-                <Bar dataKey="grau" radius={[0, 6, 6, 0]}>
-                  {(d.topVertices || []).map((_, i) => <Cell key={i} fill={`rgba(30,64,175,${1 - i * 0.07})`} />)}
+        <div className="clean-header">
+          <div className="clean-header-brand">
+            <img
+              src={logoCompleta}
+              alt="Logo ETA Airlines"
+              className="clean-header-logo"
+            />
+          </div>
+          <div className="clean-header-content">
+            <h1 className="clean-header-title">Dashboard Analítico de Aeroportos</h1>
+            <p className="dashboard-header-subtitle">
+              Indicadores, distribuição de graus, distâncias das rotas e comparação entre BFS e DFS.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main className="app-modern-main dashboard-main">
+        {error && <ErrorBanner msg={error} />}
+
+        <FilterBarAero
+          ranges={ranges}
+          pais={pais}
+          setPais={setPais}
+          grauRange={grauRange}
+          setGrauRange={setGrauRange}
+          distRange={distRange}
+          setDistRange={setDistRange}
+          hasFilter={hasFilter}
+          onClear={() => {
+            setPais("")
+            if (ranges) {
+              setGrauRange([ranges.grau_min, ranges.grau_max])
+              setDistRange([ranges.dist_min, ranges.dist_max])
+            }
+          }}
+        />
+
+        <section className="dashboard-kpi-grid">
+          <KPICard loading={loading} title="Vértices (Aeroportos)" value={d.totalV?.toLocaleString("pt-BR") || "—"} />
+          <KPICard loading={loading} title="Arestas (Rotas)" value={d.totalE?.toLocaleString("pt-BR") || "—"} />
+          <KPICard loading={loading} title="Grau Médio" value={d.grauMedio != null ? Number(d.grauMedio).toFixed(2) : "—"} sub="conexões por aeroporto" />
+          <KPICard loading={loading} title="Distância Média" value={d.pesoMedio?.toLocaleString("pt-BR") || "—"} sub="por peso" />
+        </section>
+
+        <section className="dashboard-chart-row">
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <h3 className="dashboard-chart-title">Distribuição de Graus</h3>
+            </div>
+            {loading ? <Skeleton /> : (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={d.distribuicaoGraus || []}>
+                  <defs>
+                    <linearGradient id="gradGrauAero" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.07)" />
+                  <XAxis dataKey="grau" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null
+                      const data = payload[0].payload
+                      return (
+                        <div className="dashboard-custom-tooltip dashboard-tooltip-wide">
+                          <p className="dashboard-tooltip-heading">Grau {label}</p>
+                          <p className="dashboard-tooltip-label">{data.quantidade} vértices</p>
+                          <div className="dashboard-tooltip-list">
+                            {data.vertices?.map((v, i) => <div key={i}>• {v}</div>)}
+                          </div>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="quantidade"
+                    stroke="#7c3aed"
+                    strokeWidth={2}
+                    fill="url(#gradGrauAero)"
+                    dot={{ r: 3, fill: "#7c3aed" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <h3 className="dashboard-chart-title">Top 10 Hubs</h3>
+            </div>
+            {loading ? <Skeleton /> : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={d.topVertices || []} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.07)" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <YAxis dataKey="nome" type="category" width={90} tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <Tooltip content={<ChartTooltip suffix=" conexões" />} />
+                  <Bar dataKey="grau" radius={[0, 6, 6, 0]}>
+                    {(d.topVertices || []).map((_, i) => (
+                      <Cell key={i} fill={`rgba(77,163,255,${1 - i * 0.07})`} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
+
+        <section className="glass-card dashboard-chart-card">
+          <div className="dashboard-chart-header dashboard-chart-header-wrap">
+            <div>
+              <h3 className="dashboard-chart-title">Distribuição de Distâncias das Rotas (Peso)</h3>
+              {weightStats && (
+                <p className="dashboard-chart-meta">
+                  {routes.length.toLocaleString("pt-BR")} rotas · mín {weightStats.min.toLocaleString("pt-BR")} · máx {weightStats.max.toLocaleString("pt-BR")} · média {weightStats.mean.toLocaleString("pt-BR")} · mediana {weightStats.median.toLocaleString("pt-BR")}
+                </p>
+              )}
+            </div>
+            <div className="dashboard-select-group">
+              <label className="dashboard-select-label">Faixas</label>
+              <select
+                value={weightBins}
+                onChange={e => setWeightBins(+e.target.value)}
+                className="dashboard-select"
+              >
+                {[10, 20, 30, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          </div>
+          {loading ? <Skeleton height={260} /> : weightBinsData.length === 0 ? (
+            <div className="dashboard-empty-state">Nenhuma rota carregada</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={weightBinsData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.07)" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fill: "#9ca3af" }}
+                  tickFormatter={v => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
+                  interval="preserveStartEnd"
+                  label={{ value: "Distância (peso)", position: "insideBottom", offset: -16, fontSize: 11, fill: "#9ca3af" }}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "#9ca3af" }}
+                  label={{ value: "Rotas", angle: -90, position: "insideLeft", offset: 12, fontSize: 11, fill: "#9ca3af" }}
+                />
+                <Tooltip content={<WeightBinTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                  {weightBinsData.map((_, i) => (
+                    <Cell key={i} fill={`rgba(124,58,237,${0.45 + 0.55 * (i / weightBinsData.length)})`} />
+                  ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           )}
-        </div>
-      </div>
+        </section>
 
-      {/* Gráfico de Distribuição de Pesos (Distâncias) */}
-      <div className="chart-card">
-        <div className="chart-header" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <h3 className="chart-title">Distribuição de Distâncias das Rotas (Peso)</h3>
-            {weightStats && (
-              <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.5 }}>
-                {routes.length.toLocaleString("pt-BR")} rotas · mín {weightStats.min.toLocaleString("pt-BR")} · máx {weightStats.max.toLocaleString("pt-BR")} · média {weightStats.mean.toLocaleString("pt-BR")} · mediana {weightStats.median.toLocaleString("pt-BR")}
-              </p>
+        <section className="dashboard-chart-row">
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <div>
+                <h3 className="dashboard-chart-title">Área de Frequência — Graus dos Aeroportos</h3>
+                <p className="dashboard-chart-meta">
+                  Visão complementar da concentração de aeroportos por grau.
+                </p>
+              </div>
+            </div>
+            {loading ? <Skeleton /> : degreeDistributionAreaData.length === 0 ? (
+              <div className="dashboard-empty-state">Sem distribuição de graus disponível.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={degreeDistributionAreaData}>
+                  <defs>
+                    <linearGradient id="gradDegreeDensity" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0891b2" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#0891b2" stopOpacity={0.03} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.07)" />
+                  <XAxis dataKey="grau" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="quantidade"
+                    stroke="#0891b2"
+                    strokeWidth={2}
+                    fill="url(#gradDegreeDensity)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             )}
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-            <label style={{ fontSize: 11, opacity: 0.5 }}>Faixas</label>
-            <select
-              value={weightBins}
-              onChange={e => setWeightBins(+e.target.value)}
-              style={{
-                background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 8, color: "#e2e8f0", fontSize: 12, fontWeight: 600,
-                padding: "5px 10px", cursor: "pointer", outline: "none",
-              }}
-            >
-              {[10, 20, 30, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-        </div>
-        {loading ? <Skeleton height={260} /> : weightBinsData.length === 0 ? (
-          <p style={{ textAlign: "center", opacity: 0.4, fontSize: 13, padding: "40px 0" }}>Nenhuma rota carregada</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={weightBinsData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.07)" />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                tickFormatter={v => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
-                interval="preserveStartEnd"
-                label={{ value: "Distância (peso)", position: "insideBottom", offset: -16, fontSize: 11, fill: "#9ca3af" }}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                label={{ value: "Rotas", angle: -90, position: "insideLeft", offset: 12, fontSize: 11, fill: "#9ca3af" }}
-              />
-              <Tooltip content={<WeightBinTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-              <Bar dataKey="count" radius={[3, 3, 0, 0]}>
-                {weightBinsData.map((_, i) => (
-                  <Cell key={i} fill={`rgba(124,58,237,${0.45 + 0.55 * (i / weightBinsData.length)})`} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
 
-      {/* Comparação BFS vs DFS */}
-      <div className="chart-card">
-        <div className="chart-header" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <h3 className="chart-title">Comparação de Tempo — BFS vs DFS</h3>
-            {bfsDfs && <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.5 }}>{bfsDfs.total_comparacoes} nós comparados</p>}
-          </div>
-          <div style={{ display: "flex", gap: 4, marginLeft: "auto", background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: 3 }}>
-            {[{ id: "chart", label: "Gráfico" }, { id: "table", label: "Tabela" }].map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => setView(id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 5, padding: "5px 12px",
-                  borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                  background: view === id ? "rgba(255,255,255,0.12)" : "transparent",
-                  color: view === id ? "#e2e8f0" : "#6b7280",
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {bfsErr && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, margin: "8px 0", background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.2)", fontSize: 12, color: "#fca5a5" }}>
-            <AlertCircle size={15} /> Falha: {bfsErr}
-          </div>
-        )}
-
-        {bfsDfs && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, margin: "12px 0 20px" }}>
-            {[
-              { label: "BFS mais rápido", value: bfsWins, color: "#0891b2" },
-              { label: "DFS mais rápido", value: dfsWins, color: "#7c3aed" },
-              { label: "Δ médio", value: `${avgDelta} ms`, color: "#d97706" },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <div>
-                  <p style={{ margin: 0, fontSize: 10, opacity: 0.5, fontWeight: 600 }}>{label}</p>
-                  <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color }}>{value}</p>
-                </div>
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <div>
+                <h3 className="dashboard-chart-title">Perfil das Rotas por Faixa de Distância</h3>
+                <p className="dashboard-chart-meta">
+                  Segmentação relativa entre rotas curtas, médias e longas.
+                </p>
               </div>
-            ))}
+            </div>
+            {loading ? <Skeleton /> : routeDistanceProfile.length === 0 ? (
+              <div className="dashboard-empty-state">Nenhuma rota carregada.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Tooltip content={<DonutTooltip />} />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    formatter={(value, entry) => (
+                      <span style={{ color: entry.color, fontWeight: 700 }}>{value}</span>
+                    )}
+                  />
+                  <Pie
+                    data={routeDistanceProfile}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="46%"
+                    innerRadius={58}
+                    outerRadius={100}
+                    paddingAngle={3}
+                  >
+                    {routeDistanceProfile.map((entry, index) => (
+                      <Cell key={`route-profile-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
-        )}
+        </section>
 
-        {!bfsDfs && !bfsErr ? <Skeleton height={300} /> : chartData.length > 0 && (
-          view === "chart" ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }} barCategoryGap="30%" barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="source" tick={{ fontSize: 11, fill: "#9ca3af", fontWeight: 600 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={v => `${(v * 1000).toFixed(2)}ms`} tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} width={68} />
-                <Tooltip content={<ComparisonTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} formatter={v => <span style={{ color: v === "BFS" ? "#0891b2" : "#7c3aed", fontWeight: 700 }}>{v}</span>} />
-                <Bar dataKey="BFS" fill="#0891b2" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="DFS" fill="#7c3aed" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <ComparisonTable rows={comparacoes} />
-          )
-        )}
-      </div>
+        <section className="glass-card dashboard-chart-card">
+          <div className="dashboard-chart-header dashboard-chart-header-wrap">
+            <div>
+              <h3 className="dashboard-chart-title">Comparação de Tempo — BFS vs DFS</h3>
+              {bfsDfs && (
+                <p className="dashboard-chart-meta">
+                  {bfsDfs.total_comparacoes} nós comparados
+                </p>
+              )}
+            </div>
+            <div className="dashboard-view-toggle">
+              {[{ id: "chart", label: "Gráfico" }, { id: "table", label: "Tabela" }].map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setView(id)}
+                  className={`dashboard-view-btn ${view === id ? "active" : ""}`}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
+          {bfsErr && (
+            <div className="dashboard-inline-error">
+              <AlertCircle size={15} /> Falha: {bfsErr}
+            </div>
+          )}
+
+          {bfsDfs && (
+            <div className="dashboard-mini-stats">
+              {[
+                { label: "BFS mais rápido", value: bfsWins, color: "bfs" },
+                { label: "DFS mais rápido", value: dfsWins, color: "dfs" },
+                { label: "Δ médio", value: `${avgDelta} ms`, color: "accent" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="dashboard-mini-stat-card">
+                  <p className="dashboard-mini-stat-label">{label}</p>
+                  <p className={`dashboard-mini-stat-value ${color}`}>{value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!bfsDfs && !bfsErr ? (
+            <Skeleton height={300} />
+          ) : chartData.length > 0 && (
+            view === "chart" ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }} barCategoryGap="30%" barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="source" tick={{ fontSize: 11, fill: "#9ca3af", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={v => `${(v * 1000).toFixed(2)}ms`} tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} width={68} />
+                  <Tooltip content={<ComparisonTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                  <Legend
+                    wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
+                    formatter={v => <span style={{ color: v === "BFS" ? "#0891b2" : "#7c3aed", fontWeight: 700 }}>{v}</span>}
+                  />
+                  <Bar dataKey="BFS" fill="#0891b2" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Bar dataKey="DFS" fill="#7c3aed" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ComparisonTable rows={comparacoes} />
+            )
+          )}
+        </section>
+
+        <section className="dashboard-chart-row">
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <div>
+                <h3 className="dashboard-chart-title">Tendência dos Tempos — BFS vs DFS</h3>
+                <p className="dashboard-chart-meta">
+                  Comparação contínua dos tempos por origem, em ordem alfabética.
+                </p>
+              </div>
+            </div>
+            {!bfsDfs ? <Skeleton /> : comparisonTrendData.length === 0 ? (
+              <div className="dashboard-empty-state">Sem dados de tendência disponíveis.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={comparisonTrendData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                  <defs>
+                    <linearGradient id="gradBfsTrend" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0891b2" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#0891b2" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="gradDfsTrend" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.24} />
+                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="source" tick={{ fontSize: 10, fill: "#9ca3af" }} interval={0} angle={-25} textAnchor="end" height={65} />
+                  <YAxis tickFormatter={v => `${(v * 1000).toFixed(2)}ms`} tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                  <Tooltip content={<ComparisonTooltip />} />
+                  <Legend
+                    wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
+                    formatter={v => <span style={{ color: v === "BFS" ? "#0891b2" : "#7c3aed", fontWeight: 700 }}>{v}</span>}
+                  />
+                  <Area type="monotone" dataKey="BFS" stroke="#0891b2" fill="url(#gradBfsTrend)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="DFS" stroke="#7c3aed" fill="url(#gradDfsTrend)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <div>
+                <h3 className="dashboard-chart-title">Top 10 Maiores Diferenças de Tempo</h3>
+                <p className="dashboard-chart-meta">
+                  Fontes onde BFS e DFS mais divergem em desempenho.
+                </p>
+              </div>
+            </div>
+            {!bfsDfs ? <Skeleton /> : deltaRankingData.length === 0 ? (
+              <div className="dashboard-empty-state">Sem diferenças disponíveis.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={deltaRankingData} layout="vertical" margin={{ top: 8, right: 10, left: 10, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 11, fill: "#9ca3af" }}
+                    tickFormatter={(v) => `${Number(v).toFixed(2)} ms`}
+                  />
+                  <YAxis
+                    dataKey="source"
+                    type="category"
+                    width={90}
+                    tick={{ fontSize: 11, fill: "#9ca3af" }}
+                  />
+                  <Tooltip content={<DeltaTooltip />} />
+                  <Bar dataKey="delta" radius={[0, 6, 6, 0]}>
+                    {deltaRankingData.map((item, i) => (
+                      <Cell
+                        key={i}
+                        fill={item.winner === "BFS" ? "rgba(8,145,178,0.85)" : "rgba(124,58,237,0.85)"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   )
 }

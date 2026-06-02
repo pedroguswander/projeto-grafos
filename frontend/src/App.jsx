@@ -1170,11 +1170,11 @@ function App({ onNavigate }) {
         <div className="header-top-actions">
           <button
             onClick={handleGoBack}
-            className="declaracaoia-back-button"
+            className="global-metrics-back-button"
             type="button"
             title="Voltar"
           >
-            <span className="declaracaoia-back-icon" aria-hidden="true">
+            <span className="global-metrics-back-icon" aria-hidden="true">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -1191,7 +1191,7 @@ function App({ onNavigate }) {
                 />
               </svg>
             </span>
-            <span className="declaracaoia-back-text">Voltar</span>
+            <span className="global-metrics-back-text">Voltar</span>
           </button>
         </div>
 
@@ -1199,8 +1199,11 @@ function App({ onNavigate }) {
           <div className="clean-header-brand">
             <img src={logo} alt="Logo ETA Airlines" className="clean-header-logo" />
           </div>
-          <div className="clean-header-content">
+                    <div className="clean-header-content">
             <h1 className="clean-header-title">Painel de Voos & Rotas</h1>
+            <p className="dashboard-header-subtitle">
+              Navegue interativamente pelas rotas e aeroportos e calcule os melhores caminhos.
+            </p>
           </div>
         </div>
       </header>
