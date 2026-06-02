@@ -109,7 +109,7 @@ export default function HomeETN({ onNavigate }) {
 
             <button
               className="hub-card pill-left ia-card"
-              onClick={() => onNavigate('declaracaoIA-etn')}
+              onClick={() => onNavigate('declaracao-ia-etn')}
               type="button"
             >
               <span className="hub-card-title">DECLARAÇÃO IA</span>

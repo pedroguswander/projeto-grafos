@@ -1,0 +1,98 @@
+/* =========================================================
+   DECLARACAO IA ETN THEME
+   Mantém o padrão original e só sobrescreve para o verde
+   ========================================================= */
+
+.declaracaoia-etn-theme {
+  background:
+    radial-gradient(circle at top left, rgba(38, 194, 129, 0.14), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(38, 194, 129, 0.08), transparent 20%),
+    linear-gradient(180deg, #081c16 0%, #103328 100%);
+}
+
+.declaracaoia-etn-theme .declaracaoia-container {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(38, 194, 129, 0.14);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(38, 194, 129, 0.05);
+}
+
+.declaracaoia-etn-theme .declaracaoia-title {
+  color: #f3fff9;
+}
+
+.declaracaoia-etn-theme .declaracaoia-subtitle {
+  color: #afd6c2;
+}
+
+.declaracaoia-etn-theme .declaracaoia-back-button {
+  color: #ecfff6;
+  background: rgba(16, 51, 40, 0.34);
+  border: 1px solid rgba(38, 194, 129, 0.14);
+}
+
+.declaracaoia-etn-theme .declaracaoia-back-button:hover {
+  background: rgba(18, 70, 54, 0.42);
+  border-color: rgba(38, 194, 129, 0.32);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(38, 194, 129, 0.08);
+  color: #ffffff;
+}
+
+.declaracaoia-etn-theme .declaracaoia-back-icon {
+  background: linear-gradient(135deg, #154235, #1f6b56);
+  box-shadow:
+    0 10px 18px rgba(5, 27, 21, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.declaracaoia-etn-theme .declaracaoia-back-button:hover .declaracaoia-back-icon {
+  box-shadow:
+    0 14px 22px rgba(5, 27, 21, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.declaracaoia-etn-theme .declaracaoia-action-btn {
+  box-shadow: 0 4px 18px rgba(38, 194, 129, 0.08);
+}
+
+.declaracaoia-etn-theme .declaracaoia-action-btn.primary {
+  background: linear-gradient(135deg, #26c281, #1a5c49);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(38, 194, 129, 0.22);
+}
+
+.declaracaoia-etn-theme .declaracaoia-action-btn.primary:hover {
+  box-shadow: 0 14px 28px rgba(38, 194, 129, 0.26);
+}
+
+.declaracaoia-etn-theme .declaracaoia-action-btn.secondary {
+  background: rgba(38, 194, 129, 0.05);
+  color: #dffbf0;
+  border: 1.5px solid rgba(38, 194, 129, 0.14);
+  box-shadow: 0 4px 18px rgba(38, 194, 129, 0.06);
+}
+
+.declaracaoia-etn-theme .declaracaoia-action-btn.secondary:hover {
+  background: rgba(38, 194, 129, 0.12);
+  color: #f2fff8;
+  border-color: rgba(38, 194, 129, 0.34);
+}
+
+.declaracaoia-etn-theme .pdf-viewer-wrapper {
+  border: 1px solid rgba(38, 194, 129, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.018));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.declaracaoia-etn-theme .declaracaoia-back-button:focus-visible,
+.declaracaoia-etn-theme .declaracaoia-action-btn:focus-visible {
+  outline: 2px solid rgba(38, 194, 129, 0.55);
+  outline-offset: 2px;
+}

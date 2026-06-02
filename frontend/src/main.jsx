@@ -14,6 +14,7 @@ import './css/airport-ego-panel-horizontal.css';
 import './css/DataBaseETN.css';
 import './css/DashboardETN.css';
 import './css/DeclaracaoIA.css';
+import './css/DeclaracaoIA_ETN.css';
 import App from './App.jsx';
 import Home from './Home.jsx';
 import Regras from './Regras.jsx';
@@ -25,7 +26,9 @@ import Splash from './Splash.jsx';
 import HomeETN from './HomeETN.jsx';
 import { DashboardETN } from './Dashboard/DashboardETN.jsx';
 import DeclaracaoIA from './DeclaracaoIA.jsx';
+import DeclaracaoIAETN from './DeclaracaoIA_ETN.jsx';
 import Requisitos from './Requisitos.jsx';
+import RequisitosETN from './Requisitos_ENT.jsx';
 
 function Root() {
   const [screen, setScreen] = useState('splash');
@@ -54,11 +57,13 @@ function Root() {
   if (screen === 'dashboard') return <Dashboard onBack={() => setScreen(lastHome)} />;
   if (screen === 'dashboard-etn') return <DashboardETN onBack={() => setScreen(lastHome)} />;
   if (screen === 'requisitos') return <Requisitos onBack={() => setScreen(lastHome)} />;
+  if (screen === 'requisitos-etn') return <RequisitosETN onBack={() => setScreen('home-etn')} />;
   if (screen === 'regras') return <Regras onBack={() => setScreen(lastHome)} />;
   if (screen === 'metricas') return <GlobalMetrics onBack={() => setScreen(lastHome)} />;
   if (screen === 'database') return <DataBase onBack={() => setScreen(lastHome)} />;
   if (screen === 'database-etn') return <DataBaseETN onBack={() => setScreen('home-etn')} />;
   if (screen === 'declaracaoIA') return <DeclaracaoIA onBack={() => setScreen(lastHome)} />;
+  if (screen === 'declaracao-ia-etn') return <DeclaracaoIAETN onBack={() => setScreen('home-etn')} />;
 
   return <App onNavigate={handleNavigate} />;
 }
