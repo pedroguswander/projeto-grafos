@@ -29,6 +29,8 @@ import DeclaracaoIA from './DeclaracaoIA.jsx';
 import DeclaracaoIAETN from './DeclaracaoIA_ETN.jsx';
 import Requisitos from './Requisitos.jsx';
 import RequisitosETN from './Requisitos_ENT.jsx';
+import RelatorioETN from './RelatorioETN.jsx';
+import RegrasETN from './RegrasETN.jsx';
 
 function Root() {
   const [screen, setScreen] = useState('splash');
@@ -58,6 +60,8 @@ function Root() {
   if (screen === 'dashboard-etn') return <DashboardETN onBack={() => setScreen(lastHome)} />;
   if (screen === 'requisitos') return <Requisitos onBack={() => setScreen(lastHome)} />;
   if (screen === 'requisitos-etn') return <RequisitosETN onBack={() => setScreen('home-etn')} />;
+  if (screen === 'relatorio-etn') return <RelatorioETN onBack={() => setScreen('home-etn')} />;
+  if (screen === 'regras-etn') return <RegrasETN onBack={() => setScreen('home-etn')} />;
   if (screen === 'regras') return <Regras onBack={() => setScreen(lastHome)} />;
   if (screen === 'metricas') return <GlobalMetrics onBack={() => setScreen(lastHome)} />;
   if (screen === 'database') return <DataBase onBack={() => setScreen(lastHome)} />;

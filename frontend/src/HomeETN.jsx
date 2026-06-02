@@ -100,11 +100,11 @@ export default function HomeETN({ onNavigate }) {
 
             <button
               className="hub-card pill-right"
-              onClick={() => onNavigate('metricas-etn')}
+              onClick={() => onNavigate('relatorio-etn')}
               type="button"
             >
-              <span className="hub-card-title">MÉTRICAS GLOBAIS</span>
-              <span className="hub-card-sub">Indicadores gerais</span>
+              <span className="hub-card-title">RELATÓRIO ETN</span>
+              <span className="hub-card-sub">Documento de relatório da parte II</span>
             </button>
 
             <button
