@@ -15,6 +15,7 @@ import './css/DataBaseETN.css';
 import './css/DashboardETN.css';
 import './css/DeclaracaoIA.css';
 import './css/DeclaracaoIA_ETN.css';
+import './css/PainelRotasETN.css';
 import App from './App.jsx';
 import Home from './Home.jsx';
 import Regras from './Regras.jsx';
@@ -30,6 +31,7 @@ import DeclaracaoIAETN from './DeclaracaoIA_ETN.jsx';
 import Requisitos from './Requisitos.jsx';
 import RequisitosETN from './Requisitos_ENT.jsx';
 import RelatorioETN from './RelatorioETN.jsx';
+import PainelRotasETN from './PainelRotasETN.jsx';
 import RegrasETN from './RegrasETN.jsx';
 
 function Root() {
@@ -68,6 +70,7 @@ function Root() {
   if (screen === 'database-etn') return <DataBaseETN onBack={() => setScreen('home-etn')} />;
   if (screen === 'declaracaoIA') return <DeclaracaoIA onBack={() => setScreen(lastHome)} />;
   if (screen === 'declaracao-ia-etn') return <DeclaracaoIAETN onBack={() => setScreen('home-etn')} />;
+  if (screen === 'painel-etn') return <PainelRotasETN onBack={() => setScreen('home-etn')} />;
 
   return <App onNavigate={handleNavigate} />;
 }
