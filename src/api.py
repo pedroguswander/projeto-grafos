@@ -603,5 +603,151 @@ def get_report_resumo():
     })
 
 
+# ─── ETN: Painel de Rotas (Bellman-Ford / parte 2) ─────────────
+
+etn_graph = None
+
+
+def load_etn_graph():
+    """Carrega (lazy + cache) o grafo de portos da parte 2.
+
+    Insere a raiz do projeto no sys.path para importar `parte2.src.graphs`
+    como pacote de topo `parte2`, evitando colisão com o pacote `graphs`
+    da parte 1 já importado acima. Mesmo padrão de tests/test_part2_report.py.
+    """
+    global etn_graph
+    if etn_graph is None:
+        root = os.path.abspath(os.path.join(BASE, '..'))
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from parte2.src.graphs.io import load_graph_from_csvs as _load_etn_csvs
+        etn_graph = _load_etn_csvs(data_path('ETN'))
+    return etn_graph
+
+
+def port_info(port):
+    return {'code': port.code, 'name': port.name,
+            'country': port.country, 'region': port.region}
+
+
+@app.route('/api/etn/graph-data')
+def get_etn_graph_data():
+    g = load_etn_graph()
+    nodes = [
+        {'id': c, 'label': c, 'title': f"{c} — {p.name} ({p.country})",
+         'name': p.name, 'country': p.country, 'region': p.region}
+        for c, p in g.ports.items()
+    ]
+    edges = [
+        {'from': src, 'to': dst, 'weight': w}
+        for src, neighbors in g.adjacency_list.items()
+        for dst, w in neighbors
+    ]
+    return jsonify({'nodes': nodes, 'edges': edges})
+
+
+@app.route('/api/etn/dfs-path', methods=['POST'])
+def calculate_etn_dfs_path():
+    body = request.get_json() or {}
+    start, end = body.get('start'), body.get('end')
+    max_depth = int(body.get('max_depth', 8))
+
+    if not start or not end:
+        return jsonify({'error': 'start e end são obrigatórios'}), 400
+
+    g = load_etn_graph()
+
+    if start not in g.adjacency_list or end not in g.adjacency_list:
+        return jsonify({'success': False,
+                        'message': f'Porto inválido: {start} ou {end}'}), 400
+
+    # DFS de caminho simples (sem ciclos), com limite de profundidade e de
+    # chamadas recursivas para garantir tempo de resposta no grafo denso.
+    MAX_DFS_CALLS = 50_000
+    best_cost = [float('inf')]
+    best_path = [None]
+    calls = [0]
+
+    def _dfs(node, path, visited, cost):
+        calls[0] += 1
+        if calls[0] > MAX_DFS_CALLS:
+            return
+        if node == end:
+            if cost < best_cost[0]:
+                best_cost[0] = cost
+                best_path[0] = path.copy()
+            return
+        if len(path) > max_depth:
+            return
+        for neighbor, weight in g.get_neighbors(node):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                path.append(neighbor)
+                _dfs(neighbor, path, visited, cost + weight)
+                path.pop()
+                visited.remove(neighbor)
+
+    _dfs(start, [start], {start}, 0.0)
+
+    if best_path[0] is None:
+        return jsonify({
+            'success': False,
+            'message': (f'Nenhum caminho simples encontrado de {start} a {end} '
+                        f'com até {max_depth} saltos.')
+        })
+
+    def enrich(codes):
+        return [port_info(g.get_port(c)) for c in codes if g.get_port(c)]
+
+    return jsonify({
+        'success': True,
+        'cost': best_cost[0],
+        'path': best_path[0],
+        'path_info': enrich(best_path[0]),
+        'connections': max(len(best_path[0]) - 2, 0),
+        'max_depth': max_depth,
+    })
+
+
+@app.route('/api/etn/bellman-ford', methods=['POST'])
+def calculate_etn_bellman_ford():
+    body = request.get_json() or {}
+    start, end = body.get('start'), body.get('end')
+
+    if not start or not end:
+        return jsonify({'error': 'start e end são obrigatórios'}), 400
+
+    g = load_etn_graph()  # garante sys.path + grafo carregado
+    from parte2.src.graphs.algorithms import bellman_ford
+
+    if start not in g.adjacency_list or end not in g.adjacency_list:
+        return jsonify({'success': False, 'hasNegativeCycle': False,
+                        'message': f'Porto inválido: {start} ou {end}'}), 400
+
+    cost, path, has_cycle = bellman_ford(g, start, end)
+
+    if has_cycle:
+        return jsonify({
+            'success': False, 'hasNegativeCycle': True,
+            'message': 'Ciclo negativo detectado — o problema do menor caminho é indefinido.',
+        })
+
+    if cost is None or path is None:
+        return jsonify({'success': False, 'hasNegativeCycle': False,
+                        'message': f'Não há caminho entre {start} e {end}.'})
+
+    def enrich(codes):
+        return [port_info(g.get_port(c)) for c in codes if g.get_port(c)]
+
+    return jsonify({
+        'success': True,
+        'hasNegativeCycle': False,
+        'cost': cost,
+        'path': path,
+        'path_info': enrich(path),
+        'connections': max(len(path) - 2, 0),
+    })
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
