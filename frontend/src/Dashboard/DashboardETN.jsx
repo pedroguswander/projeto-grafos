@@ -6,6 +6,8 @@ import {
 } from "recharts"
 import logoCompleta from "../assets/logo-2/logo-branca-completa2.png"
 import "../css/DashboardETN.css"
+import InsightPanel from "../../components/InsightPanel"
+import { useAIInsightETN } from "../hooks/useAIInsightETN"
 
 const API = "http://localhost:5000"
 
@@ -72,11 +74,13 @@ function buildWeightBins(arestas, numBins) {
   return bins
 }
 
-const KPICard = ({ title, value, sub, loading }) => (
+const KPICard = ({ title, value, sub, loading, accent }) => (
   <div className="dashboard-etn-kpi-card">
     <div>
       <p className="dashboard-etn-kpi-title">{title}</p>
-      {loading ? <div className="dashboard-etn-skeleton-pulse" /> : <p className="dashboard-etn-kpi-value">{value}</p>}
+      {loading ? <div className="dashboard-etn-skeleton-pulse" /> : (
+        <p className="dashboard-etn-kpi-value" style={accent ? { color: accent } : undefined}>{value}</p>
+      )}
       {sub && <p className="dashboard-etn-kpi-sub">{sub}</p>}
     </div>
   </div>
@@ -194,70 +198,88 @@ const ComparisonTable = ({ rows }) => (
   </div>
 )
 
-const SelectField = ({ label, value, onChange, options, disabled }) => (
-  <div className="dashboard-etn-select-stack">
-    <label className="dashboard-etn-select-label">{label}</label>
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      disabled={disabled}
-      className="dashboard-etn-select"
-    >
-      <option value="">Todos</option>
-      {options.map(o => (
-        <option key={o} value={o}>{o}</option>
-      ))}
-    </select>
-  </div>
-)
+const RangeSlider = ({ label, min, max, value, onChange, suffix = "" }) => {
+  const safeMax = max > min ? max : min + 1
+  const pct = (v) => ((v - min) / (safeMax - min)) * 100
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 200 }}>
+      <label style={{ fontSize: 10, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        {label}{" "}
+        <span style={{ color: "#e2e8f0", opacity: 1 }}>
+          {value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}{suffix}
+        </span>
+      </label>
+      <div style={{ position: "relative", height: 20, display: "flex", alignItems: "center" }}>
+        <div style={{ position: "absolute", left: 0, right: 0, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.12)" }} />
+        <div style={{
+          position: "absolute",
+          left: `${pct(value[0])}%`,
+          width: `${pct(value[1]) - pct(value[0])}%`,
+          height: 4, borderRadius: 4,
+          background: "linear-gradient(90deg, #0891b2, #34d399)",
+          pointerEvents: "none",
+        }} />
+        <input
+          type="range" min={min} max={safeMax} value={value[0]}
+          onChange={e => onChange([Math.min(+e.target.value, value[1] - 1), value[1]])}
+          style={{
+            position: "absolute", width: "100%", appearance: "none", background: "transparent",
+            pointerEvents: "auto", zIndex: value[0] > safeMax - (safeMax - min) * 0.1 ? 5 : 3,
+            height: 20, margin: 0, padding: 0, cursor: "pointer", accentColor: "#0891b2",
+          }}
+        />
+        <input
+          type="range" min={min} max={safeMax} value={value[1]}
+          onChange={e => onChange([value[0], Math.max(+e.target.value, value[0] + 1)])}
+          style={{
+            position: "absolute", width: "100%", appearance: "none", background: "transparent",
+            pointerEvents: "auto", zIndex: 4,
+            height: 20, margin: 0, padding: 0, cursor: "pointer", accentColor: "#34d399",
+          }}
+        />
+      </div>
+    </div>
+  )
+}
 
-const FilterBar = ({ filtros, regiao, setRegiao, pais, setPais, onClear, hasFilter }) => {
-  const paisOptions = regiao && filtros?.paises_por_regiao?.[regiao]
-    ? filtros.paises_por_regiao[regiao]
-    : Object.values(filtros?.paises_por_regiao || {})
-        .flat()
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort()
-
+const FilterBar = ({ ranges, grauRange, setGrauRange, pesoRange, setPesoRange, onClear, hasFilter }) => {
+  if (!ranges) return null
+  const hasGrau = ranges.grau_min != null && ranges.grau_max != null
+  const hasPeso = ranges.peso_min != null && ranges.peso_max != null
+  if (!hasGrau && !hasPeso) return null
   return (
     <section className="glass-card dashboard-etn-filter-bar">
       <div className="dashboard-etn-section-header">
         <div className="dashboard-etn-section-title">Filtros do painel</div>
         <div className="dashboard-etn-section-subtitle">
-          Ajuste a região e o país para refinar os dados exibidos nos indicadores e gráficos.
+          Ajuste os intervalos para refinar os dados exibidos nos indicadores e gráficos.
         </div>
       </div>
-
-      <div className="dashboard-etn-filter-grid">
-        <SelectField
-          label="Região"
-          value={regiao}
-          onChange={value => {
-            setRegiao(value)
-            setPais("")
-          }}
-          options={filtros?.regioes || []}
-          disabled={!filtros}
-        />
-
-        <SelectField
-          label="País"
-          value={pais}
-          onChange={setPais}
-          options={paisOptions}
-          disabled={!filtros}
-        />
-
-        <div className="dashboard-etn-filter-actions">
-          {hasFilter && (
-            <>
-              <button onClick={onClear} className="dashboard-etn-secondary-btn" type="button">
-                Limpar filtros
-              </button>
-              <span className="dashboard-etn-filter-active">● Filtro ativo</span>
-            </>
-          )}
-        </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 24, flexWrap: "wrap", paddingTop: 8 }}>
+        {hasGrau && (
+          <RangeSlider
+            label="Grau (conexões)"
+            min={ranges.grau_min} max={ranges.grau_max}
+            value={grauRange} onChange={setGrauRange}
+          />
+        )}
+        {hasPeso && (
+          <RangeSlider
+            label="Peso da rota"
+            min={ranges.peso_min} max={ranges.peso_max}
+            value={pesoRange} onChange={setPesoRange}
+          />
+        )}
+        {hasFilter && (
+          <>
+            <button onClick={onClear} className="dashboard-etn-secondary-btn" type="button" style={{ alignSelf: "flex-end" }}>
+              Limpar filtros
+            </button>
+            <span style={{ alignSelf: "flex-end", fontSize: 11, color: "#34d399", fontWeight: 600, padding: "7px 0" }}>
+              ● Filtro ativo
+            </span>
+          </>
+        )}
       </div>
     </section>
   )
@@ -273,19 +295,31 @@ export const DashboardETN = ({ onBack }) => {
   const [spinning, setSpinning] = useState(false)
   const [view, setView] = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
-  const [filtros, setFiltros] = useState(null)
-  const [regiao, setRegiao] = useState("")
-  const [pais, setPais] = useState("")
+  const [ranges, setRanges] = useState(null)
+  const [grauRange, setGrauRange] = useState([0, 9999])
+  const [pesoRange, setPesoRange] = useState([-9999999, 9999999])
+  const { insight, loadingInsight, generate } = useAIInsightETN()
 
-  const hasFilter = !!(regiao || pais)
+  const hasFilter = !!(
+    (ranges && grauRange[0] > ranges.grau_min) ||
+    (ranges && grauRange[1] < ranges.grau_max) ||
+    (ranges && pesoRange[0] > ranges.peso_min) ||
+    (ranges && pesoRange[1] < ranges.peso_max)
+  )
 
   const buildStatsUrl = useCallback(() => {
-    if (!hasFilter) return `${API}/api/dashboard-stats`
     const p = new URLSearchParams()
-    if (regiao) p.set("regiao", regiao)
-    if (pais) p.set("pais", pais)
-    return `${API}/api/dashboard-stats/etn/filtrado?${p.toString()}`
-  }, [hasFilter, regiao, pais])
+    if (ranges && grauRange[0] > ranges.grau_min) p.set("grau_min", grauRange[0])
+    if (ranges && grauRange[1] < ranges.grau_max) p.set("grau_max", grauRange[1])
+    if (ranges && pesoRange[0] > ranges.peso_min) p.set("peso_min", pesoRange[0])
+    if (ranges && pesoRange[1] < ranges.peso_max) p.set("peso_max", pesoRange[1])
+    const qs = p.toString()
+    return `${API}/api/dashboard-stats/etn/filtrado${qs ? "?" + qs : ""}`
+  }, [grauRange, pesoRange, ranges])
+
+  // generateRef permite chamar generate dentro do fetchAll sem causar loop
+  const generateRef = useRef(generate)
+  useEffect(() => { generateRef.current = generate }, [generate])
 
   const fetchAll = useCallback(async () => {
     setSpinning(true)
@@ -307,23 +341,53 @@ export const DashboardETN = ({ onBack }) => {
       }),
     ])
 
-    if (statsRes.status === "fulfilled") setStats(statsRes.value)
-    else setError(statsRes.reason.message)
+    const statsData   = statsRes.status   === "fulfilled" ? statsRes.value   : null
+    const bfsDfsData  = bfsRes.status    === "fulfilled" ? bfsRes.value    : null
+    const arestasData = arestasRes.status === "fulfilled" ? arestasRes.value : []
 
-    if (bfsRes.status === "fulfilled") setBfsDfs(bfsRes.value)
-    else setBfsErr(bfsRes.reason.message)
-
-    if (arestasRes.status === "fulfilled") setArestas(arestasRes.value)
+    if (statsData)   setStats(statsData)  ; else setError(statsRes.reason?.message)
+    if (bfsDfsData)  setBfsDfs(bfsDfsData); else setBfsErr(bfsRes.reason?.message)
+    setArestas(arestasData)
 
     setLoading(false)
     setSpinning(false)
-  }, [buildStatsUrl])
+
+    // Gerar insight com os dados FILTRADOS vindos do stats (nunca das arestas brutas)
+    if (statsData) {
+      generateRef.current({
+        filtro: { grauRange, pesoRange },
+        grafo: {
+          vertices:  statsData.totalV,
+          arestas:   statsData.totalE,
+          grauMedio: statsData.grauMedio,
+          pesoMedio: statsData.pesoMedio,
+        },
+        rotas: {
+          total:            statsData.totalE,
+          rotasNegativas:   statsData.rotasDeficitarias ?? 0,
+          percNegativas:    statsData.percDeficitarias != null ? statsData.percDeficitarias + "%" : "0%",
+          pesoMin:          statsData.pesoMin ?? 0,
+          pesoMax:          statsData.pesoMax ?? 0,
+          pesoMedioPositivo: statsData.pesoMedioPositivo ?? 0,
+        },
+        bfsDfs: bfsDfsData ? {
+          totalComparacoes: bfsDfsData.total_comparacoes,
+          bfsVence: bfsDfsData.comparacoes?.filter(r => r.mais_rapido === "BFS").length,
+          dfsVence: bfsDfsData.comparacoes?.filter(r => r.mais_rapido === "DFS").length,
+        } : null,
+      })
+    }
+  }, [buildStatsUrl, grauRange, pesoRange])
 
   useEffect(() => {
     fetch(`${API}/api/dashboard-stats/etn/filtros`)
-      .then(r => (r.ok ? r.json() : null))
+      .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data) setFiltros(data)
+        if (data) {
+          setRanges(data)
+          setGrauRange([data.grau_min, data.grau_max])
+          setPesoRange([data.peso_min, data.peso_max])
+        }
       })
       .catch(() => {})
   }, [])
@@ -426,23 +490,35 @@ export const DashboardETN = ({ onBack }) => {
         {error && <ErrorBanner msg={error} />}
 
         <FilterBar
-          filtros={filtros}
-          regiao={regiao}
-          setRegiao={setRegiao}
-          pais={pais}
-          setPais={setPais}
+          ranges={ranges}
+          grauRange={grauRange}
+          setGrauRange={setGrauRange}
+          pesoRange={pesoRange}
+          setPesoRange={setPesoRange}
           hasFilter={hasFilter}
           onClear={() => {
-            setRegiao("")
-            setPais("")
+            if (ranges) {
+              setGrauRange([ranges.grau_min, ranges.grau_max])
+              setPesoRange([ranges.peso_min, ranges.peso_max])
+            }
           }}
         />
 
-        <section className="dashboard-etn-kpi-grid">
+        <InsightPanel insight={insight} loading={loadingInsight} />
+
+        <section className="dashboard-etn-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
           <KPICard loading={loading} title="Vértices (Portos)" value={d.totalV?.toLocaleString("pt-BR") || "—"} />
           <KPICard loading={loading} title="Arestas (Rotas)" value={d.totalE?.toLocaleString("pt-BR") || "—"} />
           <KPICard loading={loading} title="Grau Médio" value={d.grauMedio != null ? Number(d.grauMedio).toFixed(2) : "—"} sub="conexões por porto" />
-          <KPICard loading={loading} title="Peso Médio" value={d.pesoMedio?.toLocaleString("pt-BR") || "—"} sub="por aresta" />
+          <KPICard loading={loading} title="Peso Médio (geral)" value={d.pesoMedio?.toLocaleString("pt-BR") || "—"} sub="incluindo rotas deficitárias" />
+          <KPICard loading={loading} title="Peso Médio (positivo)" value={d.pesoMedioPositivo?.toLocaleString("pt-BR") || "—"} sub="apenas rotas lucrativas" accent="#34d399" />
+          <KPICard
+            loading={loading}
+            title="Rotas Deficitárias"
+            value={d.rotasDeficitarias != null ? `${d.rotasDeficitarias.toLocaleString("pt-BR")} (${d.percDeficitarias}%)` : "—"}
+            sub="peso negativo"
+            accent="#f87171"
+          />
         </section>
 
         <section className="dashboard-etn-chart-row">
