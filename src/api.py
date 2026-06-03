@@ -54,6 +54,12 @@ def calc_stats(vertices, arestas):
 
     pesos = [w for a in arestas if (w := get_weight(a)) is not None]
     peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
+    pesos_pos = [w for w in pesos if w > 0]
+    peso_medio_positivo = round(sum(pesos_pos) / len(pesos_pos)) if pesos_pos else 0
+    rotas_deficitarias = sum(1 for w in pesos if w < 0)
+    perc_deficitarias = round(rotas_deficitarias / len(pesos) * 100, 1) if pesos else 0
+    peso_min = round(min(pesos)) if pesos else 0
+    peso_max = round(max(pesos)) if pesos else 0
     grau_medio = round((total_e * 2) / total_v, 2) if total_v else 0
 
     endpoints = (
@@ -81,6 +87,11 @@ def calc_stats(vertices, arestas):
         'totalV': total_v,
         'totalE': total_e,
         'pesoMedio': peso_medio,
+        'pesoMedioPositivo': peso_medio_positivo,
+        'rotasDeficitarias': rotas_deficitarias,
+        'percDeficitarias': perc_deficitarias,
+        'pesoMin': peso_min,
+        'pesoMax': peso_max,
         'grauMedio': grau_medio,
         'distribuicaoRegiao': dist_regiao,
         'distribuicaoGraus': dist_graus,
@@ -263,19 +274,35 @@ def get_dashboard_stats():
 
 @app.route('/api/dashboard-stats/etn/filtros')
 def get_etn_filtros():
-    vertices, _, err, code = load_etn()
+    vertices, arestas, err, code = load_etn()
     if err:
         return err, code
 
+    # Metadados de região/país (mantidos para compatibilidade)
     mapa = {}
     for v in vertices:
         r, c = v.get('D_Region', ''), v.get('Country', '')
         if r and c:
             mapa.setdefault(r, set()).add(c)
 
+    # Limites de grau
+    endpoints = (
+        [a.get('source') or a.get('origem') for a in arestas] +
+        [a.get('target') or a.get('destino') for a in arestas]
+    )
+    graus = Counter(filter(None, endpoints))
+    grau_vals = list(graus.values()) or [0]
+
+    # Limites de peso
+    pesos = [w for a in arestas if (w := get_weight(a)) is not None]
+
     return jsonify({
         'regioes': sorted(mapa),
         'paises_por_regiao': {r: sorted(ps) for r, ps in sorted(mapa.items())},
+        'grau_min': min(grau_vals),
+        'grau_max': max(grau_vals),
+        'peso_min': round(min(pesos)) if pesos else 0,
+        'peso_max': round(max(pesos)) if pesos else 0,
     })
 
 
@@ -285,22 +312,58 @@ def get_etn_filtrado():
     if err:
         return err, code
 
-    regiao, pais = request.args.get('regiao'), request.args.get('pais')
+    regiao  = request.args.get('regiao')
+    pais    = request.args.get('pais')
+    grau_min = request.args.get('grau_min', type=float)
+    grau_max = request.args.get('grau_max', type=float)
+    peso_min = request.args.get('peso_min', type=float)
+    peso_max = request.args.get('peso_max', type=float)
 
+    # Filtro por região/país
     if regiao:
         vertices = [v for v in vertices if v.get('D_Region') == regiao]
     if pais:
         vertices = [v for v in vertices if v.get('Country') == pais]
 
     codigos = {v['UNLocode'] for v in vertices}
-    # FIX: 'or' inclui arestas onde ao menos um lado pertence ao subgrafo filtrado
-    arestas = [
-        a for a in arestas
-        if get_endpoint(a, 'origem', 'from') in codigos
-        or get_endpoint(a, 'destino', 'to') in codigos
-    ]
 
-    return jsonify(calc_stats(vertices, arestas))
+    # Calcula grau de cada nó para filtro de grau
+    endpoints = (
+        [a.get('source') or a.get('origem') for a in arestas] +
+        [a.get('target') or a.get('destino') for a in arestas]
+    )
+    graus_full = Counter(filter(None, endpoints))
+
+    nos_validos = {
+        n for n, g in graus_full.items()
+        if (grau_min is None or g >= grau_min)
+        and (grau_max is None or g <= grau_max)
+    }
+
+    # Filtra arestas por região, grau e peso
+    arestas_filtradas = []
+    for a in arestas:
+        src = a.get('source') or a.get('origem') or get_endpoint(a, 'origem', 'from')
+        tgt = a.get('target') or a.get('destino') or get_endpoint(a, 'destino', 'to')
+
+        # Filtro região/país: ao menos um lado no subgrafo
+        if codigos and src not in codigos and tgt not in codigos:
+            continue
+
+        # Filtro grau
+        if src not in nos_validos or tgt not in nos_validos:
+            continue
+
+        # Filtro peso
+        w = get_weight(a)
+        if peso_min is not None and (w is None or w < peso_min):
+            continue
+        if peso_max is not None and (w is None or w > peso_max):
+            continue
+
+        arestas_filtradas.append(a)
+
+    return jsonify(calc_stats(vertices, arestas_filtradas))
 
 
 # ─── Filtros Aeroportos ────────────────────────────────────────

@@ -7,6 +7,8 @@ import {
 } from "recharts"
 import logoCompleta from "../assets/logo/logo_branca_completa.png"
 import "../css/Dashboard.css"
+import InsightPanel from "../../components/InsightPanel"
+import { useAIInsight } from "../hooks/useAIInsight"
 
 const API = "http://localhost:5000"
 const PALETTE = ["#1e40af", "#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626", "#0d9488", "#b45309", "#0369a1", "#65a30d"]
@@ -318,6 +320,7 @@ export const Dashboard = ({ onBack }) => {
   const [pais, setPais] = useState("")
   const [grauRange, setGrauRange] = useState([0, 9999])
   const [distRange, setDistRange] = useState([0, 9999999])
+  const { insight, loadingInsight, generate } = useAIInsight()
 
   const hasFilter = !!(
     pais ||
@@ -337,6 +340,11 @@ export const Dashboard = ({ onBack }) => {
     const qs = p.toString()
     return `${API}/api/dashboard-stats/aeroportos/filtrado${qs ? `?${qs}` : ""}`
   }, [pais, grauRange, distRange, ranges])
+
+  // generateRef permite chamar generate dentro do fetchAll sem adicioná-lo
+  // como dependência do useCallback — isso evita o loop infinito.
+  const generateRef = useRef(generate)
+  useEffect(() => { generateRef.current = generate }, [generate])
 
   const fetchAll = useCallback(async () => {
     setSpinning(true)
@@ -358,17 +366,54 @@ export const Dashboard = ({ onBack }) => {
       }),
     ])
 
-    if (statsRes.status === "fulfilled") setStats(statsRes.value)
-    else setError(statsRes.reason.message)
+    const statsData  = statsRes.status  === "fulfilled" ? statsRes.value  : null
+    const bfsDfsData = bfsRes.status    === "fulfilled" ? bfsRes.value    : null
+    const routesData = routesRes.status === "fulfilled" ? routesRes.value : []
 
-    if (bfsRes.status === "fulfilled") setBfsDfs(bfsRes.value)
-    else setBfsErr(bfsRes.reason.message)
-
-    if (routesRes.status === "fulfilled") setRoutes(routesRes.value)
+    if (statsData)  setStats(statsData)  ; else setError(statsRes.reason?.message)
+    if (bfsDfsData) setBfsDfs(bfsDfsData); else setBfsErr(bfsRes.reason?.message)
+    setRoutes(routesData)
 
     setLoading(false)
     setSpinning(false)
-  }, [buildStatsUrl])
+
+    // IA só é chamada DEPOIS que os dados chegaram — com os valores reais
+    const summary = buildSummary(statsData, bfsDfsData, routesData, { grauRange, distRange })
+    generateRef.current(summary)
+  }, [buildStatsUrl, grauRange, distRange])
+
+  function buildSummary(stats, bfsDfs, routes, filters) {
+    const pesos = routes
+      .map(r => r.distance ?? r.weight ?? r.peso)
+      .filter(Boolean)
+    const sorted = [...pesos].sort((a, b) => a - b)
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 0
+
+    return {
+      filtro: {
+        grau: filters.grauRange,
+        dist: filters.distRange,
+      },
+      grafo: {
+        vertices: stats?.totalV,
+        arestas: stats?.totalE,
+        grauMedio: stats?.grauMedio,
+        pesoMedio: stats?.pesoMedio,
+      },
+      rotas: {
+        total: routes.length,
+        pesoMin: sorted[0] ?? 0,
+        pesoMax: sorted[sorted.length - 1] ?? 0,
+        mediana: Math.round(median),
+      },
+      bfsDfs: bfsDfs ? {
+        totalComparacoes: bfsDfs.total_comparacoes,
+        bfsVence: bfsDfs.comparacoes?.filter(r => r.mais_rapido === "BFS").length,
+        dfsVence: bfsDfs.comparacoes?.filter(r => r.mais_rapido === "DFS").length,
+      } : null,
+    }
+    // ~15 campos → ≈ 80 tokens de entrada
+  }
 
   useEffect(() => {
     fetch(`${API}/api/dashboard-stats/aeroportos/filtros`)
@@ -380,7 +425,7 @@ export const Dashboard = ({ onBack }) => {
           setDistRange([data.dist_min, data.dist_max])
         }
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const debounceRef = useRef(null)
@@ -435,9 +480,9 @@ export const Dashboard = ({ onBack }) => {
 
   const topVerticesMap = useMemo(() => {
     const map = new Map()
-    ;(d.topVertices || []).forEach(v => {
-      map.set(v.nome, v.grau)
-    })
+      ; (d.topVertices || []).forEach(v => {
+        map.set(v.nome, v.grau)
+      })
     return map
   }, [d.topVertices])
 
@@ -584,6 +629,8 @@ export const Dashboard = ({ onBack }) => {
             }
           }}
         />
+
+        <InsightPanel insight={insight} loading={loadingInsight} />
 
         <section className="dashboard-kpi-grid">
           <KPICard loading={loading} title="Vértices (Aeroportos)" value={d.totalV?.toLocaleString("pt-BR") || "—"} />
