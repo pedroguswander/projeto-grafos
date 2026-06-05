@@ -139,8 +139,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  transform: translateY(-16px);
+  gap: 18px;
+  transform: translateY(18px);
 }
 
 /* logo */
@@ -179,14 +179,15 @@ body {
 /* área dos botões */
 .home-actions-grid {
   width: 100%;
-  max-width: 550px;
+  max-width: 650px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 14px 18px;
 }
 
-/* botões */
+/* botões base */
 .hub-card {
+  width: 100%;
   min-height: 78px;
   height: 78px;
   padding: 14px 16px;
@@ -243,23 +244,10 @@ body {
   border-radius: 18px 999px 999px 18px;
 }
 
-/* destaque do botão Declaração IA */
-.ia-card {
-  border-color: rgba(124, 92, 255, 0.18);
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.10), rgba(255,255,255,0.03));
-}
-
-.ia-card:hover {
-  border-color: rgba(124, 92, 255, 0.34);
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.16), rgba(255,255,255,0.04));
-}
-
-/* destaque do Painel de Voos */
+/* Painel de Voos */
 .flight-panel-card {
-  grid-column: 1 / -1;
-  min-height: 78px;
-  height: 78px;
-  border-radius: 999px;
+  grid-column: auto;
+  border-radius: 999px 18px 18px 999px;
   border: 1px solid rgba(77, 163, 255, 0.22);
   background: linear-gradient(135deg, rgba(77, 163, 255, 0.16), rgba(18, 34, 60, 0.92));
   box-shadow:
@@ -286,6 +274,37 @@ body {
   color: #c2d4ee;
 }
 
+/* Tráfego Aéreo */
+.airport-game-card {
+  grid-column: auto;
+  border-radius: 18px 999px 999px 18px;
+  border: 1px solid rgba(246, 197, 111, 0.22);
+  background: linear-gradient(135deg, rgba(246, 197, 111, 0.12), rgba(30, 18, 8, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 14px 32px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(246, 197, 111, 0.07);
+}
+
+.airport-game-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(246, 197, 111, 0.40);
+  background: linear-gradient(135deg, rgba(246, 197, 111, 0.2), rgba(40, 24, 8, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 18px 34px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(246, 197, 111, 0.13);
+}
+
+.airport-game-card .hub-card-title {
+  font-size: 0.87rem;
+  color: #f6e4b0;
+}
+
+.airport-game-card .hub-card-sub {
+  color: #c8b88a;
+}
+
 /* foco */
 .hub-card:focus-visible,
 .home-back-button:focus-visible {
@@ -297,7 +316,7 @@ body {
 @media (max-width: 900px) {
   .home-shell {
     max-width: 640px;
-    transform: translateY(-8px);
+    transform: translateY(12px);
   }
 
   .home-clean-content {
@@ -305,17 +324,15 @@ body {
   }
 
   .home-actions-grid {
-    gap: 10px;
+    max-width: 600px;
+    gap: 10px 14px;
   }
 
   .pill-left,
   .pill-right,
-  .flight-panel-card {
+  .flight-panel-card,
+  .airport-game-card {
     border-radius: 999px;
-  }
-
-  .flight-panel-card {
-    grid-column: 1 / -1;
   }
 }
 
@@ -345,9 +362,13 @@ body {
   }
 
   .home-shell {
-    gap: 8px;
+    gap: 12px;
     transform: none;
-    margin-top: 56px;
+    margin-top: 72px;
+  }
+
+  .home-logo-wrap {
+    margin-top: 8px;
   }
 
   .main-logo-clean {
@@ -370,7 +391,8 @@ body {
   }
 
   .hub-card,
-  .flight-panel-card {
+  .flight-panel-card,
+  .airport-game-card {
     min-height: 74px;
     height: auto;
     padding: 12px 14px;
@@ -378,16 +400,14 @@ body {
   }
 
   .hub-card-title,
-  .flight-panel-card .hub-card-title {
+  .flight-panel-card .hub-card-title,
+  .airport-game-card .hub-card-title {
     font-size: 0.84rem;
   }
 
   .hub-card-sub,
-  .flight-panel-card .hub-card-sub {
+  .flight-panel-card .hub-card-sub,
+  .airport-game-card .hub-card-sub {
     font-size: 0.75rem;
-  }
-
-  .flight-panel-card {
-    grid-column: auto;
   }
 }

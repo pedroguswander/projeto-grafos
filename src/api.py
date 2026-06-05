@@ -749,5 +749,20 @@ def calculate_etn_bellman_ford():
     })
 
 
+# ─── Airport Game ──────────────────────────────────────────────
+
+@app.route('/api/launch-game', methods=['POST'])
+def launch_game():
+    import subprocess
+    game_main = os.path.abspath(os.path.join(BASE, '..', 'atc', 'main.py'))
+    if not os.path.exists(game_main):
+        return jsonify({'error': 'atc/main.py não encontrado'}), 404
+    subprocess.Popen(
+        [sys.executable, game_main],
+        cwd=os.path.dirname(game_main),
+    )
+    return jsonify({'status': 'launched'})
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,0 +1,203 @@
+/* AirportGame — só overrides e elementos novos.
+   Layout base, back-button e hub-card vêm de Home.css */
+
+/* ── Cabeçalho acima do card ────────────────────────────────────── */
+.ag-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.ag-title {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #f4f7ff;
+  letter-spacing: -0.02em;
+  filter: drop-shadow(0 0 18px rgba(246, 197, 111, 0.22));
+}
+
+.ag-subtitle {
+  margin: 0;
+  font-size: 0.93rem;
+  color: #9db0c7;
+}
+
+/* ── Conteúdo dentro do home-clean-content ───────────────────────── */
+.ag-inner {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Cards de tipo de avião ──────────────────────────────────────── */
+.ag-planes-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.ag-plane-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: border-color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.ag-plane-card:hover {
+  border-color: color-mix(in srgb, var(--cc) 35%, transparent);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.ag-plane-pts {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--cc);
+}
+
+.ag-plane-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f4f7ff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ag-plane-desc {
+  font-size: 0.71rem;
+  color: #7a90a8;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Como jogar ──────────────────────────────────────────────────── */
+.ag-howto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.022);
+  border: 1px solid rgba(255,255,255,0.055);
+}
+
+.ag-howto-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.86rem;
+  color: #b8cbdc;
+}
+
+.ag-howto-num {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4da3ff, #7c5cff);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Área do botão ──────────────────────────────────────────────── */
+.ag-launch-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Botão Jogar ─────────────────────────────────────────────────── */
+.ag-launch-btn {
+  width: auto;
+  min-width: 260px;
+  min-height: 86px;
+  height: 86px;
+  padding: 0 34px;
+  cursor: pointer;
+  border: 1px solid rgba(246, 197, 111, 0.24);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(246, 197, 111, 0.14), rgba(58, 35, 10, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 14px 28px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(246, 197, 111, 0.08);
+  color: #f6e4b0;
+  font-family: inherit;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  outline: none;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    filter 0.18s ease;
+}
+
+.ag-launch-btn:hover {
+  transform: translateY(-3px);
+  border-color: rgba(246, 197, 111, 0.42);
+  background: linear-gradient(135deg, rgba(246, 197, 111, 0.20), rgba(70, 42, 12, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 18px 34px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(246, 197, 111, 0.14);
+  filter: brightness(1.03);
+}
+
+.ag-launch-btn:active {
+  transform: translateY(0) scale(0.985);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    0 8px 16px rgba(0, 0, 0, 0.20),
+    0 0 18px rgba(246, 197, 111, 0.08);
+  filter: brightness(0.98);
+}
+
+.ag-launch-btn:focus-visible {
+  outline: 2px solid rgba(246, 197, 111, 0.55);
+  outline-offset: 3px;
+}
+
+.ag-launch-btn-text {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f6e4b0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .ag-planes-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ag-title {
+    font-size: 1.4rem;
+  }
+
+  .ag-launch-btn {
+    min-width: 220px;
+    min-height: 78px;
+    height: 78px;
+    padding: 0 26px;
+  }
+}

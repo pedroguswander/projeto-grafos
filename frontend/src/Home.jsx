@@ -127,9 +127,16 @@ export default function Home({ onNavigate }) {
               type="button"
             >
               <span className="hub-card-title">PAINEL DE VOOS</span>
-              <span className="hub-card-sub">
-                Visualização principal e acompanhamento operacional
-              </span>
+              <span className="hub-card-sub">Acompanhamento operacional</span>
+            </button>
+
+            <button
+              className="hub-card airport-game-card"
+              onClick={() => onNavigate('airport-game')}
+              type="button"
+            >
+              <span className="hub-card-title">TRÁFEGO AÉREO</span>
+              <span className="hub-card-sub">Guie aviões sem colisões</span>
             </button>
           </div>
         </div>

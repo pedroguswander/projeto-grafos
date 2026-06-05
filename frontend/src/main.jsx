@@ -33,6 +33,8 @@ import RequisitosETN from './Requisitos_ENT.jsx';
 import RelatorioETN from './RelatorioETN.jsx';
 import PainelRotasETN from './PainelRotasETN.jsx';
 import RegrasETN from './RegrasETN.jsx';
+import AirportGame from './AirportGame.jsx';
+import './css/AirportGame.css';
 
 function Root() {
   const [screen, setScreen] = useState('splash');
@@ -71,6 +73,7 @@ function Root() {
   if (screen === 'declaracaoIA') return <DeclaracaoIA onBack={() => setScreen(lastHome)} />;
   if (screen === 'declaracao-ia-etn') return <DeclaracaoIAETN onBack={() => setScreen('home-etn')} />;
   if (screen === 'painel-etn') return <PainelRotasETN onBack={() => setScreen('home-etn')} />;
+  if (screen === 'airport-game') return <AirportGame onBack={() => setScreen(lastHome)} />;
 
   return <App onNavigate={handleNavigate} />;
 }
