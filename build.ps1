@@ -7,6 +7,22 @@ $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Push-Location $projectRoot
 
 try {
+    function Invoke-NativeCommand {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$FilePath,
+
+            [string[]]$Arguments = @()
+        )
+
+        & $FilePath @Arguments
+
+        if ($LASTEXITCODE -ne 0) {
+            $argsText = if ($Arguments.Count -gt 0) { " $($Arguments -join ' ')" } else { '' }
+            throw ("Command failed with exit code {0}: {1}{2}" -f $LASTEXITCODE, $FilePath, $argsText)
+        }
+    }
+
     Write-Host "==> Installing Python dependencies..."
     function Get-RealPythonPath {
         param([string]$cmdName)
@@ -17,22 +33,22 @@ try {
         return $null
     }
 
-    $python = Get-RealPythonPath python.exe
-    if (-not $python) {
-        $python = Get-RealPythonPath python3.exe
-    }
-    if (-not $python) {
-        $python = Get-RealPythonPath py.exe
-    }
-    if (-not $python) {
-        $python = "C:\Program Files\Python312\python.exe"
-    }
+    $pythonCandidates = @(
+        (Join-Path $projectRoot '.venv\Scripts\python.exe'),
+        (Join-Path $projectRoot 'venv\Scripts\python.exe'),
+        (Get-RealPythonPath python.exe),
+        (Get-RealPythonPath python3.exe),
+        (Get-RealPythonPath py.exe),
+        'C:\Program Files\Python312\python.exe'
+    ) | Where-Object { $_ }
 
-    if (-not (Test-Path $python)) {
+    $python = $pythonCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+    if (-not $python) {
         throw "Python executable not found. Install Python and ensure it is available as python.exe or py.exe."
     }
 
-    & $python -m pip install -r requirements.txt
+    Invoke-NativeCommand -FilePath $python -Arguments @('-m', 'pip', 'install', '--disable-pip-version-check', '-r', 'requirements.txt')
 
     Write-Host "==> Installing frontend dependencies..."
     $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
@@ -50,8 +66,14 @@ try {
     $env:Path = "$nodeBin;$env:Path"
 
     Push-Location "frontend"
-    & $npm install
-    & $npm run build
+    if (Test-Path 'package-lock.json') {
+        Invoke-NativeCommand -FilePath $npm -Arguments @('ci')
+    }
+    else {
+        Invoke-NativeCommand -FilePath $npm -Arguments @('install')
+    }
+
+    Invoke-NativeCommand -FilePath $npm -Arguments @('run', 'build')
     Pop-Location
 
     Write-Host "==> Build completo: backend e frontend concluídos."
