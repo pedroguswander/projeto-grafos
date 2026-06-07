@@ -11,7 +11,7 @@ import InsightPanel from "../../components/InsightPanel"
 import { useAIInsight } from "../hooks/useAIInsight"
 
 const API = "http://localhost:5000"
-const PALETTE = ["#1e40af", "#7c3aed", "#0891b2", "#059669", "#d97706", "#dc2626", "#0d9488", "#b45309", "#0369a1", "#65a30d"]
+const PALETTE = ["#1e40af", "#0891b2", "#0369a1"]
 
 function buildWeightBins(routes, numBins) {
   const entries = routes
@@ -309,6 +309,7 @@ const FilterBarAero = ({
 export const Dashboard = ({ onBack }) => {
   const [stats, setStats] = useState(null)
   const [routes, setRoutes] = useState([])
+  const [adjacencias, setAdjacencias] = useState([])
   const [bfsDfs, setBfsDfs] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -316,6 +317,7 @@ export const Dashboard = ({ onBack }) => {
   const [spinning, setSpinning] = useState(false)
   const [view, setView] = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
+  const [selectedHub, setSelectedHub] = useState(null)
   const [ranges, setRanges] = useState(null)
   const [pais, setPais] = useState("")
   const [grauRange, setGrauRange] = useState([0, 9999])
@@ -351,7 +353,7 @@ export const Dashboard = ({ onBack }) => {
     setError(null)
     setBfsErr(null)
 
-    const [statsRes, bfsRes, routesRes] = await Promise.allSettled([
+    const [statsRes, bfsRes, routesRes, adjRes] = await Promise.allSettled([
       fetch(buildStatsUrl()).then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
@@ -364,15 +366,21 @@ export const Dashboard = ({ onBack }) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       }),
+      fetch(`${API}/api/adjacencias`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      }),
     ])
 
     const statsData  = statsRes.status  === "fulfilled" ? statsRes.value  : null
     const bfsDfsData = bfsRes.status    === "fulfilled" ? bfsRes.value    : null
     const routesData = routesRes.status === "fulfilled" ? routesRes.value : []
+    const adjData    = adjRes.status    === "fulfilled" ? adjRes.value    : []
 
     if (statsData)  setStats(statsData)  ; else setError(statsRes.reason?.message)
     if (bfsDfsData) setBfsDfs(bfsDfsData); else setBfsErr(bfsRes.reason?.message)
     setRoutes(routesData)
+    setAdjacencias(adjData)
 
     setLoading(false)
     setSpinning(false)
@@ -526,6 +534,57 @@ export const Dashboard = ({ onBack }) => {
       .slice(0, 10)
   }, [comparacoes])
 
+  const adjMap = useMemo(() => {
+    const m = new Map()
+    adjacencias.forEach(a => {
+      m.set(`${a.origem}-${a.destino}`, a.tipo_conexao || "desconhecido")
+      m.set(`${a.destino}-${a.origem}`, a.tipo_conexao || "desconhecido")
+    })
+    return m
+  }, [adjacencias])
+
+  const pesoMedioTipoData = useMemo(() => {
+    const map = new Map()
+    routes.forEach(r => {
+      const tipo = adjMap.get(`${r.from}-${r.to}`) || "desconhecido"
+      const w = r.distance ?? r.weight ?? r.peso
+      if (w == null) return
+      if (!map.has(tipo)) map.set(tipo, { sum: 0, count: 0 })
+      const e = map.get(tipo)
+      e.sum += w; e.count++
+    })
+    return Array.from(map.entries())
+      .map(([name, { sum, count }]) => ({ name, media: Math.round(sum / count) }))
+      .sort((a, b) => b.media - a.media)
+      .slice(0, 10)
+  }, [routes, adjMap])
+
+  const connectionTypeData = useMemo(() => {
+    const map = new Map()
+    routes.forEach(r => {
+      const tipo = adjMap.get(`${r.from}-${r.to}`) || "desconhecido"
+      if (!map.has(tipo)) map.set(tipo, { value: 0, rotas: [] })
+      const e = map.get(tipo)
+      e.value++
+      e.rotas.push(`${r.from} → ${r.to}`)
+    })
+    return Array.from(map.entries())
+      .map(([name, { value, rotas }]) => ({ name, value, rotas }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+  }, [routes, adjMap])
+
+  const hubConexoes = useMemo(() => {
+    if (!selectedHub) return []
+    return routes
+      .filter(r => r.from === selectedHub || r.to === selectedHub)
+      .map(r => ({
+        label: r.from === selectedHub ? `→ ${r.to}` : `← ${r.from}`,
+        dist: r.distance ?? r.weight ?? r.peso,
+      }))
+      .sort((a, b) => (b.dist ?? 0) - (a.dist ?? 0))
+  }, [selectedHub, routes])
+
   const routeDistanceProfile = useMemo(() => {
     const vals = routes
       .map(r => r.distance ?? r.weight ?? r.peso)
@@ -550,7 +609,7 @@ export const Dashboard = ({ onBack }) => {
     return [
       { name: "Curtas", value: curtas, color: "#1e40af" },
       { name: "Médias", value: medias, color: "#0891b2" },
-      { name: "Longas", value: longas, color: "#d97706" },
+      { name: "Longas", value: longas, color: "#2b4cd3" },
     ]
   }, [routes])
 
@@ -558,6 +617,7 @@ export const Dashboard = ({ onBack }) => {
     return (d.distribuicaoGraus || []).map(item => ({
       grau: item.grau,
       quantidade: item.quantidade,
+      vertices: item.vertices || [],
     }))
   }, [d.distribuicaoGraus])
 
@@ -687,14 +747,47 @@ export const Dashboard = ({ onBack }) => {
           <div className="glass-card dashboard-chart-card">
             <div className="dashboard-chart-header">
               <h3 className="dashboard-chart-title">Top 10 Hubs</h3>
+              {selectedHub && (
+                <button onClick={() => setSelectedHub(null)} type="button" style={{ fontSize: 11, color: "#0891b2", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                  ✕ Fechar
+                </button>
+              )}
             </div>
-            {loading ? <Skeleton /> : (
+            {loading ? <Skeleton /> : selectedHub ? (
+              <div style={{ padding: "8px 4px" }}>
+                <p style={{ fontWeight: 700, color: "#0891b2", marginBottom: 6, fontSize: 13 }}>
+                  {selectedHub} — {hubConexoes.length} conexão(ões)
+                </p>
+                <div style={{ maxHeight: 230, overflowY: "auto", fontSize: 12, color: "#9ca3af", display: "flex", flexDirection: "column", gap: 3 }}>
+                  {hubConexoes.map((c, i) => (
+                    <div key={i} style={{ padding: "3px 6px", background: "rgba(8,145,178,0.07)", borderRadius: 4, display: "flex", justifyContent: "space-between" }}>
+                      <span>{c.label}</span>
+                      {c.dist != null && <span style={{ opacity: 0.6 }}>{c.dist.toLocaleString("pt-BR")}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={d.topVertices || []} layout="vertical">
+                <BarChart
+                  data={d.topVertices || []}
+                  layout="vertical"
+                  onClick={e => e?.activePayload?.[0] && setSelectedHub(e.activePayload[0].payload.nome)}
+                  style={{ cursor: "pointer" }}
+                >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.07)" />
                   <XAxis type="number" tick={{ fontSize: 11, fill: "#9ca3af" }} />
                   <YAxis dataKey="nome" type="category" width={90} tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                  <Tooltip content={<ChartTooltip suffix=" conexões" />} />
+                  <Tooltip content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+                    return (
+                      <div className="dashboard-custom-tooltip">
+                        <p className="dashboard-tooltip-heading">{label}</p>
+                        <p className="dashboard-tooltip-value">{payload[0].value} conexões</p>
+                        <p style={{ fontSize: 10, color: "#0891b2", marginTop: 4 }}>Clique para ver conexões</p>
+                      </div>
+                    )
+                  }} />
                   <Bar dataKey="grau" radius={[0, 6, 6, 0]}>
                     {(d.topVertices || []).map((_, i) => (
                       <Cell key={i} fill={`rgba(77,163,255,${1 - i * 0.07})`} />
@@ -779,13 +872,30 @@ export const Dashboard = ({ onBack }) => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.07)" />
                   <XAxis dataKey="grau" tick={{ fontSize: 11, fill: "#9ca3af" }} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                  <Tooltip content={<ChartTooltip />} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null
+                      const data = payload[0].payload
+                      return (
+                        <div className="dashboard-custom-tooltip dashboard-tooltip-wide">
+                          <p className="dashboard-tooltip-heading">Grau {label}</p>
+                          <p className="dashboard-tooltip-label">{data.quantidade} aeroporto(s)</p>
+                          {data.vertices?.length > 0 && (
+                            <div className="dashboard-tooltip-list">
+                              {data.vertices.map((v, i) => <div key={i}>• {v}</div>)}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="quantidade"
                     stroke="#0891b2"
                     strokeWidth={2}
                     fill="url(#gradDegreeDensity)"
+                    dot={{ r: 3, fill: "#0891b2" }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -976,6 +1086,79 @@ export const Dashboard = ({ onBack }) => {
                         key={i}
                         fill={item.winner === "BFS" ? "rgba(8,145,178,0.85)" : "rgba(124,58,237,0.85)"}
                       />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
+        <section className="dashboard-chart-row">
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <div>
+                <h3 className="dashboard-chart-title">Top Tipos de Conexão</h3>
+                <p className="dashboard-chart-meta">Frequência de cada categoria de rota no grafo.</p>
+              </div>
+            </div>
+            {loading ? <Skeleton /> : connectionTypeData.length === 0 ? (
+              <div className="dashboard-empty-state">Sem dados de tipo de conexão.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={connectionTypeData} layout="vertical" margin={{ top: 4, right: 16, left: 10, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                  <Tooltip content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    const d = payload[0].payload
+                    return (
+                      <div className="dashboard-custom-tooltip dashboard-tooltip-wide">
+                        <p className="dashboard-tooltip-heading">{d.name}</p>
+                        <div className="dashboard-tooltip-list">
+                          {d.rotas?.map((r, i) => <div key={i}>• {r}</div>)}
+                        </div>
+                      </div>
+                    )
+                  }} />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                    {connectionTypeData.map((_, i) => (
+                      <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div className="glass-card dashboard-chart-card">
+            <div className="dashboard-chart-header">
+              <div>
+                <h3 className="dashboard-chart-title">Peso por Tipo de Conexão</h3>
+                <p className="dashboard-chart-meta">Peso médio das rotas agrupado por categoria.</p>
+              </div>
+            </div>
+            {loading ? <Skeleton /> : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart
+                  data={pesoMedioTipoData}
+                  layout="vertical" margin={{ top: 4, right: 16, left: 10, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                  <Tooltip content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+                    return (
+                      <div className="dashboard-custom-tooltip">
+                        <p className="dashboard-tooltip-heading">{label}</p>
+                        <p className="dashboard-tooltip-value">Peso médio: {payload[0].value}</p>
+                      </div>
+                    )
+                  }} />
+                  <Bar dataKey="media" radius={[0, 6, 6, 0]}>
+                    {connectionTypeData.map((_, i) => (
+                      <Cell key={i} fill={PALETTE[(i + 5) % PALETTE.length]} />
                     ))}
                   </Bar>
                 </BarChart>

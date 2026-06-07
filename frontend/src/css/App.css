@@ -25,19 +25,12 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
-}
-
 .airport-connections-search {
   position: relative;
   margin-bottom: 1rem;
 }
 
 .app-modern-bg {
-  min-height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -304,9 +297,6 @@ body,
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.02), transparent 18%),
-    radial-gradient(circle at 16% 12%, rgba(77, 163, 255, 0.04), transparent 18%);
   z-index: 0;
 }
 
