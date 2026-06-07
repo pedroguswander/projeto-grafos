@@ -3,6 +3,7 @@ import { RefreshCw, AlertCircle, Loader2, Zap } from "lucide-react"
 import {
   AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie,
 } from "recharts"
 import logoCompleta from "../assets/logo-2/logo-branca-completa2.png"
 import "../css/DashboardETN.css"
@@ -28,7 +29,7 @@ function buildWeightBins(arestas, numBins) {
   const entries = arestas
     .map(a => ({
       w: a.peso ?? a.weight ?? a.distance,
-      label: a.source && a.target ? `${a.source} – ${a.target}` : null,
+      label: (a.origem && a.destino) ? `${a.origem} – ${a.destino}` : (a.source && a.target) ? `${a.source} – ${a.target}` : null,
     }))
     .filter(e => e.w != null && !isNaN(e.w))
 
@@ -248,7 +249,7 @@ const FilterBar = ({ ranges, grauRange, setGrauRange, pesoRange, setPesoRange, o
   const hasPeso = ranges.peso_min != null && ranges.peso_max != null
   if (!hasGrau && !hasPeso) return null
   return (
-    <section className="glass-card dashboard-etn-filter-bar">
+    <section className="glass-card-etn dashboard-etn-filter-bar">
       <div className="dashboard-etn-section-header">
         <div className="dashboard-etn-section-title">Filtros do painel</div>
         <div className="dashboard-etn-section-subtitle">
@@ -288,6 +289,7 @@ const FilterBar = ({ ranges, grauRange, setGrauRange, pesoRange, setPesoRange, o
 export const DashboardETN = ({ onBack }) => {
   const [stats, setStats] = useState(null)
   const [arestas, setArestas] = useState([])
+  const [vertices, setVertices] = useState([])
   const [bfsDfs, setBfsDfs] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -295,6 +297,9 @@ export const DashboardETN = ({ onBack }) => {
   const [spinning, setSpinning] = useState(false)
   const [view, setView] = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
+  const [selectedHub, setSelectedHub] = useState(null)
+  const [selectedPais, setSelectedPais] = useState(null)
+  const [selectedRegiao, setSelectedRegiao] = useState(null)
   const [ranges, setRanges] = useState(null)
   const [grauRange, setGrauRange] = useState([0, 9999])
   const [pesoRange, setPesoRange] = useState([-9999999, 9999999])
@@ -326,7 +331,7 @@ export const DashboardETN = ({ onBack }) => {
     setError(null)
     setBfsErr(null)
 
-    const [statsRes, bfsRes, arestasRes] = await Promise.allSettled([
+    const [statsRes, bfsRes, arestasRes, verticesRes] = await Promise.allSettled([
       fetch(buildStatsUrl()).then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
@@ -335,19 +340,25 @@ export const DashboardETN = ({ onBack }) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       }),
-      fetch(`${API}/api/ego-aeroportos`).then(r => {
+      fetch(`${API}/api/etn/arestas`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      }),
+      fetch(`${API}/api/etn/vertices`).then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       }),
     ])
 
-    const statsData   = statsRes.status   === "fulfilled" ? statsRes.value   : null
-    const bfsDfsData  = bfsRes.status    === "fulfilled" ? bfsRes.value    : null
-    const arestasData = arestasRes.status === "fulfilled" ? arestasRes.value : []
+    const statsData    = statsRes.status    === "fulfilled" ? statsRes.value    : null
+    const bfsDfsData   = bfsRes.status      === "fulfilled" ? bfsRes.value      : null
+    const arestasData  = arestasRes.status  === "fulfilled" ? arestasRes.value  : []
+    const verticesData = verticesRes.status === "fulfilled" ? verticesRes.value : []
 
-    if (statsData)   setStats(statsData)  ; else setError(statsRes.reason?.message)
-    if (bfsDfsData)  setBfsDfs(bfsDfsData); else setBfsErr(bfsRes.reason?.message)
+    if (statsData)  setStats(statsData)  ; else setError(statsRes.reason?.message)
+    if (bfsDfsData) setBfsDfs(bfsDfsData); else setBfsErr(bfsRes.reason?.message)
     setArestas(arestasData)
+    setVertices(verticesData)
 
     setLoading(false)
     setSpinning(false)
@@ -436,6 +447,54 @@ export const DashboardETN = ({ onBack }) => {
       median: Math.round(sorted[Math.floor(sorted.length / 2)]),
     }
   }, [arestas])
+
+  const vertexMap = useMemo(() => {
+    const m = new Map()
+    vertices.forEach(v => m.set(v.UNLocode, v.name || v.UNLocode))
+    return m
+  }, [vertices])
+
+  const topRotasPeso = useMemo(() => {
+    return [...arestas]
+      .map(a => ({
+        label: `${vertexMap.get(a.origem) || a.origem} → ${vertexMap.get(a.destino) || a.destino}`,
+        peso: parseFloat(a.peso ?? 0),
+      }))
+      .filter(a => !isNaN(a.peso))
+      .sort((a, b) => b.peso - a.peso)
+      .slice(0, 10)
+  }, [arestas, vertexMap])
+
+  const portosPorPais = useMemo(() => {
+    const m = new Map()
+    vertices.forEach(v => {
+      const pais = v.Country || "Desconhecido"
+      if (!m.has(pais)) m.set(pais, [])
+      m.get(pais).push({ code: v.UNLocode, name: v.name || v.UNLocode })
+    })
+    return Array.from(m.entries())
+      .map(([nome, portos]) => ({ nome, valor: portos.length, portos }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 12)
+  }, [vertices])
+
+  const balancoPorRegiao = useMemo(() => {
+    const m = new Map()
+    arestas.forEach(a => {
+      const peso = parseFloat(a.peso ?? 0)
+      if (isNaN(peso)) return
+      const vOrig = vertices.find(v => v.UNLocode === a.origem)
+      const regiao = vOrig?.D_Region || "Desconhecida"
+      if (!m.has(regiao)) m.set(regiao, { lucrativas: 0, deficitarias: 0, rotasLucr: [], rotasDef: [] })
+      const e = m.get(regiao)
+      const label = `${vertexMap.get(a.origem) || a.origem} → ${vertexMap.get(a.destino) || a.destino}`
+      if (peso >= 0) { e.lucrativas++; e.rotasLucr.push(label) }
+      else { e.deficitarias++; e.rotasDef.push(label) }
+    })
+    return Array.from(m.entries())
+      .map(([nome, v]) => ({ nome, ...v }))
+      .sort((a, b) => (b.lucrativas + b.deficitarias) - (a.lucrativas + a.deficitarias))
+  }, [arestas, vertices, vertexMap])
 
   return (
     <div className="app-modern-bg dashboard-etn-page">
@@ -570,15 +629,48 @@ export const DashboardETN = ({ onBack }) => {
           <div className="glass-card dashboard-etn-chart-card">
             <div className="dashboard-etn-chart-header">
               <h3 className="dashboard-etn-chart-title">Top 10 Hubs</h3>
+              {selectedHub && (
+                <button onClick={() => setSelectedHub(null)} type="button" style={{ fontSize: 11, color: "#34d399", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                  ✕ Fechar
+                </button>
+              )}
             </div>
 
-            {loading ? <Skeleton /> : (
+            {loading ? <Skeleton /> : selectedHub ? (
+              <div style={{ padding: "8px 4px" }}>
+                <p style={{ fontWeight: 700, color: "#34d399", marginBottom: 6, fontSize: 13 }}>
+                  {selectedHub.nome_completo || selectedHub.nome} — {selectedHub.grau} conexões
+                </p>
+                <div style={{ maxHeight: 230, overflowY: "auto", fontSize: 12, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 3 }}>
+                  {(selectedHub.conexoes || []).map((c, i) => (
+                    <div key={i} style={{ padding: "3px 6px", background: "rgba(52,211,153,0.07)", borderRadius: 4 }}>
+                      → {vertexMap.get(c) ? `${vertexMap.get(c)} (${c})` : c}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={d.topVertices || []} layout="vertical">
+                <BarChart
+                  data={(d.topVertices || []).map(v => ({ ...v, label: v.nome_completo || v.nome }))}
+                  layout="vertical"
+                  onClick={e => e?.activePayload?.[0] && setSelectedHub(e.activePayload[0].payload)}
+                  style={{ cursor: "pointer" }}
+                >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.07)" />
                   <XAxis type="number" tick={{ fontSize: 11, fill: "#9cc8b6" }} />
-                  <YAxis dataKey="nome" type="category" width={90} tick={{ fontSize: 11, fill: "#9cc8b6" }} />
-                  <Tooltip content={<ChartTooltip suffix=" conexões" />} />
+                  <YAxis dataKey="label" type="category" width={110} tick={{ fontSize: 10, fill: "#9cc8b6" }} />
+                  <Tooltip content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    const v = payload[0].payload
+                    return (
+                      <div className="dashboard-etn-custom-tooltip">
+                        <p className="dashboard-etn-tooltip-heading">{v.nome_completo || v.nome} ({v.nome})</p>
+                        <p className="dashboard-etn-tooltip-value">{v.grau} conexões</p>
+                        <p style={{ fontSize: 10, color: "#34d399", marginTop: 4 }}>Clique para ver destinos</p>
+                      </div>
+                    )
+                  }} />
                   <Bar dataKey="grau" radius={[0, 6, 6, 0]}>
                     {(d.topVertices || []).map((_, i) => (
                       <Cell key={i} fill={`rgba(52,211,153,${1 - i * 0.07})`} />
@@ -743,6 +835,169 @@ export const DashboardETN = ({ onBack }) => {
             ) : (
               <ComparisonTable rows={comparacoes} />
             )
+          )}
+        </section>
+        <section className="dashboard-etn-chart-row">
+          <div className="glass-card dashboard-etn-chart-card">
+            <div className="dashboard-etn-chart-header">
+              <div>
+                <h3 className="dashboard-etn-chart-title">Top 10 Rotas por Peso</h3>
+                <p className="dashboard-etn-chart-meta">Rotas com maior peso (lucratividade) na rede.</p>
+              </div>
+            </div>
+            {loading ? <Skeleton /> : topRotasPeso.length === 0 ? (
+              <div className="dashboard-etn-empty-state">Sem dados de arestas.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topRotasPeso} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "#9cc8b6" }} tickFormatter={v => v.toLocaleString("pt-BR")} />
+                  <YAxis dataKey="label" type="category" width={200} tick={{ fontSize: 10, fill: "#9cc8b6" }} />
+                  <Tooltip content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    return (
+                      <div className="dashboard-etn-custom-tooltip">
+                        <p className="dashboard-etn-tooltip-heading">{payload[0].payload.label}</p>
+                        <p className="dashboard-etn-tooltip-value">Peso: {Number(payload[0].value).toLocaleString("pt-BR")}</p>
+                      </div>
+                    )
+                  }} />
+                  <Bar dataKey="peso" radius={[0, 6, 6, 0]}>
+                    {topRotasPeso.map((item, i) => (
+                      <Cell key={i} fill={item.peso >= 0 ? `rgba(52,211,153,${1 - i * 0.07})` : "#f87171"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div className="glass-card dashboard-etn-chart-card">
+            <div className="dashboard-etn-chart-header">
+              <div>
+                <h3 className="dashboard-etn-chart-title">Portos por País</h3>
+                <p className="dashboard-etn-chart-meta">Quantidade de portos por país na rede ETN.</p>
+              </div>
+              {selectedPais && (
+                <button onClick={() => setSelectedPais(null)} type="button" style={{ fontSize: 11, color: "#34d399", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                  ✕ Fechar
+                </button>
+              )}
+            </div>
+            {loading ? <Skeleton /> : selectedPais ? (
+              <div style={{ padding: "8px 4px" }}>
+                <p style={{ fontWeight: 700, color: "#34d399", marginBottom: 6, fontSize: 13 }}>
+                  {selectedPais.nome} — {selectedPais.valor} porto(s)
+                </p>
+                <div style={{ maxHeight: 230, overflowY: "auto", fontSize: 12, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 3 }}>
+                  {selectedPais.portos.map((p, i) => (
+                    <div key={i} style={{ padding: "3px 6px", background: "rgba(52,211,153,0.07)", borderRadius: 4 }}>
+                      {p.name} <span style={{ opacity: 0.5 }}>({p.code})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : portosPorPais.length === 0 ? (
+              <div className="dashboard-etn-empty-state">Sem dados de vértices.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={portosPorPais}
+                  layout="vertical"
+                  margin={{ top: 4, right: 40, left: 8, bottom: 4 }}
+                  onClick={e => e?.activePayload?.[0] && setSelectedPais(e.activePayload[0].payload)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "#9cc8b6" }} />
+                  <YAxis dataKey="nome" type="category" width={100} tick={{ fontSize: 10, fill: "#9cc8b6" }} />
+                  <Tooltip content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+                    return (
+                      <div className="dashboard-etn-custom-tooltip">
+                        <p className="dashboard-etn-tooltip-heading">{label}</p>
+                        <p className="dashboard-etn-tooltip-value">{payload[0].value} porto(s)</p>
+                        <p style={{ fontSize: 10, color: "#34d399", marginTop: 4 }}>Clique para ver portos</p>
+                      </div>
+                    )
+                  }} />
+                  <Bar dataKey="valor" radius={[0, 6, 6, 0]} label={{ position: "right", fill: "#9cc8b6", fontSize: 10 }}>
+                    {portosPorPais.map((_, i) => (
+                      <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
+
+        <section className="glass-card dashboard-etn-chart-card">
+          <div className="dashboard-etn-chart-header">
+            <div>
+              <h3 className="dashboard-etn-chart-title">Balanço por Região — Lucrativas vs Deficitárias</h3>
+              <p className="dashboard-etn-chart-meta">Rotas positivas e negativas por região. Clique para ver as rotas.</p>
+            </div>
+            {selectedRegiao && (
+              <button onClick={() => setSelectedRegiao(null)} type="button" style={{ fontSize: 11, color: "#34d399", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                ✕ Fechar
+              </button>
+            )}
+          </div>
+          {loading ? <Skeleton height={300} /> : selectedRegiao ? (
+            <div style={{ padding: "8px 4px" }}>
+              <p style={{ fontWeight: 700, color: "#34d399", marginBottom: 8, fontSize: 13 }}>{selectedRegiao.nome}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#34d399", marginBottom: 4 }}>✔ Lucrativas ({selectedRegiao.lucrativas})</p>
+                  <div style={{ maxHeight: 220, overflowY: "auto", fontSize: 11, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 2 }}>
+                    {selectedRegiao.rotasLucr.map((r, i) => (
+                      <div key={i} style={{ padding: "2px 5px", background: "rgba(52,211,153,0.07)", borderRadius: 3 }}>{r}</div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#f87171", marginBottom: 4 }}>✖ Deficitárias ({selectedRegiao.deficitarias})</p>
+                  <div style={{ maxHeight: 220, overflowY: "auto", fontSize: 11, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 2 }}>
+                    {selectedRegiao.rotasDef.map((r, i) => (
+                      <div key={i} style={{ padding: "2px 5px", background: "rgba(248,113,113,0.07)", borderRadius: 3 }}>{r}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : balancoPorRegiao.length === 0 ? (
+            <div className="dashboard-etn-empty-state">Sem dados de balanço.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={Math.max(300, balancoPorRegiao.length * 42)}>
+              <BarChart
+                data={balancoPorRegiao}
+                layout="vertical"
+                margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+                barGap={2}
+                onClick={e => e?.activePayload?.[0] && setSelectedRegiao(e.activePayload[0].payload)}
+                style={{ cursor: "pointer" }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "#9cc8b6" }} />
+                <YAxis dataKey="nome" type="category" width={180} tick={{ fontSize: 10, fill: "#9cc8b6" }} />
+                <Tooltip content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null
+                  return (
+                    <div className="dashboard-etn-custom-tooltip">
+                      <p className="dashboard-etn-tooltip-heading">{label}</p>
+                      {payload.map((p, i) => (
+                        <p key={i} style={{ color: p.color }}>{p.name}: {p.value}</p>
+                      ))}
+                      <p style={{ fontSize: 10, color: "#34d399", marginTop: 4 }}>Clique para ver rotas</p>
+                    </div>
+                  )
+                }} />
+                <Legend formatter={v => <span style={{ color: v === "lucrativas" ? "#34d399" : "#f87171", fontWeight: 700 }}>{v}</span>} />
+                <Bar dataKey="lucrativas" fill="#34d399" radius={[0, 4, 4, 0]} maxBarSize={18} />
+                <Bar dataKey="deficitarias" fill="#f87171" radius={[0, 4, 4, 0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
           )}
         </section>
       </main>

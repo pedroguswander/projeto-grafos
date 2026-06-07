@@ -83,6 +83,26 @@ def calc_stats(vertices, arestas):
         for k, v in sorted(regioes.items(), key=lambda x: x[1], reverse=True)
     ]
 
+    vertex_info = {v.get('UNLocode', ''): v for v in vertices}
+
+    # conexões por nó: destinos de cada origem
+    conexoes_map = {}
+    for a in arestas:
+        orig = get_endpoint(a, 'origem', 'from')
+        dest = get_endpoint(a, 'destino', 'to')
+        if orig:
+            conexoes_map.setdefault(orig, []).append(dest)
+
+    top = []
+    for n, g in graus.most_common(10):
+        info = vertex_info.get(n, {})
+        top.append({
+            'nome': n,
+            'nome_completo': info.get('name', n),
+            'grau': g,
+            'conexoes': conexoes_map.get(n, []),
+        })
+
     return {
         'totalV': total_v,
         'totalE': total_e,
@@ -95,7 +115,7 @@ def calc_stats(vertices, arestas):
         'grauMedio': grau_medio,
         'distribuicaoRegiao': dist_regiao,
         'distribuicaoGraus': dist_graus,
-        'topVertices': [{'nome': n, 'grau': g} for n, g in graus.most_common(10)],
+        'topVertices': top,
     }
 
 def load_etn():
@@ -180,6 +200,10 @@ def get_routes():
         for src, neighbors in g.adjacency_list.items()
         for dst, dist in neighbors
     ])
+
+@app.route('/api/adjacencias')
+def get_adjacencias():
+    return csv_endpoint('adjacencias_aeroportos.csv')
 
 @app.route('/api/aeroportos-data')
 def get_aeroportos_data():
@@ -271,6 +295,20 @@ def get_dashboard_stats():
         return err, code
     return jsonify(calc_stats(vertices, arestas))
 
+
+@app.route('/api/etn/arestas')
+def get_etn_arestas():
+    vertices, arestas, err, code = load_etn()
+    if err:
+        return err, code
+    return jsonify(arestas)
+
+@app.route('/api/etn/vertices')
+def get_etn_vertices():
+    vertices, arestas, err, code = load_etn()
+    if err:
+        return err, code
+    return jsonify(vertices)
 
 @app.route('/api/dashboard-stats/etn/filtros')
 def get_etn_filtros():
