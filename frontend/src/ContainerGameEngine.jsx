@@ -60,6 +60,54 @@ const REP_LEVEL_GAIN_DECAY = 0.12
 const REP_MIN_GAIN = 1.5
 const HUD_H = 58
 
+// ── Graph: Bellman-Ford helpers ────────────────────────────────
+
+// Peso de uma jogada: negativo = eficiente, positivo = custoso
+function getMoveWeight({ perfect, reactionTime, level }) {
+  let w = perfect ? -3 : 2
+  const rt = reactionTime / 1000  // segundos
+
+  // Janela ótima: ~2s (tempo natural do pêndulo chegar à posição ideal)
+  if (rt >= 1.5 && rt <= 2.5)      w -= 2  // sweet spot
+  else if (rt >= 1.0 && rt < 1.5)  w -= 1  // ligeiramente cedo
+  else if (rt > 2.5 && rt <= 3.5)  w -= 1  // ligeiramente tarde
+  else if (rt > 3.5 && rt <= 5.0)  w += 1  // tarde demais
+  else if (rt > 5.0)               w += 2  // indecisão
+
+  // nível aumenta levemente o custo base
+  w += Math.floor((level - 1) / 5) * 0.5
+
+  return Math.round(w * 10) / 10
+}
+
+// Bellman-Ford: dist[i] = custo mínimo de S0 até Si
+// Cada nó Si representa "i containers empilhados com sucesso"
+function runBellmanFord(nodeCount, edges) {
+  const dist = new Array(nodeCount).fill(Infinity)
+  dist[0] = 0
+
+  for (let i = 0; i < nodeCount - 1; i++) {
+    let updated = false
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight
+        updated = true
+      }
+    }
+    if (!updated) break
+  }
+
+  // Detectar ciclo negativo (não ocorre neste DAG linear, incluído por completude)
+  let hasNegativeCycle = false
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true; break
+    }
+  }
+
+  return { dist, hasNegativeCycle }
+}
+
 // ── Ranking ────────────────────────────────────────────────────
 const RANKING_KEY = 'cstack_ranking'
 
@@ -235,6 +283,14 @@ function makeState() {
     reputation: REP_START,
     bgTime: 0,
     initialViewY,
+    // ── Grafo de estados da partida ──────────────────────────
+    graphNodes: 1,          // S0 existe ao início
+    graphEdges: [],         // arestas Si→Si+1 adicionadas a cada jogada
+    bellmanDist: [0],       // custo mínimo acumulado por BF
+    moveStartTime: performance.now(),  // quando o container ficou disponível
+    lastReactionTime: 0,
+    lastMoveWeight: null,
+    lastMoveLabel: '',
   }
 }
 
@@ -292,6 +348,7 @@ function update(s) {
 
   if (s.landDelay > 0) {
     s.landDelay--
+    if (s.landDelay === 0) s.moveStartTime = performance.now()
     updateParticles(s)
     updateFloatTexts(s)
     return
@@ -371,6 +428,20 @@ function update(s) {
       s.dropping = null
       s.stacked++
       s.score += pts
+
+      // ── Grafo: criar aresta Si-1 → Si e recalcular Bellman-Ford ──
+      {
+        const fromIdx = s.stacked - 1
+        const toIdx   = s.stacked
+        const w = getMoveWeight({ perfect, reactionTime: s.lastReactionTime, level: s.level })
+        s.lastMoveWeight = w
+        s.lastMoveLabel  = w <= -4 ? '⚡ ELITE' : w < 0 ? '✦ EFICIENTE' : w < 2 ? '◆ NEUTRO' : '⚠ CUSTOSO'
+        s.graphNodes++
+        s.graphEdges.push({ from: fromIdx, to: toIdx, weight: w })
+        const { dist } = runBellmanFord(s.graphNodes, s.graphEdges)
+        s.bellmanDist = dist
+      }
+
       playSound(perfect ? 'perfect' : 'land')
 
       if (s.stacked % 8 === 0) s.level++
@@ -827,6 +898,262 @@ function drawHUD(ctx, s) {
   ctx.textAlign = 'left'
 }
 
+// ── Graph Visualization ─────────────────────────────────────────
+
+const GVIZ_W    = 240
+const GVIZ_COLS = 3      // 3 por linha → nós maiores e mais legíveis
+const GVIZ_ROW_H = 96
+const GVIZ_NR   = 20    // node radius
+const GVIZ_PX   = 30    // horizontal padding
+
+// CSS elastic-out: overshoot e se asienta em 1
+function elasticOut(t) {
+  if (t <= 0) return 0
+  if (t >= 1) return 1
+  const c4 = (2 * Math.PI) / 3
+  return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1
+}
+
+function gvizPos(i, W) {
+  const row = Math.floor(i / GVIZ_COLS)
+  const col = (row % 2 === 0) ? i % GVIZ_COLS : GVIZ_COLS - 1 - i % GVIZ_COLS
+  const sp  = GVIZ_COLS <= 1 ? 0 : (W - GVIZ_PX * 2) / (GVIZ_COLS - 1)
+  return { x: GVIZ_PX + col * sp, y: 38 + GVIZ_NR + row * GVIZ_ROW_H }
+}
+
+function drawGviz(ctx, W, H, { edges, nodeCount, nodeT, edgeProgress, nodeRings, bellmanDist, pulseT }) {
+  ctx.clearRect(0, 0, W, H)
+  if (nodeCount < 1) return
+
+  const pos = Array.from({ length: nodeCount }, (_, i) => gvizPos(i, W))
+
+  // ── Edges ─────────────────────────────────────────────────────
+  for (let idx = 0; idx < edges.length; idx++) {
+    const { from, to, weight } = edges[idx]
+    const p1 = pos[from], p2 = pos[to]
+    if (!p1 || !p2) continue
+
+    const prog = edgeProgress[idx] ?? 1
+    const rgb  = weight < 0 ? '76,247,176' : weight < 2 ? '180,200,190' : '255,107,107'
+    const sameRow = Math.floor(from / GVIZ_COLS) === Math.floor(to / GVIZ_COLS)
+
+    ctx.save()
+    ctx.lineWidth = 2.5
+
+    if (sameRow) {
+      const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x)
+      const sx  = p1.x + Math.cos(ang) * GVIZ_NR
+      const sy  = p1.y + Math.sin(ang) * GVIZ_NR
+      const ex  = p2.x - Math.cos(ang) * GVIZ_NR
+      const ey  = p2.y - Math.sin(ang) * GVIZ_NR
+      const len = Math.hypot(ex - sx, ey - sy)
+
+      // Aresta se desenhando progressivamente via dash-offset
+      ctx.strokeStyle = `rgba(${rgb},0.90)`
+      ctx.setLineDash([len, len])
+      ctx.lineDashOffset = len * (1 - prog)
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke()
+      ctx.setLineDash([])
+
+      // Glow na aresta sendo desenhada
+      if (prog < 1) {
+        const drawn = sx + (ex - sx) * prog
+        const drawnY = sy + (ey - sy) * prog
+        ctx.strokeStyle = `rgba(${rgb},0.25)`
+        ctx.lineWidth = 7
+        ctx.shadowColor = `rgba(${rgb},0.9)`;  ctx.shadowBlur = 12
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(drawn, drawnY); ctx.stroke()
+        ctx.shadowBlur = 0
+      }
+
+      // Seta aparece quando aresta está quase completa
+      if (prog > 0.82) {
+        const aOp = Math.min(1, (prog - 0.82) / 0.18)
+        const aw = 9
+        ctx.globalAlpha = aOp
+        ctx.strokeStyle = `rgba(${rgb},0.95)`
+        ctx.lineWidth = 2.5
+        ctx.beginPath()
+        ctx.moveTo(ex, ey); ctx.lineTo(ex - aw * Math.cos(ang - 0.42), ey - aw * Math.sin(ang - 0.42))
+        ctx.moveTo(ex, ey); ctx.lineTo(ex - aw * Math.cos(ang + 0.42), ey - aw * Math.sin(ang + 0.42))
+        ctx.stroke()
+        ctx.globalAlpha = 1
+      }
+
+      // Peso surge após aresta completa
+      if (prog > 0.88) {
+        const lOp = Math.min(1, (prog - 0.88) / 0.12)
+        ctx.globalAlpha  = lOp
+        ctx.fillStyle    = `rgba(${rgb},1)`
+        ctx.font         = 'bold 10px "Courier New",monospace'
+        ctx.textAlign    = 'center'
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillText(weight > 0 ? '+' + weight : String(weight),
+          (p1.x + p2.x) / 2, (p1.y + p2.y) / 2 - GVIZ_NR - 3)
+        ctx.globalAlpha  = 1
+      }
+    } else {
+      // Aresta vertical de virada de linha
+      const sy   = p1.y + GVIZ_NR
+      const ey   = p2.y - GVIZ_NR
+      const len  = Math.abs(ey - sy)
+      const midY = (sy + ey) / 2
+
+      ctx.strokeStyle = `rgba(${rgb},0.90)`
+      ctx.setLineDash([len, len])
+      ctx.lineDashOffset = len * (1 - prog)
+      ctx.beginPath(); ctx.moveTo(p1.x, sy); ctx.lineTo(p2.x, ey); ctx.stroke()
+      ctx.setLineDash([])
+
+      if (prog > 0.82) {
+        const aOp = Math.min(1, (prog - 0.82) / 0.18)
+        const aw = 9
+        ctx.globalAlpha = aOp; ctx.strokeStyle = `rgba(${rgb},0.95)`; ctx.lineWidth = 2.5
+        ctx.beginPath()
+        ctx.moveTo(p2.x, ey); ctx.lineTo(p2.x - aw * 0.5, ey - aw * 0.87)
+        ctx.moveTo(p2.x, ey); ctx.lineTo(p2.x + aw * 0.5, ey - aw * 0.87)
+        ctx.stroke(); ctx.globalAlpha = 1
+      }
+
+      if (prog > 0.88) {
+        const lOp = Math.min(1, (prog - 0.88) / 0.12)
+        ctx.globalAlpha  = lOp
+        ctx.fillStyle    = `rgba(${rgb},1)`
+        ctx.font         = 'bold 10px "Courier New",monospace'
+        const toRight    = p1.x < W / 2
+        ctx.textAlign    = toRight ? 'left' : 'right'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(weight > 0 ? '+' + weight : String(weight), p1.x + (toRight ? 16 : -16), midY)
+        ctx.globalAlpha  = 1
+      }
+    }
+    ctx.restore()
+  }
+
+  // ── Nodes ──────────────────────────────────────────────────────
+  for (let i = 0; i < nodeCount; i++) {
+    const { x, y } = pos[i]
+    const t      = nodeT[i] ?? 1
+    const sc     = elasticOut(t)
+    const isLast = i === nodeCount - 1
+    const pulse  = isLast ? Math.sin(pulseT * 2) * 0.09 + 1 : 1
+    const ring   = nodeRings?.[i]
+    const dist   = bellmanDist?.[i]
+
+    // Ring burst que expande ao aparecer
+    if (ring && ring.op > 0.01) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(x, y, GVIZ_NR * ring.r, 0, Math.PI * 2)
+      ctx.strokeStyle = `rgba(76,247,176,${ring.op * 0.8})`
+      ctx.lineWidth = 2.5
+      ctx.shadowColor = 'rgba(76,247,176,0.9)'; ctx.shadowBlur = 10
+      ctx.stroke()
+      ctx.restore()
+    }
+
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.scale(sc * pulse, sc * pulse)
+
+    if (isLast) {
+      ctx.shadowColor = 'rgba(76,247,176,0.85)'; ctx.shadowBlur = 22
+    } else if (t < 1) {
+      ctx.shadowColor = 'rgba(76,247,176,0.55)'; ctx.shadowBlur = 14
+    }
+
+    ctx.beginPath(); ctx.arc(0, 0, GVIZ_NR, 0, Math.PI * 2)
+    ctx.fillStyle   = isLast ? 'rgba(38,194,129,0.28)' : i === 0 ? 'rgba(76,130,255,0.18)' : 'rgba(255,255,255,0.07)'
+    ctx.fill()
+    ctx.lineWidth   = 2
+    ctx.strokeStyle = isLast ? '#4cf7b0' : i === 0 ? 'rgba(100,160,255,0.60)' : 'rgba(255,255,255,0.28)'
+    ctx.stroke()
+
+    ctx.shadowBlur   = 0
+    ctx.fillStyle    = isLast ? '#4cf7b0' : 'rgba(195,220,210,0.88)'
+    ctx.font         = `bold ${i >= 10 ? 8 : 9}px "Courier New",monospace`
+    ctx.textAlign    = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText('S' + i, 0, 0)
+    ctx.restore()
+
+    // Custo BF surge gradualmente abaixo do nó
+    if (dist !== undefined && dist !== Infinity && t > 0.5) {
+      const lOp = Math.min(1, (t - 0.5) / 0.5)
+      ctx.save()
+      ctx.globalAlpha  = lOp
+      ctx.font         = '8px "Courier New",monospace'
+      ctx.textAlign    = 'center'; ctx.textBaseline = 'alphabetic'
+      ctx.fillStyle    = dist < 0 ? 'rgba(76,247,176,0.75)' : dist > 3 ? 'rgba(255,107,107,0.75)' : 'rgba(175,200,190,0.62)'
+      ctx.fillText((dist > 0 ? '+' : '') + dist.toFixed(1), x, y + GVIZ_NR + 13)
+      ctx.restore()
+    }
+  }
+}
+
+function GraphViz({ edges, nodeCount, bellmanDist }) {
+  const canvasRef = useRef(null)
+  const stRef     = useRef({
+    edges: [], nodeCount: 1, bellmanDist: [0],
+    nodeT: [0],           // tempo elástico 0→1 para cada nó
+    edgeProgress: [],     // progresso 0→1 de desenho de cada aresta
+    nodeRings: [{ r: 1, op: 0 }],  // ring burst por nó
+    pulseT: 0,
+  })
+
+  // Sync props → stRef; crescer arrays de animação para nós/arestas novos
+  useEffect(() => {
+    const st = stRef.current
+    while (st.nodeT.length < nodeCount) {
+      st.nodeT.push(0)
+      st.nodeRings.push({ r: 1, op: 1 })  // ativa ring burst para novo nó
+    }
+    while (st.edgeProgress.length < edges.length) st.edgeProgress.push(0)
+    st.edges = edges; st.nodeCount = nodeCount; st.bellmanDist = bellmanDist || []
+
+    const canvas = canvasRef.current
+    if (canvas) {
+      const rows = Math.max(1, Math.ceil(nodeCount / GVIZ_COLS))
+      canvas.height = 38 + GVIZ_NR + rows * GVIZ_ROW_H + 28
+    }
+  }, [edges, nodeCount, bellmanDist])
+
+  // Loop RAF persistente para animações
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    let rafId
+
+    const tick = () => {
+      const st = stRef.current
+      st.pulseT += 0.05
+
+      // Animação elástica dos nós
+      for (let i = 0; i < st.nodeT.length; i++)
+        if (st.nodeT[i] < 1) st.nodeT[i] = Math.min(1, st.nodeT[i] + 0.055)
+
+      // Progresso de desenho das arestas
+      for (let i = 0; i < st.edgeProgress.length; i++)
+        if (st.edgeProgress[i] < 1) st.edgeProgress[i] = Math.min(1, st.edgeProgress[i] + 0.05)
+
+      // Ring burst expandindo e desaparecendo
+      for (const ring of st.nodeRings) {
+        if (ring.op > 0) {
+          ring.r  = Math.min(3.5, ring.r + 0.07)
+          ring.op = Math.max(0, ring.op - 0.032)
+        }
+      }
+
+      drawGviz(ctx, canvas.width, canvas.height, st)
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
+
+  return <canvas ref={canvasRef} width={GVIZ_W} height={38 + GVIZ_NR + GVIZ_ROW_H + 28} className="cg-gviz-canvas" />
+}
+
 // ── React component ────────────────────────────────────────────
 export default function Game({ startDirect = false, onBack }) {
   const canvasRef = useRef(null)
@@ -839,7 +1166,13 @@ export default function Game({ startDirect = false, onBack }) {
   const [rankings, setRankings] = useState(() => loadRankings())
   const [playerName, setPlayerName] = useState('')
   const [lastSavedIdx, setLastSavedIdx] = useState(-1)
-  const [hudState, setHudState] = useState({ score: 0, level: 1, reputation: 100, stacked: 0, rankPos: 1 })
+  const [hudState, setHudState] = useState({
+    score: 0, level: 1, reputation: 100, stacked: 0, rankPos: 1,
+    graphEdgesPreview: [], bellmanFinalCost: 0,
+    lastMoveWeight: null, lastMoveLabel: '', lastReactionTime: 0,
+    graphEdgesAll: [], graphNodeCount: 1, graphBellmanDist: [0],
+  })
+  const gvizScrollRef = useRef(null)
   const rankingsRef = useRef(loadRankings())
 
   useEffect(() => {
@@ -853,6 +1186,13 @@ export default function Game({ startDirect = false, onBack }) {
       }
     })
   }, [])
+
+  // Auto-scroll graph viz to bottom when new node appears
+  useEffect(() => {
+    if (gvizScrollRef.current) {
+      gvizScrollRef.current.scrollTop = gvizScrollRef.current.scrollHeight
+    }
+  }, [hudState.graphNodeCount])
 
   const startGame = useCallback(() => {
     stateRef.current = makeState()
@@ -879,7 +1219,17 @@ export default function Game({ startDirect = false, onBack }) {
       hudTick++
       if (hudTick % 6 === 0) {
         const rankPos = rankingsRef.current.filter(r => r.score > s.score).length + 1
-        setHudState({ score: s.score, level: s.level, reputation: s.reputation, stacked: s.stacked, rankPos })
+        setHudState({
+          score: s.score, level: s.level, reputation: s.reputation, stacked: s.stacked, rankPos,
+          graphEdgesPreview: s.graphEdges.slice(-3),
+          bellmanFinalCost: s.bellmanDist.length > 0 ? s.bellmanDist[s.bellmanDist.length - 1] : 0,
+          lastMoveWeight: s.lastMoveWeight,
+          lastMoveLabel: s.lastMoveLabel,
+          lastReactionTime: s.lastReactionTime,
+          graphEdgesAll: [...s.graphEdges],
+          graphNodeCount: s.graphNodes,
+          graphBellmanDist: [...s.bellmanDist],
+        })
       }
 
       if (s.gameOver) {
@@ -930,6 +1280,7 @@ export default function Game({ startDirect = false, onBack }) {
     const s = stateRef.current
     if (!s || s.dropping || s.landDelay > 0 || s.gameOver) return
 
+    s.lastReactionTime = performance.now() - s.moveStartTime
     playSound('drop')
 
     const angle = s.pendAngle
@@ -971,6 +1322,25 @@ export default function Game({ startDirect = false, onBack }) {
       </button>
 
       <div className="cg-game-row">
+        {isPlaying && (
+          <div className="cg-graph-viz-panel">
+            <div className="cg-gviz-heading">GRAFO DA PARTIDA</div>
+            <div className="cg-gviz-scroll" ref={gvizScrollRef}>
+              <GraphViz
+                edges={hudState.graphEdgesAll}
+                nodeCount={hudState.graphNodeCount}
+                bellmanDist={hudState.graphBellmanDist}
+              />
+            </div>
+            <div className="cg-gviz-footer">
+              <span className="cg-gviz-footer-label">CUSTO ACUMULADO BF</span>
+              <span className={`cg-gviz-footer-cost${(hudState.bellmanFinalCost || 0) < 0 ? ' neg' : (hudState.bellmanFinalCost || 0) > 4 ? ' pos' : ''}`}>
+                {(hudState.bellmanFinalCost || 0) > 0 ? '+' : ''}{Number(hudState.bellmanFinalCost || 0).toFixed(1)}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="cg-canvas-wrap">
           <canvas
             ref={canvasRef}
@@ -1006,6 +1376,52 @@ export default function Game({ startDirect = false, onBack }) {
                 <span className="cg-scard-label">RANKING</span>
                 <span className="cg-scard-value">#{hudState.rankPos}</span>
               </div>
+            </div>
+            <div className="cg-scard-divider" />
+            <div className="cg-graph-section">
+              <span className="cg-graph-heading">BELLMAN-FORD</span>
+              <div className="cg-graph-chain">
+                {hudState.graphEdgesPreview.length === 0 ? (
+                  <span className="cg-graph-empty">Aguardando jogadas…</span>
+                ) : (
+                  <>
+                    {hudState.graphEdgesPreview.length >= 3 && (
+                      <span className="cg-graph-more">…</span>
+                    )}
+                    {hudState.graphEdgesPreview.map((e, i) => (
+                      <span key={e.from} className="cg-gnode-pair">
+                        {i === 0 && <span className="cg-gnode">S{e.from}</span>}
+                        <span className={`cg-gedge ${e.weight < 0 ? 'cg-gedge--neg' : e.weight < 2 ? 'cg-gedge--neu' : 'cg-gedge--pos'}`}>
+                          {e.weight > 0 ? '+' : ''}{e.weight}
+                        </span>
+                        <span className="cg-gnode">S{e.to}</span>
+                      </span>
+                    ))}
+                  </>
+                )}
+              </div>
+              <div className="cg-graph-row2">
+                <div className="cg-graph-meta-item">
+                  <span className="cg-graph-meta-label">CUSTO BF</span>
+                  <span className={`cg-graph-meta-val${hudState.bellmanFinalCost < 0 ? ' neg' : hudState.bellmanFinalCost > 4 ? ' pos' : ''}`}>
+                    {hudState.bellmanFinalCost === Infinity ? '∞' : (hudState.bellmanFinalCost > 0 ? '+' : '') + Number(hudState.bellmanFinalCost).toFixed(1)}
+                  </span>
+                </div>
+                {hudState.lastReactionTime > 0 && (
+                  <div className="cg-graph-meta-item">
+                    <span className="cg-graph-meta-label">REAÇÃO</span>
+                    <span className="cg-graph-meta-val">{(hudState.lastReactionTime / 1000).toFixed(2)}s</span>
+                  </div>
+                )}
+              </div>
+              {hudState.lastMoveLabel && (
+                <div className={`cg-graph-badge${
+                  hudState.lastMoveWeight !== null && hudState.lastMoveWeight < 0 ? ' cg-graph-badge--neg' :
+                  hudState.lastMoveWeight !== null && hudState.lastMoveWeight < 2 ? ' cg-graph-badge--neu' : ' cg-graph-badge--pos'
+                }`}>
+                  {hudState.lastMoveLabel}
+                </div>
+              )}
             </div>
             <div className="cg-scard-divider" />
             <div className="cg-scard-footer">

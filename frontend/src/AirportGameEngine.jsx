@@ -40,10 +40,13 @@ const SPAWN_CORNERS = [
 
 // Airplane definitions
 const PLANE_DEFS = {
-  small:  { speed: 35,  turnSpeed: 5.5, hitbox: 14, score: 10,  imgScale: 0.63 },
-  medium: { speed: 65,  turnSpeed: 3.0, hitbox: 16, score: 50,  imgScale: 0.75 },
-  heavy:  { speed: 110, turnSpeed: 1.5, hitbox: 18, score: 100, imgScale: 0.72 },
+  //                                                              apprDist = 30 + (speed/turnSpeed)*1.5  (min vertical lead for each type)
+  small:  { speed: 35,  turnSpeed: 5.5, hitbox: 14, score: 10,  imgScale: 0.63, apprDist: 40  },
+  medium: { speed: 65,  turnSpeed: 3.0, hitbox: 16, score: 50,  imgScale: 0.75, apprDist: 65  },
+  heavy:  { speed: 110, turnSpeed: 1.5, hitbox: 18, score: 100, imgScale: 0.72, apprDist: 140 },
 }
+// RGB strings for Dijkstra path color per plane type
+const DJK_COLORS = { small: '255,185,40', medium: '77,163,255', heavy: '255,70,70' }
 
 // Menu button rects (calibrated for menu_v4.png drawn at 800×600)
 const PLAY_BTN = { x: 272, y: 318, w: 258, h: 80 }
@@ -160,6 +163,7 @@ function createPlane(imgs, score) {
     vy: Math.sin(angle) * def.speed,
     path: [], crashed: false,
     fuel: FUEL_MAX[type], blinkTimer: 0,
+    dijkstraPath: [],
   }
 }
 
@@ -269,6 +273,159 @@ function drawSweep(ctx, angle) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// DIJKSTRA GRID
+// ════════════════════════════════════════════════════════════════════════════
+// Node layout:
+//   0-79  — 10×8 grid covering the canvas
+//   80    — top approach funnel   (directly above runway, same X)
+//   81    — bottom approach funnel (directly below runway, same X)
+// After Dijkstra we manually append the actual runway entry point so the
+// final segment is always a perfectly vertical drop/climb into the strip.
+const DJK_COLS    = 10
+const DJK_ROWS    = 8
+const DJK_GRID_N  = DJK_COLS * DJK_ROWS  // 80
+const DJK_TAPPR_I = DJK_GRID_N           // 80  ↑ above runway
+const DJK_BAPPR_I = DJK_GRID_N + 1       // 81  ↓ below runway
+const DJK_N       = DJK_GRID_N + 2       // 82
+
+// Runway strip geometry — use right-side X (user-calibrated to match visual runway)
+const _RCX           = LANDING_AREA.x + LANDING_AREA.w - 4    // ≈ 481 (near right edge)
+const DJK_LAND_MID_Y = LANDING_AREA.y + LANDING_AREA.h / 2    // 256
+// Actual runway entry points (appended after Dijkstra for the mandatory vertical segment)
+const DJK_LAND_TOP = { x: _RCX, y: LANDING_AREA.y }           // (481, 204)
+const DJK_LAND_BOT = { x: _RCX, y: LANDING_AREA.y + LANDING_AREA.h } // (481, 308)
+
+// Grid-node positions only — funnel positions (80/81) are computed dynamically per plane
+function djkXY(idx) {
+  return {
+    x: (idx % DJK_COLS + 0.5) * (CW / DJK_COLS),
+    y: (Math.floor(idx / DJK_COLS) + 0.5) * (CH / DJK_ROWS),
+  }
+}
+
+// Static adjacency — grid-to-grid only (funnel connections added dynamically per apprDist)
+const DJK_ADJ = (() => {
+  const adj = Array.from({ length: DJK_GRID_N }, () => [])
+  for (let r = 0; r < DJK_ROWS; r++) {
+    for (let c = 0; c < DJK_COLS; c++) {
+      const i = r * DJK_COLS + c
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue
+          const nr = r + dr, nc = c + dc
+          if (nr < 0 || nr >= DJK_ROWS || nc < 0 || nc >= DJK_COLS) continue
+          const j  = nr * DJK_COLS + nc
+          const pi = djkXY(i), pj = djkXY(j)
+          adj[i].push([j, Math.hypot(pj.x - pi.x, pj.y - pi.y)])
+        }
+      }
+    }
+  }
+  return adj
+})()
+
+function runDijkstra(sx, sy, planes, excludeId, apprDist) {
+  const nx = CW / DJK_COLS  // ~80
+  // Funnel positions depend on plane maneuverability (apprDist = min vertical lead)
+  const topAppr = { x: _RCX, y: LANDING_AREA.y - apprDist }
+  const botAppr = { x: _RCX, y: LANDING_AREA.y + LANDING_AREA.h + apprDist }
+  const apprXY  = (i) => i === DJK_TAPPR_I ? topAppr : botAppr
+
+  const tgtI   = sy < DJK_LAND_MID_Y ? DJK_TAPPR_I : DJK_BAPPR_I
+  const skipI  = tgtI === DJK_TAPPR_I ? DJK_BAPPR_I : DJK_TAPPR_I
+  const entryPt = tgtI === DJK_TAPPR_I ? DJK_LAND_TOP : DJK_LAND_BOT
+
+  let src = 0, minD = Infinity
+  for (let i = 0; i < DJK_GRID_N; i++) {
+    const p = djkXY(i), d = (p.x - sx) ** 2 + (p.y - sy) ** 2
+    if (d < minD) { minD = d; src = i }
+  }
+
+  const dist = new Float32Array(DJK_N).fill(Infinity)
+  const prev = new Int32Array(DJK_N).fill(-1)
+  const vis  = new Uint8Array(DJK_N)
+  dist[src]  = 0
+  vis[skipI] = 1
+
+  for (;;) {
+    let u = -1
+    for (let i = 0; i < DJK_N; i++) if (!vis[i] && (u < 0 || dist[i] < dist[u])) u = i
+    if (u < 0 || dist[u] === Infinity || u === tgtI) break
+    vis[u] = 1
+
+    if (u < DJK_GRID_N) {
+      // Grid → grid (static edges)
+      for (const [v, w0] of DJK_ADJ[u]) {
+        if (vis[v]) continue
+        let pen = 0
+        const vp = djkXY(v)
+        for (const pl of planes) {
+          if (pl.id === excludeId || pl.crashed) continue
+          const dd = Math.hypot(pl.x - vp.x, pl.y - vp.y)
+          if (dd < 90) pen += (90 - dd) * 2.2
+        }
+        const nd = dist[u] + w0 + pen
+        if (nd < dist[v]) { dist[v] = nd; prev[v] = u }
+      }
+      // Grid → funnel (dynamic, radius = 2 cells)
+      const uPt = djkXY(u)
+      for (const apprI of [DJK_TAPPR_I, DJK_BAPPR_I]) {
+        if (vis[apprI]) continue
+        const ap = apprXY(apprI)
+        const d  = Math.hypot(uPt.x - ap.x, uPt.y - ap.y)
+        if (d < nx * 2) {
+          const nd = dist[u] + d
+          if (nd < dist[apprI]) { dist[apprI] = nd; prev[apprI] = u }
+        }
+      }
+    } else {
+      // Funnel → grid (dynamic)
+      const ap = apprXY(u)
+      for (let i = 0; i < DJK_GRID_N; i++) {
+        if (vis[i]) continue
+        const p = djkXY(i)
+        const d = Math.hypot(p.x - ap.x, p.y - ap.y)
+        if (d < nx * 2) {
+          const nd = dist[u] + d
+          if (nd < dist[i]) { dist[i] = nd; prev[i] = u }
+        }
+      }
+    }
+  }
+
+  // Reconstruct path — use apprXY for funnel nodes, djkXY for grid nodes
+  const pts = []
+  let cur   = tgtI
+  for (let g = 0; cur >= 0 && g < DJK_N; g++) {
+    pts.unshift(cur >= DJK_GRID_N ? apprXY(cur) : djkXY(cur))
+    if (cur === src) break
+    cur = prev[cur]
+  }
+  pts.unshift({ x: sx, y: sy })
+  pts.push(entryPt)
+  return pts.length >= 2 ? pts : [{ x: sx, y: sy }, entryPt]
+}
+
+// Catmull-Rom spline rendered as cubic Bézier through Dijkstra waypoints
+function drawCatmullPath(ctx, pts) {
+  if (pts.length < 2) return
+  ctx.beginPath()
+  ctx.moveTo(pts[0].x, pts[0].y)
+  if (pts.length === 2) { ctx.lineTo(pts[1].x, pts[1].y); return }
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[Math.min(pts.length - 1, i + 2)]
+    const cp1x = p1.x + (p2.x - p0.x) / 6
+    const cp1y = p1.y + (p2.y - p0.y) / 6
+    const cp2x = p2.x - (p3.x - p1.x) / 6
+    const cp2y = p2.y - (p3.y - p1.y) / 6
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // RANKING
 // ════════════════════════════════════════════════════════════════════════════
 const LS_KEY = 'atc_ranking_v1'
@@ -306,6 +463,8 @@ function freshState(imgs) {
     sweepAngle:   0,
     snapshot:     null,
     flashTimer:   0,
+    djkTimer:     0.25, // start at threshold so first run fires immediately
+    djkDash:      0,
   }
 }
 
@@ -594,9 +753,21 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       gs.elapsed += dt
       gs.sweepAngle = (gs.sweepAngle + SWEEP_SPEED * 60 * dt) % (Math.PI * 2)
 
+      // ── Dijkstra path update ──────────────────────────────────────
+      gs.djkDash  = (gs.djkDash - 55 * dt + 1000) % 100
+      gs.djkTimer += dt
+      if (gs.djkTimer >= 0.25) {
+        gs.djkTimer = 0
+        for (const p of gs.airplanes) {
+          if (!p.crashed)
+            p.dijkstraPath = runDijkstra(p.x, p.y, gs.airplanes, p.id, p.def.apprDist)
+        }
+      }
+
       if (gs.elapsed >= gs.nextSpawn && gs.airplanes.length < 30) {
         gs.airplanes.push(createPlane(imgs, gs.score))
         gs.nextSpawn = gs.elapsed + spawnInterval(gs.score)
+        gs.djkTimer  = 0.25  // force immediate recompute for the new plane
       }
 
       gs.pointTexts = gs.pointTexts.filter(pt => {
@@ -687,6 +858,26 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       if (sel && imgs.glow) {
         ctx.drawImage(imgs.glow, sel.x - imgs.glow.width / 2, sel.y - imgs.glow.height / 2)
       }
+
+      // ── Dijkstra routes (Catmull-Rom, dashed amber) ──────────────
+      ctx.save()
+      ctx.setLineDash([10, 7])
+      ctx.lineWidth = 1.8
+      for (const p of gs.airplanes) {
+        if (p.crashed || !p.dijkstraPath || p.dijkstraPath.length < 2) continue
+        // Snap start to plane nose every frame — no Dijkstra needed for this
+        const ang     = Math.atan2(p.vy, p.vx)
+        const noseDst = p.def.hitbox * 0.85
+        p.dijkstraPath[0] = { x: p.x + Math.cos(ang) * noseDst, y: p.y + Math.sin(ang) * noseDst }
+        const alpha = p.path.length > 0 ? 0.18 : 0.52
+        const rgb = DJK_COLORS[p.type] || '255,185,60'
+        ctx.strokeStyle  = `rgba(${rgb},${alpha})`
+        ctx.lineDashOffset = -gs.djkDash
+        drawCatmullPath(ctx, p.dijkstraPath)
+        ctx.stroke()
+      }
+      ctx.setLineDash([])
+      ctx.restore()
 
       // Paths (BLUE) + sprites
       for (const p of gs.airplanes) {
