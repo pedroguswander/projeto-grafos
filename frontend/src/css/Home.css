@@ -305,6 +305,37 @@ body {
   color: #c8b88a;
 }
 
+/* Jogo de Contêineres */
+.game-card {
+  grid-column: auto;
+  border-radius: 18px 999px 999px 18px;
+  border: 1px solid rgba(200, 168, 50, 0.28);
+  background: linear-gradient(135deg, rgba(200, 168, 50, 0.13), rgba(13, 26, 46, 0.95));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 14px 32px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(200, 168, 50, 0.08);
+}
+
+.game-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 215, 0, 0.45);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(13, 26, 46, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 18px 34px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(255, 215, 0, 0.15);
+}
+
+.game-card .hub-card-title {
+  font-size: 0.87rem;
+  color: #FFD700;
+}
+
+.game-card .hub-card-sub {
+  color: #c8b060;
+}
+
 /* foco */
 .hub-card:focus-visible,
 .home-back-button:focus-visible {
@@ -331,7 +362,8 @@ body {
   .pill-left,
   .pill-right,
   .flight-panel-card,
-  .airport-game-card {
+  .airport-game-card,
+  .game-card {
     border-radius: 999px;
   }
 }
@@ -392,7 +424,8 @@ body {
 
   .hub-card,
   .flight-panel-card,
-  .airport-game-card {
+  .airport-game-card,
+  .game-card {
     min-height: 74px;
     height: auto;
     padding: 12px 14px;
@@ -401,13 +434,15 @@ body {
 
   .hub-card-title,
   .flight-panel-card .hub-card-title,
-  .airport-game-card .hub-card-title {
+  .airport-game-card .hub-card-title,
+  .game-card .hub-card-title {
     font-size: 0.84rem;
   }
 
   .hub-card-sub,
   .flight-panel-card .hub-card-sub,
-  .airport-game-card .hub-card-sub {
+  .airport-game-card .hub-card-sub,
+  .game-card .hub-card-sub {
     font-size: 0.75rem;
   }
 }

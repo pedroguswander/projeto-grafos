@@ -139,8 +139,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  transform: translateY(-16px);
+  gap: 18px;
+  transform: translateY(18px);
 }
 
 /* logo */
@@ -179,10 +179,10 @@ body {
 /* área dos botões */
 .home-actions-grid {
   width: 100%;
-  max-width: 550px;
+  max-width: 650px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 14px 18px;
 }
 
 /* botões */
@@ -256,26 +256,24 @@ body {
 
 /* destaque do Painel de Voos */
 .flight-panel-card {
-  grid-column: 1 / -1;
-  min-height: 78px;
-  height: 78px;
-  border-radius: 999px;
-  border: 1px solid rgba(77, 163, 255, 0.22);
-  background: linear-gradient(135deg, rgba(77, 163, 255, 0.16), rgba(18, 34, 60, 0.92));
+  grid-column: auto;
+  border-radius: 999px 18px 18px 999px;
+  border: 1px solid rgba(38, 194, 129, 0.22);
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.16), rgba(18, 46, 36, 0.92));
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.05),
     0 14px 32px rgba(0, 0, 0, 0.24),
-    0 0 24px rgba(77, 163, 255, 0.08);
+    0 0 24px rgba(38, 194, 129, 0.08);
 }
 
 .flight-panel-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(77, 163, 255, 0.40);
-  background: linear-gradient(135deg, rgba(77, 163, 255, 0.24), rgba(20, 40, 72, 0.96));
+  border-color: rgba(38, 194, 129, 0.40);
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.24), rgba(20, 58, 46, 0.96));
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.06),
     0 18px 34px rgba(0, 0, 0, 0.28),
-    0 0 28px rgba(77, 163, 255, 0.14);
+    0 0 28px rgba(38, 194, 129, 0.14);
 }
 
 .flight-panel-card .hub-card-title {
@@ -283,7 +281,7 @@ body {
 }
 
 .flight-panel-card .hub-card-sub {
-  color: #c2d4ee;
+  color: #c2f0de;
 }
 
 /* foco */
@@ -297,6 +295,37 @@ body {
    TEMA ETN
    Sobrescreve os azuis com verdes sem afetar a home padrão
    ========================================================= */
+/* Tráfego Aéreo */
+.airport-game-card {
+  grid-column: auto;
+  border-radius: 18px 999px 999px 18px;
+  border: 1px solid rgba(38, 194, 129, 0.22);
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.12), rgba(8, 30, 20, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 14px 32px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(38, 194, 129, 0.07);
+}
+
+.airport-game-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(38, 194, 129, 0.40);
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.20), rgba(12, 45, 36, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 18px 34px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(38, 194, 129, 0.13);
+}
+
+.airport-game-card .hub-card-title {
+  font-size: 0.87rem;
+  color: #dff8ec;
+}
+
+.airport-game-card .hub-card-sub {
+  color: #8fcfb4;
+}
+
 
 .home-etn-theme {
   background:
@@ -323,26 +352,27 @@ body {
     inset 0 1px 0 rgba(38, 194, 129, 0.05);
 }
 
+/* ── Botão Voltar — tema ETN verde ── */
 .home-etn-theme .home-back-button {
   color: #edfff7;
-  border: 1px solid rgba(38, 194, 129, 0.14);
-  background: rgba(16, 51, 40, 0.32);
+  border: 1px solid rgba(38, 194, 129, 0.22);
+  background: rgba(10, 35, 28, 0.55);
   box-shadow:
     0 12px 30px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .home-etn-theme .home-back-button:hover {
-  background: rgba(18, 70, 54, 0.42);
-  border-color: rgba(38, 194, 129, 0.32);
+  background: rgba(15, 55, 42, 0.70);
+  border-color: rgba(38, 194, 129, 0.42);
   box-shadow:
     0 16px 34px rgba(0, 0, 0, 0.26),
-    0 0 0 1px rgba(38, 194, 129, 0.10);
+    0 0 0 1px rgba(38, 194, 129, 0.12);
   color: #ffffff;
 }
 
 .home-etn-theme .home-back-icon {
-  background: linear-gradient(135deg, #154235, #1f6b56);
+  background: linear-gradient(135deg, #0f3a2d, #1a5e49);
   box-shadow:
     0 10px 18px rgba(5, 27, 21, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -410,35 +440,61 @@ body {
   color: #dcfff1;
 }
 
+/* ── Jogo de Contêineres — tema ETN verde ── */
+.home-etn-theme .game-card {
+  grid-column: auto;
+  border-radius: 18px 999px 999px 18px;
+  border: 1px solid rgba(38, 194, 129, 0.22);
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.12), rgba(8, 30, 20, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 14px 32px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(38, 194, 129, 0.07);
+}
+
+.home-etn-theme .game-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(38, 194, 129, 0.40);
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.20), rgba(12, 45, 36, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 18px 34px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(38, 194, 129, 0.13);
+}
+
+.home-etn-theme .game-card .hub-card-title {
+  font-size: 0.87rem;
+  color: #dff8ec;
+}
+
+.home-etn-theme .game-card .hub-card-sub {
+  color: #8fcfb4;
+}
+
 .home-etn-theme .hub-card:focus-visible,
 .home-etn-theme .home-back-button:focus-visible {
   outline: 2px solid rgba(38, 194, 129, 0.55);
   outline-offset: 2px;
 }
 
-/* ajuste intermediário */
 @media (max-width: 900px) {
   .home-shell {
     max-width: 640px;
-    transform: translateY(-8px);
+    transform: translateY(12px);
   }
-
   .home-clean-content {
     padding: 22px;
   }
-
   .home-actions-grid {
-    gap: 10px;
+    max-width: 600px;
+    gap: 10px 14px;
   }
-
   .pill-left,
   .pill-right,
-  .flight-panel-card {
+  .flight-panel-card,
+  .airport-game-card,
+  .game-card {
     border-radius: 999px;
-  }
-
-  .flight-panel-card {
-    grid-column: 1 / -1;
   }
 }
 
@@ -468,9 +524,9 @@ body {
   }
 
   .home-shell {
-    gap: 8px;
+    gap: 12px;
     transform: none;
-    margin-top: 56px;
+    margin-top: 72px;
   }
 
   .main-logo-clean {
@@ -493,7 +549,9 @@ body {
   }
 
   .hub-card,
-  .flight-panel-card {
+  .flight-panel-card,
+  .airport-game-card,
+  .game-card {
     min-height: 74px;
     height: auto;
     padding: 12px 14px;
@@ -501,16 +559,19 @@ body {
   }
 
   .hub-card-title,
-  .flight-panel-card .hub-card-title {
+  .flight-panel-card .hub-card-title,
+  .game-card .hub-card-title {
     font-size: 0.84rem;
   }
 
   .hub-card-sub,
-  .flight-panel-card .hub-card-sub {
+  .flight-panel-card .hub-card-sub,
+  .game-card .hub-card-sub {
     font-size: 0.75rem;
   }
 
-  .flight-panel-card {
+  .flight-panel-card,
+  .game-card {
     grid-column: auto;
   }
 }

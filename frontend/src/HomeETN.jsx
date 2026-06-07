@@ -135,6 +135,17 @@ export default function HomeETN({ onNavigate }) {
                 Visualização principal e acompanhamento operacional
               </span>
             </button>
+
+            <button
+              className="hub-card airport-game-card"
+              onClick={() => onNavigate('container-game')}
+              type="button"
+            >
+              <span className="hub-card-title">CONTROLE DE CARGAS</span>
+              <span className="hub-card-sub">
+                Empilhe contêineres no porto e opera o guindaste
+              </span>
+            </button>
           </div>
         </div>
       </div>

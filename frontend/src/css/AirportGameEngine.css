@@ -1,0 +1,415 @@
+/* ================================================================
+   AirportGameEngine — canvas wrapper, HUD, overlays
+   ================================================================ */
+
+/* Outer: flex-start removes top gap — canvas starts at the red line */
+.atc-outer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: #06111d;
+  z-index: 200;
+}
+
+/* Row — top padding clears the Voltar button; bottom padding keeps bottom clean */
+.atc-game-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  /* 56px top: clears the back button (16px top + ~32px height + 8px gap)
+     20px bottom: breathing room at bottom */
+  padding: 56px 12px 20px 0;
+}
+
+/* ── Canvas wrapper ───────────────────────────────────────────── */
+.atc-canvas-wrap {
+  position: relative;
+  line-height: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  /* 76px = 56px top padding + 20px bottom padding */
+  width: min(calc(100vw - 324px), calc((100vh - 76px) * 4 / 3));
+  aspect-ratio: 4 / 3;
+  box-shadow:
+    0 0 0 1px rgba(77,163,255,0.18),
+    0 32px 80px rgba(0,0,0,0.65),
+    0 0 60px rgba(77,163,255,0.07);
+}
+
+/* Canvas fills wrapper — toCanvas() handles coordinate mapping */
+.atc-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+/* ── Sidebar — same height as canvas, immediately to its right ── */
+.atc-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  /* Mirrors canvas height: same formula resolved for height */
+  height: min(calc((100vw - 324px) * 3 / 4), calc(100vh - 76px));
+  transition: opacity 0.3s ease;
+}
+.atc-sidebar--hidden { opacity: 0; pointer-events: none; }
+
+/* ── Full-height card inside sidebar ─────────────────────────── */
+.atc-scard {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(8,22,44,0.92), rgba(5,14,28,0.96));
+  border: 1px solid rgba(77,163,255,0.22);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(77,163,255,0.06),
+    0 24px 60px rgba(0,0,0,0.55),
+    0 0 40px rgba(77,163,255,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.atc-scard-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 16px 16px;
+}
+
+.atc-scard-brand-logo {
+  display: block;
+  width: auto;
+  height: 100px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(77,163,255,0.4));
+}
+
+.atc-scard-brand-sub {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(77,163,255,0.65);
+  text-align: center;
+}
+
+.atc-scard-divider {
+  width: calc(100% - 24px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(77,163,255,0.28), transparent);
+  flex-shrink: 0;
+}
+
+/* Stats section grows to fill remaining card height */
+.atc-scard-stats {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.atc-scard-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.07);
+  text-align: center;
+}
+.atc-scard-stat--blue { border-color: rgba(77,163,255,0.28); }
+.atc-scard-stat--gold { border-color: rgba(246,197,111,0.28); }
+.atc-scard-stat--rank { border-color: rgba(76,247,176,0.22); }
+
+.atc-scard-label {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.60rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(162,195,232,0.55);
+  line-height: 1;
+}
+
+.atc-scard-value {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.atc-scard-stat--blue .atc-scard-value { color: rgb(77,163,255); }
+.atc-scard-stat--gold .atc-scard-value { color: rgb(246,197,111); }
+.atc-scard-stat--rank .atc-scard-value { color: rgb(76,247,176); }
+
+/* ── Espaço Aéreo section ────────────────────────────────────── */
+.atc-scard-airspace {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.atc-scard-planes-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  width: 100%;
+  gap: 8px;
+}
+
+.atc-scard-plane-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(77,163,255,0.14);
+}
+
+/* All plane images rendered at identical fixed size */
+.atc-scard-plane-img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 4px rgba(77,163,255,0.3));
+}
+
+.atc-scard-plane-count {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #edf3ff;
+  line-height: 1;
+}
+
+.atc-scard-plane-label {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.57rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(162,195,232,0.45);
+  line-height: 1;
+}
+
+.atc-scard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  flex-shrink: 0;
+}
+
+.atc-scard-ping {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(77,163,255,0.85);
+  box-shadow: 0 0 8px rgba(77,163,255,0.8), 0 0 16px rgba(77,163,255,0.4);
+  animation: atc-ping 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes atc-ping {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.65); }
+}
+
+.atc-scard-status {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.60rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(77,163,255,0.55);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .atc-sidebar     { width: 220px; }
+  .atc-canvas-wrap { width: min(calc(100vw - 244px), calc((100vh - 76px) * 4 / 3)); }
+  /* 244 = 220 + 12 gap + 12 right padding */
+  .atc-sidebar     { height: min(calc((100vw - 244px) * 3 / 4), calc(100vh - 76px)); }
+}
+@media (max-width: 600px) {
+  .atc-game-row    { flex-direction: column; gap: 0; padding: 56px 0 0 0; }
+  .atc-canvas-wrap { width: 100vw; border-radius: 0; aspect-ratio: auto; height: 56vw; }
+  .atc-sidebar     { width: 100%; height: auto; }
+  .atc-scard       { height: auto; border-radius: 0; }
+  .atc-scard-stats { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+}
+
+/* ── Overlays ────────────────────────────────────────────────── */
+.atc-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6,17,29,0.80);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  z-index: 10;
+}
+
+/* ── Glass panel (game-over) ─────────────────────────────────── */
+.atc-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 52px;
+  background: linear-gradient(180deg, rgba(10,22,42,0.97), rgba(7,16,31,0.99));
+  border: 1px solid rgba(77,163,255,0.28);
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px rgba(77,163,255,0.08),
+    0 24px 60px rgba(0,0,0,0.55),
+    0 0 40px rgba(77,163,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ── Game-over panel ─────────────────────────────────────────── */
+.atc-go-panel { min-width: 360px; max-width: 430px; gap: 16px; padding: 38px 48px 36px; }
+
+.atc-go-title {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 1.9rem; font-weight: 900;
+  letter-spacing: 6px; color: #edf3ff; margin: 0;
+  text-shadow: 0 0 28px rgba(77,163,255,0.55), 0 2px 8px rgba(0,0,0,0.65);
+}
+
+.atc-go-divider { width: 100%; height: 1px; background: rgba(77,163,255,0.22); }
+
+.atc-go-stats {
+  display: flex; gap: 28px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.95rem; color: rgba(162,195,232,0.85);
+}
+.atc-go-stats b { color: #edf3ff; font-weight: 800; }
+
+.atc-go-prompt {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.85rem; color: rgba(162,195,232,0.70); margin: 0;
+}
+
+.atc-go-input {
+  width: 100%; box-sizing: border-box;
+  padding: 12px 18px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 1rem; font-weight: 600; color: #edf3ff;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(77,163,255,0.32); border-radius: 10px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.atc-go-input::placeholder { color: rgba(130,165,200,0.45); }
+.atc-go-input:focus {
+  border-color: rgba(77,163,255,0.60);
+  box-shadow: 0 0 0 3px rgba(77,163,255,0.12);
+}
+
+.atc-go-btns { display: flex; gap: 10px; width: 100%; }
+.atc-go-save, .atc-go-skip {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  border-radius: 12px; padding: 12px 18px;
+}
+.atc-go-save small, .atc-go-skip small {
+  font-size: 0.72rem; font-weight: 400; opacity: 0.65; letter-spacing: 0;
+}
+
+/* ── Buttons (game-over + ranking) ───────────────────────────── */
+.atc-btn {
+  padding: 11px 30px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.88rem; font-weight: 800; letter-spacing: 0.06em; color: #edf3ff;
+  background: linear-gradient(135deg, rgba(77,163,255,0.18), rgba(10,22,42,0.96));
+  border: 1px solid rgba(77,163,255,0.30); border-radius: 999px;
+  cursor: pointer; outline: none; backdrop-filter: blur(6px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.28), 0 0 14px rgba(77,163,255,0.09), inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.atc-btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(77,163,255,0.28), rgba(12,28,56,0.97));
+  border-color: rgba(77,163,255,0.52);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.34), 0 0 20px rgba(77,163,255,0.18), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+.atc-btn:active { transform: scale(0.97); }
+
+.atc-btn-outline {
+  background: transparent; border-color: rgba(77,163,255,0.20);
+  color: rgba(162,195,232,0.90); box-shadow: none;
+}
+.atc-btn-outline:hover {
+  background: rgba(77,163,255,0.08); border-color: rgba(77,163,255,0.40);
+  color: #edf3ff; box-shadow: none;
+}
+
+/* ── Ranking canvas overlay ──────────────────────────────────── */
+.atc-ranking-overlay {
+  flex-direction: column; gap: 14px;
+  background: rgba(3,9,18,0.92);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.atc-rank-canvas {
+  display: block; width: 800px; height: 600px;
+  max-width: 100%; border-radius: 8px;
+}
+.atc-rank-footer { display: flex; gap: 12px; justify-content: center; }
+
+/* ── Always-visible exit button ──────────────────────────────── */
+.atc-back-btn {
+  position: absolute;
+  top: 16px; right: 20px; z-index: 300;
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 0.42rem 0.65rem 0.42rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid rgba(77,163,255,0.22);
+  background: rgba(6,17,29,0.70);
+  color: #edf3ff;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.88rem; font-weight: 800; letter-spacing: -0.01em;
+  cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+  transition: background 0.20s ease, border-color 0.20s ease, transform 0.20s ease;
+}
+.atc-back-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(10,24,48,0.82);
+  border-color: rgba(77,163,255,0.42);
+}
+.atc-back-icon {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0d2040, #1a3b6e);
+  box-shadow: 0 6px 14px rgba(8,20,50,0.38), inset 0 1px 0 rgba(255,255,255,0.10);
+  transition: transform 0.20s ease;
+}
+.atc-back-btn:hover .atc-back-icon { transform: translateX(-2px); }
+.atc-back-text { white-space: nowrap; padding-right: 0.1rem; }

@@ -35,6 +35,7 @@ import PainelRotasETN from './PainelRotasETN.jsx';
 import RegrasETN from './RegrasETN.jsx';
 import AirportGame from './AirportGame.jsx';
 import './css/AirportGame.css';
+import ContainerGame from './ContainerGame.jsx';
 
 function Root() {
   const [screen, setScreen] = useState('splash');
@@ -74,6 +75,7 @@ function Root() {
   if (screen === 'declaracao-ia-etn') return <DeclaracaoIAETN onBack={() => setScreen('home-etn')} />;
   if (screen === 'painel-etn') return <PainelRotasETN onBack={() => setScreen('home-etn')} />;
   if (screen === 'airport-game') return <AirportGame onBack={() => setScreen(lastHome)} />;
+  if (screen === 'container-game') return <ContainerGame onBack={() => setScreen('home-etn')} />;
 
   return <App onNavigate={handleNavigate} />;
 }
