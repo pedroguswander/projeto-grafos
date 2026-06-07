@@ -863,6 +863,23 @@
   box-shadow: none;
 }
 
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.modal-footer-note {
+  font-size: 0.86rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
 .empty-state {
   min-height: 360px;
   display: flex;

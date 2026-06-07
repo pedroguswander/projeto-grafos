@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from 'react-modal';
+import Papa from 'papaparse';
 import './css/DataBaseETN.css';
 
 import navioCru from './assets/navio/navio-cru.png';
@@ -11,7 +12,44 @@ import navioBotes from './assets/navio/navio-botes.png';
 import navioCargaSuperior from './assets/navio/navio-carga-superior.png';
 import navioCargaInferior from './assets/navio/navio-carga-inferior.png';
 
+import portsUrl from './assets/Planilhas2/ports.csv?url';
+import demandUrl from './assets/Planilhas2/Demand_WorldSmall.csv?url';
+import distUrl from './assets/Planilhas2/dist_dense.csv?url';
+import fleetUrl from './assets/Planilhas2/fleet_data.csv?url';
+
 Modal.setAppElement('#root');
+
+const LINHAS_POR_PAGINA = 500;
+
+// Bases reais do ETN exibidas na "Prévia da Base" (independente da parte do navio selecionada).
+const BASES_CSV = [
+  { id: 'ports', nome: 'ports.csv', arquivo: portsUrl },
+  { id: 'demand', nome: 'Demand_WorldSmall.csv', arquivo: demandUrl },
+  { id: 'dist', nome: 'dist_dense.csv', arquivo: distUrl },
+  { id: 'fleet', nome: 'fleet_data.csv', arquivo: fleetUrl },
+];
+
+// Remove colunas finais 100% vazias (ex.: vírgula sobrando no fim de cada linha do dist_dense).
+function removerColunasVaziasFinais(rows = []) {
+  if (!rows.length) return rows;
+  let maxCols = rows.reduce((acc, row) => Math.max(acc, row?.length || 0), 0);
+  const colunaVazia = (col) =>
+    rows.every((row) => String(row?.[col] ?? '').trim() === '');
+  while (maxCols > 0 && colunaVazia(maxCols - 1)) maxCols -= 1;
+  return rows.map((row) => row.slice(0, maxCols));
+}
+
+// Remove colunas cujo cabeçalho está vazio (geradas por vírgula extra no header).
+function removerColunasHeaderVazio(rows = []) {
+  if (!rows.length) return rows;
+  const header = rows[0];
+  const colsValidas = header.reduce((acc, h, i) => {
+    if (String(h ?? '').trim() !== '') acc.push(i);
+    return acc;
+  }, []);
+  if (colsValidas.length === header.length) return rows;
+  return rows.map((row) => colsValidas.map((i) => row[i] ?? ''));
+}
 
 const PLANILHAS_ETN = [
   {
@@ -437,6 +475,14 @@ export default function DataBaseETN({ onBack }) {
   const [erro, setErro] = useState('');
   const [reqPage, setReqPage] = useState(0);
 
+  // Estado da "Prévia da Base": bases CSV reais do ETN, independentes da parte do navio.
+  const [csvSel, setCsvSel] = useState(0);
+  const [csvPreview, setCsvPreview] = useState([]);
+  const [csvDetalhe, setCsvDetalhe] = useState([]);
+  const [csvCarregando, setCsvCarregando] = useState(false);
+  const [csvErro, setCsvErro] = useState('');
+  const [linhasVisiveis, setLinhasVisiveis] = useState(LINHAS_POR_PAGINA);
+
   const imagens = useMemo(
     () => ({
       base: {
@@ -546,14 +592,67 @@ export default function DataBaseETN({ onBack }) {
     setReqPage((prev) => Math.min(prev + 1, requisitos.length - 1));
   };
 
+  const carregarCsv = async (idx) => {
+    const base = BASES_CSV[idx];
+    if (!base) return;
+
+    setCsvSel(idx);
+    setCsvCarregando(true);
+    setCsvErro('');
+    setCsvPreview([]);
+    setCsvDetalhe([]);
+
+    try {
+      const response = await fetch(base.arquivo, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Falha ao carregar arquivo (${response.status})`);
+      }
+
+      const texto = await response.text();
+      const { data } = Papa.parse(texto, { skipEmptyLines: true });
+      const rows = removerColunasHeaderVazio(removerColunasVaziasFinais(data));
+
+      if (!rows.length) {
+        throw new Error(`A base "${base.nome}" está vazia.`);
+      }
+
+      setCsvPreview(rows.slice(0, 6));
+      setCsvDetalhe(rows);
+    } catch (e) {
+      console.error('Erro ao carregar base CSV do ETN:', e);
+      setCsvErro(`Não foi possível carregar a base "${base.nome}".`);
+      setCsvPreview([]);
+      setCsvDetalhe([]);
+    } finally {
+      setCsvCarregando(false);
+    }
+  };
+
+  const abrirModal = () => {
+    setLinhasVisiveis(LINHAS_POR_PAGINA);
+    setModalAberto(true);
+  };
+
+  const handleVerMais = () => {
+    setLinhasVisiveis((prev) => prev + LINHAS_POR_PAGINA);
+  };
+
   useEffect(() => {
     carregarPlanilha(0);
   }, []);
 
-  const headers = preview.length > 0 ? preview[0] : [];
-  const bodyRows = preview.length > 1 ? preview.slice(1) : [];
-  const detalheHeaders = detalhe.length > 0 ? detalhe[0] : [];
-  const detalheRows = detalhe.length > 1 ? detalhe.slice(1) : [];
+  useEffect(() => {
+    carregarCsv(0);
+  }, []);
+
+  const baseCsvAtual = BASES_CSV[csvSel];
+
+  const headers = csvPreview.length > 0 ? csvPreview[0] : [];
+  const bodyRows = csvPreview.length > 1 ? csvPreview.slice(1) : [];
+  const detalheHeaders = csvDetalhe.length > 0 ? csvDetalhe[0] : [];
+  const detalheRows = csvDetalhe.length > 1 ? csvDetalhe.slice(1) : [];
+  const detalheRowsVisiveis = detalheRows.slice(0, linhasVisiveis);
+  const totalRegistros = detalheRows.length;
 
   return (
     <div className="database-page database-etn-theme">
@@ -585,7 +684,7 @@ export default function DataBaseETN({ onBack }) {
           <h1 className="database-title">Estrutura do Navio</h1>
           <p className="database-desc">
             Navegue visualmente pela embarcação e associe cada componente a uma
-            base operacional fictícia do projeto ETN. Ao clicar em uma área
+            base operacional do projeto ETN. Ao clicar em uma área
             específica, a prévia dos dados é atualizada automaticamente.
           </p>
         </header>
@@ -828,41 +927,39 @@ export default function DataBaseETN({ onBack }) {
               <h2 className="table-preview-title">Prévia da Base</h2>
             </div>
 
-            {abas.length > 1 && (
-              <div className="table-subtabs-wrap">
-                <div className="table-subtabs-header">
-                  <span className="table-subtabs-label">Abas da base</span>
-                  <span className="table-subtabs-current">
-                    {abaAtual ? `Selecionada: ${abaAtual}` : ''}
-                  </span>
-                </div>
-
-                <div className="sheet-subtabs sheet-subtabs--table">
-                  {abas.map((aba) => (
-                    <button
-                      key={aba}
-                      type="button"
-                      className={`sheet-subtab ${abaAtual === aba ? 'active' : ''}`}
-                      onClick={() => handleTrocarAba(aba)}
-                    >
-                      {aba}
-                    </button>
-                  ))}
-                </div>
+            <div className="table-subtabs-wrap">
+              <div className="table-subtabs-header">
+                <span className="table-subtabs-label">Planilhas do ETN</span>
+                <span className="table-subtabs-current">
+                  {baseCsvAtual ? `Selecionada: ${baseCsvAtual.nome}` : ''}
+                </span>
               </div>
-            )}
+
+              <div className="sheet-subtabs sheet-subtabs--table">
+                {BASES_CSV.map((base, idx) => (
+                  <button
+                    key={base.id}
+                    type="button"
+                    className={`sheet-subtab ${csvSel === idx ? 'active' : ''}`}
+                    onClick={() => carregarCsv(idx)}
+                  >
+                    {base.nome}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="preview-wrapper">
-              {carregando ? (
+              {csvCarregando ? (
                 <div className="empty-state">
                   <div className="loader" />
                   <p>Carregando prévia da base...</p>
                 </div>
-              ) : erro ? (
+              ) : csvErro ? (
                 <div className="empty-state error">
-                  <p>{erro}</p>
+                  <p>{csvErro}</p>
                 </div>
-              ) : preview.length === 0 ? (
+              ) : csvPreview.length === 0 ? (
                 <div className="empty-state">
                   <p>Nenhum dado disponível para visualização.</p>
                 </div>
@@ -899,14 +996,14 @@ export default function DataBaseETN({ onBack }) {
             <div className="preview-footer">
               <span className="preview-note">
                 Exibindo uma amostra inicial da base selecionada
-                {abaAtual ? ` • Aba: ${abaAtual}` : ''}.
+                {baseCsvAtual ? ` • ${baseCsvAtual.nome}` : ''}.
               </span>
 
               <button
                 type="button"
                 className="details-btn"
-                onClick={() => setModalAberto(true)}
-                disabled={detalhe.length === 0}
+                onClick={abrirModal}
+                disabled={csvDetalhe.length === 0}
               >
                 Ver base completa
               </button>
@@ -924,8 +1021,10 @@ export default function DataBaseETN({ onBack }) {
           <div className="modal-header">
             <div>
               <p className="eyebrow">Visualização completa</p>
-              <h2>{planilha?.nome}</h2>
-              <p className="modal-subtitle">{planilha?.objetivo}</p>
+              <h2>{baseCsvAtual?.nome}</h2>
+              <p className="modal-subtitle">
+                {totalRegistros.toLocaleString('pt-BR')} registros na base.
+              </p>
             </div>
 
             <button
@@ -937,23 +1036,8 @@ export default function DataBaseETN({ onBack }) {
             </button>
           </div>
 
-          {abas.length > 1 && (
-            <div className="modal-abas">
-              {abas.map((aba) => (
-                <button
-                  key={aba}
-                  type="button"
-                  className={`modal-aba-btn ${abaAtual === aba ? 'active' : ''}`}
-                  onClick={() => handleTrocarAba(aba)}
-                >
-                  {aba}
-                </button>
-              ))}
-            </div>
-          )}
-
           <div className="modal-table-wrapper">
-            {detalhe.length > 0 ? (
+            {csvDetalhe.length > 0 ? (
               <table className="modal-table">
                 <thead>
                   <tr>
@@ -967,7 +1051,7 @@ export default function DataBaseETN({ onBack }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {detalheRows.map((row, rowIndex) => (
+                  {detalheRowsVisiveis.map((row, rowIndex) => (
                     <tr key={rowIndex}>
                       {detalheHeaders.map((_, colIndex) => (
                         <td key={colIndex} title={String(row[colIndex] ?? '')}>
@@ -986,6 +1070,25 @@ export default function DataBaseETN({ onBack }) {
               </div>
             )}
           </div>
+
+          {detalheRows.length > 0 && (
+            <div className="modal-footer">
+              <span className="modal-footer-note">
+                Mostrando {Math.min(linhasVisiveis, totalRegistros).toLocaleString('pt-BR')}{' '}
+                de {totalRegistros.toLocaleString('pt-BR')} registros.
+              </span>
+
+              {linhasVisiveis < totalRegistros && (
+                <button
+                  type="button"
+                  className="details-btn"
+                  onClick={handleVerMais}
+                >
+                  Ver mais
+                </button>
+              )}
+            </div>
+          )}
         </Modal>
       </div>
     </div>
