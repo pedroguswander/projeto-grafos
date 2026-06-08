@@ -89,15 +89,12 @@ function generateLocalInsight(summaryObject) {
   const rMin      = rotas?.pesoMin        ?? 0
   const rMax      = rotas?.pesoMax        ?? 0
 
-  // Portos dentro do filtro de grau
-  const portosNoFiltro = DATASET_MEMORY.portos.filter(p => {
-    const hub = DATASET_MEMORY.top5_hubs.find(h => h.codigo === p.codigo)
-    const grau = hub?.grau ?? 50
-    return grau >= grauMin && grau <= grauMax
-  })
-
-  const hubs = DATASET_MEMORY.top5_hubs.filter(h => h.grau >= grauMin && h.grau <= grauMax)
-  const hubNames = hubs.map(h => `${h.nome} (${h.codigo})`).join(", ")
+  // Usa os hubs reais vindos do dashboard (API), com fallback para DATASET_MEMORY
+  const apiHubs = summaryObject.topVertices || []
+  const hubs = apiHubs.length > 0
+    ? apiHubs
+    : DATASET_MEMORY.top5_hubs.filter(h => h.grau >= grauMin && h.grau <= grauMax)
+  const hubNames = hubs.slice(0, 5).map(h => `${h.nome} (${h.codigo})`).join(", ")
 
   const sentences = []
 
@@ -144,12 +141,16 @@ function generateLocalInsight(summaryObject) {
       "A alta conectividade média indica resiliência na rede — priorize hubs de alto grau como pontos de transbordo para maximizar eficiência logística."
     )
   } else if (pesoMedio > 0) {
+    const top3 = hubs.slice(0, 3).map(h => h.nome).join(", ")
     recomendacoes.push(
-      `O peso médio positivo de ${fmt(pesoMedio)} indica rotas lucrativas nesta faixa; concentrar escalas nos hubs de menor custo FFE (Singapura, Jeddah, Jebel Ali) pode ampliar a margem operacional.`
+      `O peso médio positivo de ${fmt(pesoMedio)} indica rotas lucrativas nesta faixa; concentrar escalas nos principais hubs filtrados (${top3}) pode ampliar a margem operacional.`
     )
   } else {
+    const top2 = hubs.slice(0, 2).map(h => `${h.nome} (${h.codigo})`).join(" e ")
     recomendacoes.push(
-      "Amplie o intervalo de grau para incluir hubs estratégicos como Gioia Tauro (ITGIT) e Jebel Ali (AEJEA), que oferecem a maior conectividade global da rede ETN."
+      top2
+        ? `Amplie o intervalo de grau para incluir mais hubs estratégicos além de ${top2}, que lideram a conectividade neste filtro.`
+        : "Amplie o intervalo de grau para incluir hubs estratégicos com maior conectividade global."
     )
   }
 
@@ -170,8 +171,9 @@ function writeSessionCache(key, value) {
 
 function trimSummary(obj) {
   return {
-    filtro: obj.filtro,
-    grafo:  obj.grafo,
+    filtro:       obj.filtro,
+    grafo:        obj.grafo,
+    topVertices:  obj.topVertices,
     rotas:  obj.rotas
       ? {
           total:             obj.rotas.total,

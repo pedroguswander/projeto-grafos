@@ -92,17 +92,7 @@ const TTV = ({ c }) => <p className="dashboard-etn-tooltip-value">{c}</p>
 const TTL = ({ c }) => <p className="dashboard-etn-tooltip-label">{c}</p>
 const TTList = ({ items }) => <div className="dashboard-etn-tooltip-list">{items.map((r, i) => <div key={i}>• {r}</div>)}</div>
 
-const WeightBinTooltip = ({ active, payload }) => {
-  if (!active || !payload?.length) return null
-  const d = payload[0].payload
-  const isSingle = d.label === d.rangeEnd || Math.abs(d.label - d.rangeEnd) < 0.01
-  return (
-    <TT cls="dashboard-etn-tooltip-wide">
-      <TTH c={isSingle ? Number(d.label).toLocaleString("pt-BR") : `${Number(d.label).toLocaleString("pt-BR")} – ${Number(d.rangeEnd).toLocaleString("pt-BR")}`} />
-      {d.arestas?.length > 0 ? <TTList items={d.arestas} /> : <TTV c={`${d.count.toLocaleString("pt-BR")} arestas`} />}
-    </TT>
-  )
-}
+
 
 const ComparisonTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -208,9 +198,11 @@ export const DashboardETN = ({ onBack }) => {
   const [bfsErr, setBfsErr]         = useState(null)
   const [view, setView]             = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
-  const [selectedHub, setSelectedHub]       = useState(null)
-  const [selectedPais, setSelectedPais]     = useState(null)
-  const [selectedRegiao, setSelectedRegiao] = useState(null)
+  const [selectedHub, setSelectedHub]                   = useState(null)
+  const [selectedPais, setSelectedPais]                 = useState(null)
+  const [selectedRegiao, setSelectedRegiao]             = useState(null)
+  const [selectedWeightBin, setSelectedWeightBin]       = useState(null)
+  const [selectedRegioDistrib, setSelectedRegioDistrib] = useState(null)
   const [ranges, setRanges]         = useState(null)
   const [grauRange, setGrauRange]   = useState([0, 9999])
   const [pesoRange, setPesoRange]   = useState([-9999999, 9999999])
@@ -259,6 +251,7 @@ export const DashboardETN = ({ onBack }) => {
       generateRef.current({
         filtro: { grauRange, pesoRange },
         grafo: { vertices: statsData.totalV, arestas: statsData.totalE, grauMedio: statsData.grauMedio, pesoMedio: statsData.pesoMedio },
+        topVertices: (statsData.topVertices || []).map(v => ({ codigo: v.nome, nome: v.nome_completo || v.nome, grau: v.grau })),
         rotas: {
           total: statsData.totalE, rotasNegativas: statsData.rotasDeficitarias ?? 0,
           percNegativas: statsData.percDeficitarias != null ? statsData.percDeficitarias + "%" : "0%",
@@ -360,7 +353,7 @@ export const DashboardETN = ({ onBack }) => {
       <header className="app-modern-header">
         <div className="header-top-actions">
           <button onClick={onBack} className="global-metrics-back-button" type="button" title="Voltar">
-            <span className="global-metrics-back-icon" aria-hidden="true">
+            <span className="global-metrics-back-icon-etn" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
                 <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -390,7 +383,7 @@ export const DashboardETN = ({ onBack }) => {
           onClear={() => { if (ranges) { setGrauRange([ranges.grau_min, ranges.grau_max]); setPesoRange([ranges.peso_min, ranges.peso_max]) } }}
         />
 
-        <InsightPanel insight={insight} loading={loadingInsight} />
+        <InsightPanel insight={insight} loading={loadingInsight} theme="green" />
 
         {/* KPIs */}
         <section className="dashboard-etn-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
@@ -488,16 +481,31 @@ export const DashboardETN = ({ onBack }) => {
         <section className="glass-card dashboard-etn-chart-card">
           <div className="dashboard-etn-chart-header">
             <h3 className="dashboard-etn-chart-title">Distribuição por Região</h3>
+            {selectedRegioDistrib && <CloseBtn onClick={() => setSelectedRegioDistrib(null)} />}
           </div>
-          {loading ? <Skeleton height={260} /> : (
+          {loading ? <Skeleton height={260} /> : selectedRegioDistrib ? (
+            <div style={{ padding: "8px 4px" }}>
+              <p style={{ fontWeight: 700, color: "#34d399", marginBottom: 6, fontSize: 13 }}>
+                {selectedRegioDistrib.nome} — {selectedRegioDistrib.valor} porto(s)
+              </p>
+              <div style={{ maxHeight: 230, overflowY: "auto", fontSize: 12, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 3 }}>
+                {vertices.filter(v => v.D_Region === selectedRegioDistrib.nome).map((v, i) => (
+                  <div key={i} style={{ padding: "3px 6px", background: "rgba(52,211,153,0.07)", borderRadius: 4 }}>
+                    {v.name || v.UNLocode} <span style={{ opacity: 0.5 }}>({v.UNLocode})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
             <ResponsiveContainer width="100%" height={Math.max(260, (d.distribuicaoRegiao || []).slice(0, 10).length * 36)}>
-              <BarChart data={(d.distribuicaoRegiao || []).slice(0, 10)} layout="vertical" margin={{ top: 4, right: 60, left: 8, bottom: 4 }}>
+              <BarChart data={(d.distribuicaoRegiao || []).slice(0, 10)} layout="vertical" margin={{ top: 4, right: 60, left: 8, bottom: 4 }}
+                onClick={e => e?.activePayload?.[0] && setSelectedRegioDistrib(e.activePayload[0].payload)} style={{ cursor: "pointer" }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={GRID} />
                 <XAxis type="number" tick={TICK_ETN} axisLine={false} tickLine={false} />
                 <YAxis dataKey="nome" type="category" width={130} tick={{ fontSize: 12, fill: "#dff7ee", fontWeight: 500 }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null
-                  return <TT><TTH c={label} /><TTV c={`${Number(payload[0].value).toLocaleString("pt-BR")} portos`} /></TT>
+                  return <TT><TTH c={label} /><TTV c={`${Number(payload[0].value).toLocaleString("pt-BR")} portos`} /><p style={{ fontSize: 10, color: "#34d399", marginTop: 4 }}>Clique para ver portos</p></TT>
                 }} />
                 <Bar dataKey="valor" radius={[0, 6, 6, 0]} maxBarSize={22} label={{ position: "right", fill: "#9cc8b6", fontSize: 11, fontWeight: 700 }}>
                   {(d.distribuicaoRegiao || []).slice(0, 10).map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
@@ -512,28 +520,47 @@ export const DashboardETN = ({ onBack }) => {
           <div className="dashboard-etn-chart-header dashboard-etn-chart-header-wrap">
             <div>
               <h3 className="dashboard-etn-chart-title">Distribuição de Pesos das Arestas</h3>
-              {weightStats && (
+              {weightStats && !selectedWeightBin && (
                 <p className="dashboard-etn-chart-meta">
                   {weightStats.total.toLocaleString("pt-BR")} arestas · mín {weightStats.min.toLocaleString("pt-BR")} · máx {weightStats.max.toLocaleString("pt-BR")} · média {weightStats.mean.toLocaleString("pt-BR")} · mediana {weightStats.median.toLocaleString("pt-BR")}
                 </p>
               )}
             </div>
-            <div className="dashboard-etn-select-group">
-              <label className="dashboard-etn-select-label">Faixas</label>
-              <select value={weightBins} onChange={e => setWeightBins(+e.target.value)} className="dashboard-etn-select">
-                {[10, 20, 30, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
+            {selectedWeightBin
+              ? <CloseBtn onClick={() => setSelectedWeightBin(null)} />
+              : <div className="dashboard-etn-select-group">
+                  <label className="dashboard-etn-select-label">Faixas</label>
+                  <select value={weightBins} onChange={e => setWeightBins(+e.target.value)} className="dashboard-etn-select">
+                    {[10, 20, 30, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+            }
           </div>
-          {loading ? <Skeleton height={260} /> : weightBinsData.length === 0 ? (
+          {loading ? <Skeleton height={260} /> : selectedWeightBin ? (
+            <div style={{ padding: "8px 4px" }}>
+              <p style={{ fontWeight: 700, color: "#34d399", marginBottom: 6, fontSize: 13 }}>
+                Peso {Number(selectedWeightBin.label).toLocaleString("pt-BR")}{Math.abs(selectedWeightBin.label - selectedWeightBin.rangeEnd) > 0.01 ? ` – ${Number(selectedWeightBin.rangeEnd).toLocaleString("pt-BR")}` : ""} — {selectedWeightBin.count} aresta(s)
+              </p>
+              <div style={{ maxHeight: 230, overflowY: "auto", fontSize: 12, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 3 }}>
+                {(selectedWeightBin.arestas || []).map((r, i) => (
+                  <div key={i} style={{ padding: "3px 6px", background: "rgba(52,211,153,0.07)", borderRadius: 4 }}>• {r}</div>
+                ))}
+              </div>
+            </div>
+          ) : weightBinsData.length === 0 ? (
             <div className="dashboard-etn-empty-state">Nenhuma aresta com peso carregada</div>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={weightBinsData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}>
+              <BarChart data={weightBinsData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}
+                onClick={e => e?.activePayload?.[0] && setSelectedWeightBin(e.activePayload[0].payload)} style={{ cursor: "pointer" }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID} />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9cc8b6" }} tickFormatter={v => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} interval="preserveStartEnd" label={{ value: "Peso", position: "insideBottom", offset: -16, fontSize: 11, fill: "#9cc8b6" }} />
                 <YAxis tick={{ fontSize: 10, fill: "#9cc8b6" }} label={{ value: "Arestas", angle: -90, position: "insideLeft", offset: 12, fontSize: 11, fill: "#9cc8b6" }} />
-                <Tooltip content={<WeightBinTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                <Tooltip content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const d = payload[0].payload
+                  return <TT><TTH c={Number(d.label).toLocaleString("pt-BR")} /><TTV c={`${d.count} arestas`} /><p style={{ fontSize: 10, color: "#34d399", marginTop: 4 }}>Clique para ver arestas</p></TT>
+                }} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
                 <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                   {weightBinsData.map((_, i) => <Cell key={i} fill={`rgba(52,211,153,${0.45 + 0.55 * (i / weightBinsData.length)})`} />)}
                 </Bar>
