@@ -23,7 +23,9 @@ function buildWeightBins(routes, numBins) {
     .filter(e => e.w != null && !isNaN(e.w))
   if (!entries.length) return []
 
-  if (entries.every(e => Number.isInteger(e.w))) {
+  const allIntegers = entries.every(e => Number.isInteger(e.w))
+  const distinctValues = allIntegers ? new Set(entries.map(e => e.w)).size : Infinity
+  if (allIntegers && distinctValues <= numBins) {
     const map = new Map()
     entries.forEach(({ w, label }) => {
       if (!map.has(w)) map.set(w, { label: w, rangeEnd: w, count: 0, rotas: [] })
@@ -90,17 +92,7 @@ const TTVal  = ({ c }) => <p className="dashboard-tooltip-value">{c}</p>
 const TTSub  = ({ c }) => <p className="dashboard-tooltip-label">{c}</p>
 const TTList = ({ items }) => <div className="dashboard-tooltip-list">{items.map((r, i) => <div key={i}>• {r}</div>)}</div>
 
-const WeightBinTooltip = ({ active, payload }) => {
-  if (!active || !payload?.length) return null
-  const d = payload[0].payload
-  const isSingle = d.label === d.rangeEnd || Math.abs(d.label - d.rangeEnd) < 0.01
-  return (
-    <TT cls="dashboard-tooltip-wide">
-      <TTHead c={isSingle ? Number(d.label).toLocaleString("pt-BR") : `${Number(d.label).toLocaleString("pt-BR")} – ${Number(d.rangeEnd).toLocaleString("pt-BR")}`} />
-      {d.rotas?.length > 0 ? <TTList items={d.rotas} /> : <TTVal c={`${d.count.toLocaleString("pt-BR")} rotas`} />}
-    </TT>
-  )
-}
+
 
 const ComparisonTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -221,6 +213,8 @@ export const Dashboard = ({ onBack }) => {
   const [view, setView] = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
   const [selectedHub, setSelectedHub] = useState(null)
+  const [selectedDistBand, setSelectedDistBand] = useState(null)
+  const [selectedWeightBin, setSelectedWeightBin] = useState(null)
   const [ranges, setRanges] = useState(null)
   const [pais, setPais] = useState("")
   const [grauRange, setGrauRange] = useState([0, 9999])
@@ -265,8 +259,9 @@ export const Dashboard = ({ onBack }) => {
     if (s) {
       const pesos = r.map(x => x.distance ?? x.weight ?? x.peso).filter(Boolean).sort((a, b) => a - b)
       generateRef.current({
-        filtro: { grau: grauRange, dist: distRange },
+        filtro: { grauRange, pesoRange: distRange },
         grafo: { vertices: s.totalV, arestas: s.totalE, grauMedio: s.grauMedio, pesoMedio: s.pesoMedio },
+        topVertices: (s.topVertices || []).map(h => ({ iata: h.nome, cidade: h.nome_completo || h.nome, grau: h.grau })),
         rotas: { total: r.length, pesoMin: pesos[0] ?? 0, pesoMax: pesos[pesos.length - 1] ?? 0, mediana: Math.round(pesos[Math.floor(pesos.length / 2)] ?? 0) },
         bfsDfs: b ? { totalComparacoes: b.total_comparacoes, bfsVence: b.comparacoes?.filter(x => x.mais_rapido === "BFS").length, dfsVence: b.comparacoes?.filter(x => x.mais_rapido === "DFS").length } : null,
       })
@@ -358,6 +353,23 @@ export const Dashboard = ({ onBack }) => {
 
   const degreeData = useMemo(() => (d.distribuicaoGraus || []).map(i => ({ ...i, vertices: i.vertices || [] })), [d.distribuicaoGraus])
 
+  const distBandRoutes = useMemo(() => {
+    if (!selectedDistBand) return []
+    const vals = routes.map(r => r.distance ?? r.weight ?? r.peso).filter(v => v != null && !isNaN(v)).sort((a, b) => a - b)
+    if (!vals.length) return []
+    const q1 = vals[Math.floor(vals.length * 0.33)], q2 = vals[Math.floor(vals.length * 0.66)]
+    return routes
+      .filter(r => {
+        const w = r.distance ?? r.weight ?? r.peso
+        if (w == null || isNaN(w)) return false
+        if (selectedDistBand === "Curtas") return w <= q1
+        if (selectedDistBand === "Médias") return w > q1 && w <= q2
+        return w > q2
+      })
+      .map(r => ({ label: `${r.from} → ${r.to}`, dist: r.distance ?? r.weight ?? r.peso }))
+      .sort((a, b) => (b.dist ?? 0) - (a.dist ?? 0))
+  }, [selectedDistBand, routes])
+
   return (
     <div className="app-modern-bg dashboard-page">
       <header className="app-modern-header">
@@ -386,7 +398,7 @@ export const Dashboard = ({ onBack }) => {
           onClear={() => { setPais(""); if (ranges) { setGrauRange([ranges.grau_min, ranges.grau_max]); setDistRange([ranges.dist_min, ranges.dist_max]) } }}
         />
 
-        <InsightPanel insight={insight} loading={loadingInsight} />
+        <InsightPanel insight={insight} loading={loadingInsight} theme="blue" />
 
         <section className="dashboard-kpi-grid">
           <KPICard loading={loading} title="Vértices (Aeroportos)" value={d.totalV?.toLocaleString("pt-BR") || "—"} />
@@ -451,28 +463,43 @@ export const Dashboard = ({ onBack }) => {
           <div className="dashboard-chart-header dashboard-chart-header-wrap">
             <div>
               <h3 className="dashboard-chart-title">Distribuição de Distâncias das Rotas (Peso)</h3>
-              {weightStats && (
+              {weightStats && !selectedWeightBin && (
                 <p className="dashboard-chart-meta">
                   {routes.length.toLocaleString("pt-BR")} rotas · mín {weightStats.min.toLocaleString("pt-BR")} · máx {weightStats.max.toLocaleString("pt-BR")} · média {weightStats.mean.toLocaleString("pt-BR")} · mediana {weightStats.median.toLocaleString("pt-BR")}
                 </p>
               )}
             </div>
-            <div className="dashboard-select-group">
-              <label className="dashboard-select-label">Faixas</label>
-              <select value={weightBins} onChange={e => setWeightBins(+e.target.value)} className="dashboard-select">
-                {[10, 20, 30, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
+            {selectedWeightBin
+              ? <CloseBtn onClick={() => setSelectedWeightBin(null)} color="#7c3aed" />
+              : <div className="dashboard-select-group">
+                  <label className="dashboard-select-label">Faixas</label>
+                  <select value={weightBins} onChange={e => setWeightBins(+e.target.value)} className="dashboard-select">
+                    {[10, 20, 30, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+            }
           </div>
-          {loading ? <Skeleton height={260} /> : weightBinsData.length === 0 ? (
+          {loading ? <Skeleton height={260} /> : selectedWeightBin ? (
+            <HubDetail
+              hub={`Peso ${Number(selectedWeightBin.label).toLocaleString("pt-BR")}${selectedWeightBin.label !== selectedWeightBin.rangeEnd && Math.abs(selectedWeightBin.label - selectedWeightBin.rangeEnd) > 0.01 ? ` – ${Number(selectedWeightBin.rangeEnd).toLocaleString("pt-BR")}` : ""}`}
+              conexoes={(selectedWeightBin.rotas || []).map(r => ({ label: r }))}
+              accent="#7c3aed"
+            />
+          ) : weightBinsData.length === 0 ? (
             <div className="dashboard-empty-state">Nenhuma rota carregada</div>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={weightBinsData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}>
+              <BarChart data={weightBinsData} margin={{ top: 4, right: 8, left: 0, bottom: 24 }}
+                onClick={e => e?.activePayload?.[0] && setSelectedWeightBin(e.activePayload[0].payload)}
+                style={{ cursor: "pointer" }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID} />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={v => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} interval="preserveStartEnd" label={{ value: "Distância (peso)", position: "insideBottom", offset: -16, fontSize: 11, fill: "#9ca3af" }} />
                 <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} label={{ value: "Rotas", angle: -90, position: "insideLeft", offset: 12, fontSize: 11, fill: "#9ca3af" }} />
-                <Tooltip content={<WeightBinTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                <Tooltip content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const d = payload[0].payload
+                  return <TT><TTHead c={Number(d.label).toLocaleString("pt-BR")} /><TTVal c={`${d.count} rotas`} /><p style={{ fontSize: 10, color: "#7c3aed", marginTop: 4 }}>Clique para ver rotas</p></TT>
+                }} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
                 <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                   {weightBinsData.map((_, i) => <Cell key={i} fill={`rgba(124,58,237,${0.45 + 0.55 * (i / weightBinsData.length)})`} />)}
                 </Bar>
@@ -516,20 +543,42 @@ export const Dashboard = ({ onBack }) => {
             <div className="dashboard-chart-header">
               <div>
                 <h3 className="dashboard-chart-title">Perfil das Rotas por Faixa de Distância</h3>
-                <p className="dashboard-chart-meta">Segmentação relativa entre rotas curtas, médias e longas.</p>
+                {!selectedDistBand && <p className="dashboard-chart-meta">Segmentação relativa entre rotas curtas, médias e longas.</p>}
               </div>
+              {selectedDistBand && <CloseBtn onClick={() => setSelectedDistBand(null)} color="#0891b2" />}
             </div>
-            {loading ? <Skeleton /> : routeDistanceProfile.length === 0 ? (
+            {loading ? <Skeleton /> : selectedDistBand ? (
+              <HubDetail
+                hub={selectedDistBand}
+                conexoes={distBandRoutes}
+                accent={routeDistanceProfile.find(r => r.name === selectedDistBand)?.color ?? "#0891b2"}
+              />
+            ) : routeDistanceProfile.length === 0 ? (
               <div className="dashboard-empty-state">Nenhuma rota carregada.</div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Tooltip content={({ active, payload }) => {
                     if (!active || !payload?.length) return null
-                    return <TT><TTHead c={payload[0].name} /><TTVal c={Number(payload[0].value).toLocaleString("pt-BR")} /></TT>
+                    return (
+                      <TT>
+                        <TTHead c={payload[0].name} />
+                        <TTVal c={Number(payload[0].value).toLocaleString("pt-BR")} />
+                        <p style={{ fontSize: 10, color: "#0891b2", marginTop: 4 }}>Clique para ver rotas</p>
+                      </TT>
+                    )
                   }} />
                   <Legend verticalAlign="bottom" height={36} formatter={(v, e) => <span style={{ color: e.color, fontWeight: 700 }}>{v}</span>} />
-                  <Pie data={routeDistanceProfile} dataKey="value" nameKey="name" cx="50%" cy="46%" innerRadius={58} outerRadius={100} paddingAngle={3}>
+                  <Pie
+                    data={routeDistanceProfile}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%" cy="46%"
+                    innerRadius={58} outerRadius={100}
+                    paddingAngle={3}
+                    style={{ cursor: "pointer" }}
+                    onClick={e => e?.name && setSelectedDistBand(e.name)}
+                  >
                     {routeDistanceProfile.map((e, i) => <Cell key={i} fill={e.color} />)}
                   </Pie>
                 </PieChart>
