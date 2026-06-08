@@ -193,6 +193,65 @@ def _shortest_simple_path(
     return best[0], best[1]
 
 
+def _detectar_ciclo_negativo(graph: Graph) -> Optional[List[str]]:
+    nodes = list(graph.adjacency_list)
+    edges = [(u, v, w) for u in nodes for v, w in graph.get_neighbors(u)]
+    dist: Dict[str, float] = {n: 0.0 for n in nodes}
+    prev: Dict[str, Optional[str]] = {n: None for n in nodes}
+    x: Optional[str] = None
+    for _ in range(len(nodes)):
+        x = None
+        for u, v, w in edges:
+            if v not in dist:
+                continue
+            if dist[u] + w < dist[v] - 1e-9:
+                dist[v] = dist[u] + w
+                prev[v] = u
+                x = v
+    if x is None:
+        return None
+    for _ in range(len(nodes)):
+        x = prev[x]
+    cycle: List[str] = [x]
+    v = prev[x]
+    while v != x:
+        cycle.append(v)
+        v = prev[v]
+    cycle.append(x)
+    cycle.reverse()
+    return cycle
+
+
+def remover_ciclos_negativos(graph: Graph) -> Graph:
+    novo = Graph()
+    for port in graph.ports.values():
+        novo.add_port(port)
+    for u in graph.adjacency_list:
+        for v, w in graph.get_neighbors(u):
+            novo.add_route(u, v, w)
+    while True:
+        cycle = _detectar_ciclo_negativo(novo)
+        if cycle is None:
+            break
+        pior_arco: Optional[Tuple[str, str]] = None
+        pior_peso = float('inf')
+        for i in range(len(cycle) - 1):
+            a, b = cycle[i], cycle[i + 1]
+            for v, w in novo.adjacency_list[a]:
+                if v == b and w < pior_peso:
+                    pior_peso = w
+                    pior_arco = (a, b)
+        if pior_arco is None:
+            break
+        a, b = pior_arco
+        vizinhos = novo.adjacency_list[a]
+        for idx, (v, w) in enumerate(vizinhos):
+            if v == b and w == pior_peso:
+                vizinhos.pop(idx)
+                break
+    return novo
+
+
 def bellman_ford(
     graph: Graph, start: str, end: str
 ) -> Tuple[Optional[float], Optional[List[str]], bool]:

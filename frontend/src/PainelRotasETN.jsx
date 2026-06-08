@@ -765,12 +765,76 @@ function PainelRotasETN({ onBack }) {
     return adjacency
   }
 
+  // ─── Grafo sem ciclos negativos (para Bellman-Ford) ─────────
+  const findNegativeCycle = (edges, nodeIds) => {
+    const dist = {}
+    const prev = {}
+    nodeIds.forEach((n) => { dist[n] = 0; prev[n] = null })
+    let x = null
+    for (let i = 0; i < nodeIds.length; i++) {
+      x = null
+      for (const e of edges) {
+        if (dist[e.from] + e.weight < dist[e.to] - 1e-9) {
+          dist[e.to] = dist[e.from] + e.weight
+          prev[e.to] = e.from
+          x = e.to
+        }
+      }
+    }
+    if (x === null) return null
+    for (let i = 0; i < nodeIds.length; i++) x = prev[x]
+    const cycle = [x]
+    let v = prev[x]
+    while (v !== x) { cycle.push(v); v = prev[v] }
+    cycle.push(x)
+    cycle.reverse()
+    return cycle
+  }
+
+  const removeNegativeCycles = (rawEdges, nodes) => {
+    const nodeIds = nodes.map((n) => n.id)
+    let edges = rawEdges.map((e) => ({ from: e.from, to: e.to, weight: Number(e.weight) }))
+    while (true) {
+      const cycle = findNegativeCycle(edges, nodeIds)
+      if (cycle === null) break
+      let worstIdx = -1
+      let worstW = Infinity
+      for (let i = 0; i < cycle.length - 1; i++) {
+        const a = cycle[i], b = cycle[i + 1]
+        const idx = edges.findIndex((e) => e.from === a && e.to === b)
+        if (idx >= 0 && edges[idx].weight < worstW) {
+          worstW = edges[idx].weight
+          worstIdx = idx
+        }
+      }
+      if (worstIdx < 0) break
+      edges.splice(worstIdx, 1)
+    }
+    return edges
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const decycledEdges = useMemo(
+    () => removeNegativeCycles(graphData.edges, graphData.nodes),
+    [graphData.edges, graphData.nodes],
+  )
+
+  const buildBellmanAdjacency = () => {
+    const adjacency = new Map()
+    graphData.nodes.forEach((n) => adjacency.set(n.id, []))
+    decycledEdges.forEach((edge) => {
+      if (!adjacency.has(edge.from)) adjacency.set(edge.from, [])
+      adjacency.get(edge.from).push({ to: edge.to, weight: edge.weight })
+    })
+    return adjacency
+  }
+
   // ─── Simulação Bellman-Ford ──────────────────────────────────
   const BF_ITERATION_CAP = 12
 
 
   const generateBellmanFordSteps = (start) => {
-    const adjacency = buildAdjacency()
+    const adjacency = buildBellmanAdjacency()
     const nodeIds = bellmanTableNodes
     const dist = {}
     const prev = {}

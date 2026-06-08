@@ -11,7 +11,7 @@ from graphs.io import load_graph_from_csvs
 app = Flask(__name__)
 CORS(app)
 
-graph = etn_graph = None
+graph = etn_graph = etn_graph_bf = None
 BASE = os.path.dirname(os.path.abspath(__file__))
 
 # ─── Helpers ───────────────────────────────────────────────────
@@ -33,6 +33,14 @@ def load_etn_graph():
         from parte2.src.graphs.io import load_graph_from_csvs as _load
         etn_graph = _load(data_path('ETN'))
     return etn_graph
+
+def load_etn_graph_sem_ciclos():
+    global etn_graph_bf
+    if etn_graph_bf is None:
+        g = load_etn_graph()
+        from parte2.src.graphs.algorithms import remover_ciclos_negativos
+        etn_graph_bf = remover_ciclos_negativos(g)
+    return etn_graph_bf
 
 def load_etn():
     vp, ap = data_path('ETN', 'vertices.csv'), data_path('ETN', 'arestas.csv')
@@ -521,7 +529,8 @@ def calculate_etn_bellman_ford():
     if start not in g.adjacency_list or end not in g.adjacency_list:
         return jsonify({'success': False, 'hasNegativeCycle': False,
                         'message': f'Porto inválido: {start} ou {end}'}), 400
-    cost, path, has_cycle = bellman_ford(g, start, end)
+    g_bf = load_etn_graph_sem_ciclos()
+    cost, path, has_cycle = bellman_ford(g_bf, start, end)
     if has_cycle:
         # Ciclo negativo — usa DFS para obter um caminho visualizável no mapa
         best_cost_v, best_path_v, calls_v = [float('inf')], [None], [0]
