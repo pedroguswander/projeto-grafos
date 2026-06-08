@@ -663,6 +663,9 @@ function PainelRotasETN({ onBack }) {
   // Controle do box de ciclo negativo
   const [cycleDismissed, setCycleDismissed] = useState(false)
 
+  // Modal da nota analítica
+  const [showNoteModal, setShowNoteModal] = useState(false)
+
   // Simulação passo a passo (frontend, independente do backend)
   const [bellmanSteps, setBellmanSteps] = useState([])
   const [isSimulating, setIsSimulating] = useState(false)
@@ -1136,6 +1139,160 @@ function PainelRotasETN({ onBack }) {
             </button>
           </div>
         </div>
+
+        {/* ── Trigger card — nota analítica ── */}
+        <button type="button" className="etn-note-trigger" onClick={() => setShowNoteModal(true)}>
+          <span className="etn-note-trigger-icon">⚠</span>
+          <span className="etn-note-trigger-text">
+            Este grafo contém <strong>ciclos negativos</strong> — o Bellman-Ford usa um grafo tratado (arestas mais negativas removidas iterativamente).
+          </span>
+          <span className="etn-note-trigger-cta">Saiba mais →</span>
+        </button>
+
+        {/* ── Modal da nota analítica ── */}
+        {showNoteModal && (
+          <div
+            className="etn-note-overlay"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowNoteModal(false) }}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="etn-note-modal">
+              <div className="etn-note-modal-header">
+                <div className="etn-note-modal-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                    width="18" height="18" style={{ color: '#26c281', flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  Como funciona o grafo Bellman-Ford?
+                </div>
+                <button type="button" className="etn-note-close" onClick={() => setShowNoteModal(false)} aria-label="Fechar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="14" height="14">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div className="etn-note-modal-body">
+
+                {/* Seção 1 */}
+                <div className="etn-note-section">
+                  <div className="etn-note-section-num">1</div>
+                  <div>
+                    <div className="etn-note-section-title">Ciclos negativos no grafo</div>
+                    <p className="etn-note-section-text">
+                      O grafo ETN é <strong>direcionado</strong> e possui arestas com peso negativo representando rotas deficitárias.
+                      Alguns conjuntos de arestas formam <strong>ciclos negativos</strong> — circuitos cujos pesos somam um valor
+                      negativo. Quando existe um ciclo negativo alcançável a partir da origem, o problema do menor caminho torna-se
+                      <strong> indefinido</strong>: percorrer o ciclo repetidamente reduz o custo indefinidamente.
+                    </p>
+                    <p className="etn-note-section-text">
+                      Para contornar isso, o painel aplica um pré-processamento: detecta cada ciclo negativo com uma passagem de
+                      Bellman-Ford de super-fonte virtual (todas as distâncias iniciam em 0), identifica a aresta de menor peso
+                      dentro do ciclo e a remove. O processo repete até que nenhum ciclo negativo persista.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Seção 2 — SVGs antes/depois */}
+                <div className="etn-note-section">
+                  <div className="etn-note-section-num">2</div>
+                  <div style={{ width: '100%' }}>
+                    <div className="etn-note-section-title">Antes e depois</div>
+                    <div className="etn-note-diagrams">
+
+                      {/* Antes */}
+                      <div className="etn-note-diagram-wrap">
+                        <div className="etn-note-diagram-label">Antes</div>
+                        <svg viewBox="0 0 180 140" className="etn-note-svg" aria-hidden="true">
+                          {/* Arestas */}
+                          <defs>
+                            <marker id="arr-before" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                              <polygon points="0 0, 7 3.5, 0 7" fill="#26c281" opacity="0.7"/>
+                            </marker>
+                          </defs>
+                          {/* A→B */}
+                          <line x1="30" y1="110" x2="85" y2="28" stroke="#26c281" strokeWidth="1.8" opacity="0.75" markerEnd="url(#arr-before)"/>
+                          <text x="36" y="65" fontSize="10" fill="#f6c56f" textAnchor="middle">−5</text>
+                          {/* B→C */}
+                          <line x1="90" y1="25" x2="148" y2="108" stroke="#26c281" strokeWidth="1.8" opacity="0.75" markerEnd="url(#arr-before)"/>
+                          <text x="132" y="65" fontSize="10" fill="#f6c56f" textAnchor="middle">−4</text>
+                          {/* C→A */}
+                          <line x1="145" y1="115" x2="38" y2="115" stroke="#26c281" strokeWidth="1.8" opacity="0.75" markerEnd="url(#arr-before)"/>
+                          <text x="91" y="130" fontSize="10" fill="#f6c56f" textAnchor="middle">+2</text>
+                          {/* Nós */}
+                          <circle cx="30" cy="115" r="14" fill="#0b241c" stroke="#26c281" strokeWidth="1.5"/>
+                          <text x="30" y="119" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ecfff7">A</text>
+                          <circle cx="90" cy="22" r="14" fill="#0b241c" stroke="#26c281" strokeWidth="1.5"/>
+                          <text x="90" y="26" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ecfff7">B</text>
+                          <circle cx="150" cy="115" r="14" fill="#0b241c" stroke="#26c281" strokeWidth="1.5"/>
+                          <text x="150" y="119" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ecfff7">C</text>
+                          {/* Soma */}
+                          <text x="90" y="14" textAnchor="middle" fontSize="9" fill="#ff6b6b" fontWeight="700">soma = −7</text>
+                        </svg>
+                      </div>
+
+                      {/* Seta entre */}
+                      <div className="etn-note-diagram-arrow">→</div>
+
+                      {/* Depois */}
+                      <div className="etn-note-diagram-wrap">
+                        <div className="etn-note-diagram-label">Depois</div>
+                        <svg viewBox="0 0 180 140" className="etn-note-svg" aria-hidden="true">
+                          <defs>
+                            <marker id="arr-after" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                              <polygon points="0 0, 7 3.5, 0 7" fill="#26c281" opacity="0.7"/>
+                            </marker>
+                          </defs>
+                          {/* A→B removida */}
+                          <line x1="30" y1="110" x2="85" y2="28" stroke="#f6c56f" strokeWidth="1.4" opacity="0.28" strokeDasharray="5 4"/>
+                          <text x="36" y="65" fontSize="10" fill="#f6c56f" opacity="0.35" textAnchor="middle">−5</text>
+                          <text x="58" y="78" fontSize="8" fill="#f6c56f" opacity="0.55" textAnchor="middle" fontWeight="700">removida</text>
+                          {/* B→C */}
+                          <line x1="90" y1="25" x2="148" y2="108" stroke="#26c281" strokeWidth="1.8" opacity="0.75" markerEnd="url(#arr-after)"/>
+                          <text x="132" y="65" fontSize="10" fill="#f6c56f" textAnchor="middle">−4</text>
+                          {/* C→A */}
+                          <line x1="145" y1="115" x2="38" y2="115" stroke="#26c281" strokeWidth="1.8" opacity="0.75" markerEnd="url(#arr-after)"/>
+                          <text x="91" y="130" fontSize="10" fill="#f6c56f" textAnchor="middle">+2</text>
+                          {/* Nós */}
+                          <circle cx="30" cy="115" r="14" fill="#0b241c" stroke="#26c281" strokeWidth="1.5"/>
+                          <text x="30" y="119" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ecfff7">A</text>
+                          <circle cx="90" cy="22" r="14" fill="#0b241c" stroke="#26c281" strokeWidth="1.5"/>
+                          <text x="90" y="26" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ecfff7">B</text>
+                          <circle cx="150" cy="115" r="14" fill="#0b241c" stroke="#26c281" strokeWidth="1.5"/>
+                          <text x="150" y="119" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ecfff7">C</text>
+                          {/* Sem ciclo */}
+                          <text x="90" y="14" textAnchor="middle" fontSize="9" fill="#26c281" fontWeight="700">sem ciclo negativo</text>
+                        </svg>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seção 3 */}
+                <div className="etn-note-section">
+                  <div className="etn-note-section-num">3</div>
+                  <div>
+                    <div className="etn-note-section-title">Análise completa</div>
+                    <p className="etn-note-section-text">
+                      Esta abordagem é uma <strong>heurística de engenharia</strong>: remove o mínimo de arestas necessário para
+                      eliminar todos os ciclos negativos, priorizando as mais negativas. Não há garantia de que o caminho retornado
+                      seja ótimo em relação ao grafo original — apenas que é o menor caminho no grafo tratado.
+                    </p>
+                    <p className="etn-note-section-text">
+                      Para a análise completa do Bellman-Ford sobre o grafo original (incluindo detecção de ciclos, distribuição
+                      de pesos negativos e comparação com Dijkstra), consulte o <strong>relatório do projeto</strong>.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        )}
 
         <section className="glass-card app-top-bar clean-top-bar">
           <div className="field-group">
