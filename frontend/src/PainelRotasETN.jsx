@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
+import GlobeGL from 'react-globe.gl'
 
 import logoEtn from './assets/logo-2/logo-branca-isolada2.png'
 
@@ -106,7 +107,8 @@ function WorldMap({ graphData, pathResult, startPort, endPort, portMeta, onNodeC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plotlyLoaded, graphData, pathResult, startPort, endPort])
 
-  const activePath = pathResult?.success ? (pathResult?.path || []) : []
+  // Usa o path sempre que disponível (inclui fallback DFS do ciclo negativo do BF)
+  const activePath = pathResult?.path?.length > 1 ? pathResult.path : []
 
   const isPathEdge = (from, to) =>
     activePath.length > 1 && activePath.some((n, i) =>
@@ -136,24 +138,41 @@ function WorldMap({ graphData, pathResult, startPort, endPort, portMeta, onNodeC
       midCustom.push([edge.from, edge.to, edge.weight, inPath ? 1 : 0])
     })
 
+    const hasRoute = activePath.length > 0
     const baseEdgeTrace = {
       type: 'scattergeo', mode: 'lines',
       lon: baseLon, lat: baseLat,
-      line: { width: 0.7, color: 'rgba(148,163,184,0.22)' },
+      line: {
+        width: hasRoute ? 0.4 : 0.7,
+        color: hasRoute ? 'rgba(255,255,255,0.07)' : 'rgba(180,200,195,0.18)',
+      },
+      hoverinfo: 'none', showlegend: false,
+    }
+
+    // Halo/glow por trás da rota ativa
+    const pathGlowTrace = {
+      type: 'scattergeo', mode: 'lines',
+      lon: pathLon, lat: pathLat,
+      line: { width: 22, color: 'rgba(255,215,0,0.09)' },
       hoverinfo: 'none', showlegend: false,
     }
 
     const pathEdgeTrace = {
       type: 'scattergeo', mode: 'lines',
       lon: pathLon, lat: pathLat,
-      line: { width: 3.5, color: '#f6c56f' },
+      line: { width: 5, color: '#FFD700' },
       hoverinfo: 'none', showlegend: false,
     }
 
+    // Marcadores invisíveis para hover: path=30px, outros=8px
     const weightHoverTrace = {
       type: 'scattergeo', mode: 'markers',
       lon: midLon, lat: midLat,
-      marker: { size: 10, color: 'rgba(0,0,0,0)', opacity: 0 },
+      marker: {
+        size: midCustom.map((c) => (c[3] === 1 ? 30 : 8)),
+        color: 'rgba(0,0,0,0)',
+        opacity: 0,
+      },
       customdata: midCustom,
       hovertemplate: '<extra></extra>',
       showlegend: false,
@@ -183,7 +202,7 @@ function WorldMap({ graphData, pathResult, startPort, endPort, portMeta, onNodeC
         color: nodes.map((n) =>
           n.id === startPort ? '#26c281' :
           n.id === endPort ? '#ff6b6b' :
-          activePath.includes(n.id) ? '#f6c56f' :
+          activePath.includes(n.id) ? '#FFD700' :
           getRegionColor(region)
         ),
         line: {
@@ -241,11 +260,11 @@ function WorldMap({ graphData, pathResult, startPort, endPort, portMeta, onNodeC
     // scrollZoom: true → o usuário navega/dá zoom no mapa-múndi com o scroll do mouse
     const config = { responsive: true, displayModeBar: false, scrollZoom: true }
 
-    const weightHoverIndex = 2 // base, path, weightHover
+    const weightHoverIndex = 3 // base, pathGlow, path, weightHover
 
     Plotly.react(
       plotRef.current,
-      [baseEdgeTrace, pathEdgeTrace, weightHoverTrace, ...nodeTraces],
+      [baseEdgeTrace, pathGlowTrace, pathEdgeTrace, weightHoverTrace, ...nodeTraces],
       layout, config,
     ).then(() => {
       plotRef.current.removeAllListeners('plotly_hover')
@@ -302,11 +321,13 @@ function WorldMap({ graphData, pathResult, startPort, endPort, portMeta, onNodeC
             top: edgeTooltip.y - 10,
             pointerEvents: 'none',
             zIndex: 200,
-            background: 'rgba(11,36,28,0.96)',
-            border: `1px solid ${edgeTooltip.inPath ? '#f6c56f' : '#2c4338'}`,
+            background: edgeTooltip.inPath ? 'rgba(20,15,0,0.97)' : 'rgba(11,36,28,0.96)',
+            border: `1.5px solid ${edgeTooltip.inPath ? '#FFD700' : '#2c4338'}`,
             borderRadius: 8,
             padding: '6px 12px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            boxShadow: edgeTooltip.inPath
+              ? '0 4px 24px rgba(255,215,0,0.2), 0 0 0 1px rgba(255,215,0,0.08)'
+              : '0 4px 20px rgba(0,0,0,0.5)',
             display: 'flex', flexDirection: 'column', gap: 2, minWidth: 110,
           }}
         >
@@ -316,16 +337,307 @@ function WorldMap({ graphData, pathResult, startPort, endPort, portMeta, onNodeC
           <div style={{ fontSize: 13, fontWeight: 600, color: '#ecfff7', fontFamily: 'Inter, sans-serif' }}>
             {edgeTooltip.from} → {edgeTooltip.to}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: edgeTooltip.inPath ? '#f6c56f' : '#9cc8b6', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: edgeTooltip.inPath ? '#FFD700' : '#9cc8b6', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
             ⚖ Peso: {formatWeight(edgeTooltip.weight)}
           </div>
           {edgeTooltip.inPath && (
-            <div style={{ fontSize: 10, color: '#f6c56f', fontFamily: 'Inter, sans-serif', opacity: 0.85 }}>
-              ✦ Rota ativa
+            <div style={{ fontSize: 10, color: '#FFD700', fontFamily: 'Inter, sans-serif', fontWeight: 800, letterSpacing: '0.04em' }}>
+              ★ Melhor rota
             </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ===========================================================================
+// Globo 3D interativo (react-globe.gl) — modal de visão 3D
+// ===========================================================================
+function Globe3DModal({ onClose, graphData, pathResult, startPort, endPort, portMeta }) {
+  const globeRef = useRef(null)
+  const containerRef = useRef(null)
+  const [dimensions, setDimensions] = useState({ w: 900, h: 600 })
+  const [autoRotate, setAutoRotate] = useState(true)
+  const [globeReady, setGlobeReady] = useState(false)
+  const [countriesGeoJSON, setCountriesGeoJSON] = useState({ features: [] })
+
+  // Usa o path sempre que disponível (inclui fallback DFS do ciclo negativo do BF)
+  const activePath = useMemo(
+    () => (pathResult?.path?.length > 1 ? pathResult.path : []),
+    [pathResult],
+  )
+
+  const arcsData = useMemo(() => {
+    const pathEdges = new Set(
+      activePath.slice(0, -1).map((p, i) => `${p}|${activePath[i + 1]}`),
+    )
+    return graphData.edges
+      .map((e) => {
+        const A = PORT_COORDS[e.from]
+        const B = PORT_COORDS[e.to]
+        if (!A || !B) return null
+        return {
+          startLat: A.lat, startLng: A.lon,
+          endLat: B.lat, endLng: B.lon,
+          from: e.from, to: e.to,
+          weight: e.weight,
+          inPath: pathEdges.has(`${e.from}|${e.to}`),
+        }
+      })
+      .filter(Boolean)
+  }, [graphData.edges, activePath])
+
+  const pointsData = useMemo(() => {
+    const pathSet = new Set(activePath)
+    return graphData.nodes
+      .filter((n) => PORT_COORDS[n.id])
+      .map((n) => ({
+        lat: PORT_COORDS[n.id].lat,
+        lng: PORT_COORDS[n.id].lon,
+        id: n.id,
+        region: portMeta[n.id]?.region || 'Outro',
+        name: portMeta[n.id]?.name || n.id,
+        country: portMeta[n.id]?.country || '',
+        isStart: n.id === startPort,
+        isEnd: n.id === endPort,
+        inPath: pathSet.has(n.id),
+      }))
+  }, [graphData.nodes, portMeta, startPort, endPort, activePath])
+
+  // Carrega bordas de países (GeoJSON) para exibir no globo
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/countries.geojson')
+      .then((r) => r.json())
+      .then((data) => setCountriesGeoJSON(data))
+      .catch(() => {})
+  }, [])
+
+  // Ajusta dimensões ao container com ResizeObserver
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      setDimensions({ w: el.clientWidth, h: el.clientHeight })
+    })
+    ro.observe(el)
+    setDimensions({ w: el.clientWidth, h: el.clientHeight })
+    return () => ro.disconnect()
+  }, [])
+
+  // Inicializa controles após o globo estar pronto
+  useEffect(() => {
+    if (!globeReady || !globeRef.current) return
+    const ctrl = globeRef.current.controls()
+    ctrl.autoRotate = autoRotate
+    ctrl.autoRotateSpeed = 0.45
+    ctrl.enableDamping = true
+    ctrl.dampingFactor = 0.08
+    globeRef.current.pointOfView({ lat: 20, lng: 10, altitude: 2.5 }, 800)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [globeReady])
+
+  // Sincroniza autoRotate
+  useEffect(() => {
+    if (!globeRef.current) return
+    globeRef.current.controls().autoRotate = autoRotate
+  }, [autoRotate])
+
+  // Fecha com Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  const flyToRoute = () => {
+    if (!globeRef.current || !startPort || !endPort) return
+    const A = PORT_COORDS[startPort]
+    const B = PORT_COORDS[endPort]
+    if (!A || !B) return
+    globeRef.current.pointOfView(
+      { lat: (A.lat + B.lat) / 2, lng: (A.lon + B.lon) / 2, altitude: 2.0 },
+      1200,
+    )
+  }
+
+  return (
+    <div
+      className="globe-modal-overlay"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="globe-modal-container">
+
+        {/* ── Cabeçalho ── */}
+        <div className="globe-modal-header">
+          <div className="globe-modal-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+              width="20" height="20" style={{ color: '#26c281', flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            Mapa de Conexões — Visão 3D
+          </div>
+          <div className="globe-modal-controls">
+            {pathResult?.success && startPort && endPort && (
+              <button type="button" className="globe-ctrl-btn" onClick={flyToRoute} title="Centralizar câmera na rota">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                Focar na rota
+              </button>
+            )}
+            <button
+              type="button"
+              className={`globe-ctrl-btn${autoRotate ? ' active' : ''}`}
+              onClick={() => setAutoRotate((v) => !v)}
+              title={autoRotate ? 'Pausar rotação automática' : 'Iniciar rotação automática'}
+            >
+              {autoRotate ? (
+                <>
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                    <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                  </svg>
+                  Pausar rotação
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                    <polygon points="5,3 19,12 5,21"/>
+                  </svg>
+                  Girar globo
+                </>
+              )}
+            </button>
+            <button type="button" className="globe-close-btn" onClick={onClose} aria-label="Fechar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="15" height="15">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Barra da rota ativa ── */}
+        {pathResult?.success && activePath.length > 0 && (
+          <div className="globe-path-bar">
+            <span className="globe-path-label">Rota ativa:</span>
+            <div className="globe-path-ports">
+              {activePath.map((port, i) => (
+                <span key={`gp-${port}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <span style={{
+                    color: port === startPort ? '#26c281' : port === endPort ? '#ff6b6b' : '#f6c56f',
+                    fontWeight: 800, fontSize: '0.82rem',
+                  }}>{port}</span>
+                  {i < activePath.length - 1 && (
+                    <span style={{ color: '#3a5a4b', fontSize: '0.75rem' }}>›</span>
+                  )}
+                </span>
+              ))}
+            </div>
+            {pathResult.cost != null && (
+              <span className="globe-path-cost">Peso total: {formatWeight(pathResult.cost)}</span>
+            )}
+          </div>
+        )}
+
+        {/* ── Corpo do globo ── */}
+        <div className="globe-modal-body" ref={containerRef}>
+          {!globeReady && (
+            <div className="globe-loading">
+              <div className="globe-loading-spinner" />
+              <div className="globe-loading-text">Carregando globo 3D…</div>
+            </div>
+          )}
+
+          <GlobeGL
+            ref={globeRef}
+            width={dimensions.w}
+            height={dimensions.h}
+            onGlobeReady={() => setGlobeReady(true)}
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+            bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+            backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+            atmosphereColor="rgba(38,194,129,0.65)"
+            atmosphereAltitude={0.18}
+            // ── Bordas de países ──
+            polygonsData={countriesGeoJSON.features}
+            polygonCapColor={() => 'rgba(0,0,0,0)'}
+            polygonSideColor={() => 'rgba(0,0,0,0)'}
+            polygonStrokeColor={() => 'rgba(38,194,129,0.4)'}
+            polygonAltitude={0.001}
+            polygonLabel={() => ''}
+            // ── Arcos ──
+            arcsData={arcsData}
+            arcStartLat={(d) => d.startLat}
+            arcStartLng={(d) => d.startLng}
+            arcEndLat={(d) => d.endLat}
+            arcEndLng={(d) => d.endLng}
+            arcColor={(d) => {
+              if (d.inPath) return '#FFD700'
+              return activePath.length > 0 ? 'rgba(255,255,255,0.06)' : 'rgba(38,194,129,0.13)'
+            }}
+            arcStroke={(d) => {
+              if (d.inPath) return 3.0
+              return activePath.length > 0 ? 0.18 : 0.28
+            }}
+            arcDashLength={(d) => d.inPath ? 0.45 : 1}
+            arcDashGap={(d) => d.inPath ? 0.2 : 0}
+            arcDashAnimateTime={(d) => d.inPath ? 1000 : 0}
+            arcAltitudeAutoScale={0.28}
+            arcLabel={(d) => `<div style="background:rgba(${d.inPath ? '20,15,0' : '6,26,20'},0.97);border:1.5px solid rgba(${d.inPath ? '255,215,0' : '38,194,129'},0.55);border-radius:9px;padding:7px 12px;font-family:Inter,sans-serif;box-shadow:${d.inPath ? '0 4px 20px rgba(255,215,0,0.2)' : '0 4px 20px rgba(0,0,0,0.5)'}"><span style="color:#ecfff7;font-weight:700">${d.from}</span><span style="color:#3a5a4b;margin:0 6px">→</span><span style="color:#ecfff7;font-weight:700">${d.to}</span><div style="color:${d.inPath ? '#FFD700' : '#9cc8b6'};font-size:11px;margin-top:3px;font-weight:${d.inPath ? '700' : '400'}">Peso: ${formatWeight(d.weight)}${d.inPath ? ' · ★ Melhor rota' : ''}</div></div>`}
+            // ── Pontos ──
+            pointsData={pointsData}
+            pointLat={(d) => d.lat}
+            pointLng={(d) => d.lng}
+            pointColor={(d) => {
+              if (d.isStart) return '#26c281'
+              if (d.isEnd)   return '#ff6b6b'
+              if (d.inPath)  return '#FFD700'
+              return activePath.length > 0
+                ? 'rgba(200,220,210,0.45)'
+                : getRegionColor(d.region)
+            }}
+            pointRadius={(d) => {
+              if (d.isStart || d.isEnd) return 0.62
+              if (d.inPath) return 0.5
+              return activePath.length > 0 ? 0.22 : 0.3
+            }}
+            pointAltitude={(d) => (d.isStart || d.isEnd) ? 0.08 : d.inPath ? 0.05 : 0.01}
+            pointLabel={(d) => `<div style="background:rgba(6,26,20,0.97);border:1.5px solid ${getRegionColor(d.region)};border-radius:10px;padding:10px 14px;font-family:Inter,sans-serif;min-width:150px;box-shadow:0 6px 28px rgba(0,0,0,0.6)"><div style="font-weight:800;color:#ecfff7;font-size:15px;letter-spacing:0.03em">${d.id}</div><div style="color:#bfe0d2;font-size:12px;margin-top:3px">${d.name}</div><div style="color:#6f9a89;font-size:10px;margin-top:3px">${d.country} &middot; ${d.region}</div>${d.isStart ? '<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">✦ Porto de origem</div>' : ''}${d.isEnd ? '<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">✦ Porto de destino</div>' : ''}${d.inPath && !d.isStart && !d.isEnd ? '<div style="color:#FFD700;font-size:11px;font-weight:700;margin-top:5px">★ Melhor rota</div>' : ''}</div>`}
+          />
+
+          {/* ── Legenda ── */}
+          <div className="globe-legend">
+            <div className="globe-legend-title">Legenda</div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot" style={{ background: '#26c281' }} />
+              Origem
+            </div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot" style={{ background: '#ff6b6b' }} />
+              Destino
+            </div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot" style={{ background: '#FFD700', boxShadow: '0 0 6px #FFD700' }} />
+              Melhor rota
+            </div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot" style={{ background: '#7f93a8' }} />
+              Outros portos
+            </div>
+            <div className="globe-legend-sep" />
+            <div className="globe-legend-hint">
+              Arraste para girar<br />
+              Scroll para zoom<br />
+              Passe o mouse nos portos
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   )
 }
@@ -343,6 +655,7 @@ function PainelRotasETN({ onBack }) {
   const [selectedConnectionPort, setSelectedConnectionPort] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  const [show3DGlobe, setShow3DGlobe] = useState(false)
 
   // Algoritmo selecionado
   const [algorithm, setAlgorithm] = useState('bellman-ford') // 'bellman-ford' | 'dfs'
@@ -870,6 +1183,31 @@ function PainelRotasETN({ onBack }) {
         )}
 
         <section className="glass-card app-modern-graph" style={{ position: 'relative' }}>
+          <div className="map-section-header">
+            <div className="map-section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"
+                width="16" height="16" style={{ color: '#26c281', flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              Mapa de Conexões Global
+            </div>
+            <button
+              type="button"
+              className="globe-3d-open-btn"
+              onClick={() => setShow3DGlobe(true)}
+              title="Abrir visualização 3D interativa do mapa"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                width="14" height="14">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+              Ver em 3D
+            </button>
+          </div>
           <WorldMap
             graphData={graphData}
             pathResult={pathResult}
@@ -879,6 +1217,17 @@ function PainelRotasETN({ onBack }) {
             onNodeClick={handlePortClick}
           />
         </section>
+
+        {show3DGlobe && (
+          <Globe3DModal
+            onClose={() => setShow3DGlobe(false)}
+            graphData={graphData}
+            pathResult={pathResult}
+            startPort={startPort}
+            endPort={endPort}
+            portMeta={portMeta}
+          />
+        )}
 
         <div className="airport-connections-panel">
           <div className="airport-connections-header">

@@ -523,8 +523,31 @@ def calculate_etn_bellman_ford():
                         'message': f'Porto inválido: {start} ou {end}'}), 400
     cost, path, has_cycle = bellman_ford(g, start, end)
     if has_cycle:
-        return jsonify({'success': False, 'hasNegativeCycle': True,
-                        'message': 'Ciclo negativo detectado.'})
+        # Ciclo negativo — usa DFS para obter um caminho visualizável no mapa
+        best_cost_v, best_path_v, calls_v = [float('inf')], [None], [0]
+        def _dfs_viz(node, p, visited, c):
+            calls_v[0] += 1
+            if calls_v[0] > 30_000 or len(p) > 8:
+                return
+            if node == end:
+                if c < best_cost_v[0]:
+                    best_cost_v[0] = c
+                    best_path_v[0] = p.copy()
+                return
+            for nb, w in g.get_neighbors(node):
+                if nb not in visited:
+                    visited.add(nb); p.append(nb)
+                    _dfs_viz(nb, p, visited, c + w)
+                    p.pop(); visited.remove(nb)
+        _dfs_viz(start, [start], {start}, 0.0)
+        viz_path = best_path_v[0] or []
+        return jsonify({
+            'success': False, 'hasNegativeCycle': True,
+            'path': viz_path,
+            'path_info': enrich_ports(g, viz_path) if viz_path else [],
+            'connections': max(len(viz_path) - 2, 0),
+            'message': 'Ciclo negativo detectado.',
+        })
     if cost is None:
         return jsonify({'success': False, 'hasNegativeCycle': False,
                         'message': f'Não há caminho entre {start} e {end}.'})

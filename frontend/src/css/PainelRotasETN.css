@@ -201,3 +201,307 @@
   max-width: 400px;
   line-height: 1.4;
 }
+
+/* ── Cabeçalho da seção do mapa ──────────────────────────── */
+.map-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem 0.65rem;
+  border-bottom: 1px solid rgba(38, 194, 129, 0.1);
+}
+
+.map-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--muted, #9cc8b6);
+  letter-spacing: 0.02em;
+}
+
+/* ── Botão "Ver em 3D" ───────────────────────────────────── */
+.globe-3d-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.46rem 1.05rem;
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.13), rgba(45, 212, 191, 0.06));
+  border: 1px solid rgba(38, 194, 129, 0.38);
+  border-radius: 999px;
+  color: #26c281;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.22s;
+  letter-spacing: 0.02em;
+}
+
+.globe-3d-open-btn:hover {
+  background: linear-gradient(135deg, rgba(38, 194, 129, 0.24), rgba(45, 212, 191, 0.14));
+  border-color: rgba(38, 194, 129, 0.65);
+  box-shadow:
+    0 0 18px rgba(38, 194, 129, 0.2),
+    inset 0 0 10px rgba(38, 194, 129, 0.06);
+  color: #ecfff7;
+  transform: translateY(-1px);
+}
+
+/* ── Overlay do modal 3D ─────────────────────────────────── */
+.globe-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 8, 5, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: globe-fade-in 0.22s ease;
+}
+
+@keyframes globe-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Container do modal ──────────────────────────────────── */
+.globe-modal-container {
+  width: 92vw;
+  height: 90vh;
+  max-width: 1500px;
+  background: rgba(5, 18, 13, 0.98);
+  border: 1px solid rgba(38, 194, 129, 0.22);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgba(38, 194, 129, 0.07),
+    0 0 60px rgba(38, 194, 129, 0.11),
+    0 40px 100px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: globe-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes globe-slide-in {
+  from { transform: scale(0.92) translateY(24px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+/* ── Cabeçalho do modal ──────────────────────────────────── */
+.globe-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid rgba(38, 194, 129, 0.14);
+  flex-shrink: 0;
+  background: rgba(11, 36, 28, 0.65);
+}
+
+.globe-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ecfff7;
+  letter-spacing: 0.025em;
+}
+
+.globe-modal-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.globe-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.85rem;
+  border: 1px solid rgba(38, 194, 129, 0.28);
+  border-radius: 999px;
+  background: rgba(38, 194, 129, 0.07);
+  color: #9cc8b6;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.globe-ctrl-btn.active {
+  background: rgba(38, 194, 129, 0.16);
+  border-color: rgba(38, 194, 129, 0.5);
+  color: #26c281;
+}
+
+.globe-ctrl-btn:hover {
+  background: rgba(38, 194, 129, 0.18);
+  border-color: rgba(38, 194, 129, 0.45);
+  color: #ecfff7;
+}
+
+.globe-close-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  color: #6f9a89;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.globe-close-btn:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: rgba(255, 107, 107, 0.42);
+  color: #ff6b6b;
+}
+
+/* ── Barra de rota ativa ─────────────────────────────────── */
+.globe-path-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.44rem 1.2rem;
+  border-bottom: 1px solid rgba(246, 197, 111, 0.13);
+  background: rgba(246, 197, 111, 0.04);
+  flex-shrink: 0;
+  font-family: 'Inter', sans-serif;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.globe-path-bar::-webkit-scrollbar { display: none; }
+
+.globe-path-label {
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: #9cc8b6;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.globe-path-ports {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+}
+
+.globe-path-cost {
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: #f6c56f;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 0.35rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid rgba(246, 197, 111, 0.28);
+}
+
+/* ── Corpo (onde vive o canvas do globo) ─────────────────── */
+.globe-modal-body {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #000209;
+  min-height: 0;
+}
+
+/* ── Carregamento ────────────────────────────────────────── */
+.globe-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 10;
+  background: rgba(4, 16, 11, 0.92);
+}
+
+.globe-loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(38, 194, 129, 0.2);
+  border-top-color: #26c281;
+  border-radius: 50%;
+  animation: globe-spin 0.75s linear infinite;
+}
+
+@keyframes globe-spin {
+  to { transform: rotate(360deg); }
+}
+
+.globe-loading-text {
+  font-size: 0.88rem;
+  color: #6f9a89;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Legenda sobreposta ao globo ─────────────────────────── */
+.globe-legend {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  background: rgba(5, 18, 13, 0.88);
+  border: 1px solid rgba(38, 194, 129, 0.22);
+  border-radius: 11px;
+  padding: 0.75rem 1rem;
+  font-family: 'Inter', sans-serif;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  min-width: 145px;
+}
+
+.globe-legend-title {
+  font-size: 0.67rem;
+  font-weight: 800;
+  color: #6f9a89;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.55rem;
+}
+
+.globe-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.79rem;
+  color: #bfe0d2;
+  margin-bottom: 0.28rem;
+  line-height: 1.2;
+}
+
+.globe-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.globe-legend-sep {
+  height: 1px;
+  background: rgba(38, 194, 129, 0.18);
+  margin: 0.45rem 0;
+}
+
+.globe-legend-hint {
+  font-size: 0.69rem;
+  color: #5a7a6a;
+  line-height: 1.55;
+}
