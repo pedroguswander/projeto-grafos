@@ -16,20 +16,24 @@ import portsUrl from './assets/Planilhas2/ports.csv?url';
 import demandUrl from './assets/Planilhas2/Demand_WorldSmall.csv?url';
 import distUrl from './assets/Planilhas2/dist_dense.csv?url';
 import fleetUrl from './assets/Planilhas2/fleet_data.csv?url';
+import distSparseUrl from './assets/Planilhas2/dist_sparse.csv?url';
+import demandLargeUrl from './assets/Planilhas2/Demand_WorldLarge.csv?url';
+import reportUrl from './assets/Planilhas2/part2_report.json?url';
 
 Modal.setAppElement('#root');
 
 const LINHAS_POR_PAGINA = 500;
 
-// Bases reais do ETN exibidas na "Prévia da Base" (independente da parte do navio selecionada).
 const BASES_CSV = [
-  { id: 'ports', nome: 'ports.csv', arquivo: portsUrl },
-  { id: 'demand', nome: 'Demand_WorldSmall.csv', arquivo: demandUrl },
-  { id: 'dist', nome: 'dist_dense.csv', arquivo: distUrl },
-  { id: 'fleet', nome: 'fleet_data.csv', arquivo: fleetUrl },
+  { id: 'ports',        nome: 'ports.csv',              arquivo: portsUrl       },
+  { id: 'demand',       nome: 'Demand_WorldSmall.csv',  arquivo: demandUrl      },
+  { id: 'dist',         nome: 'dist_dense.csv',         arquivo: distUrl        },
+  { id: 'fleet',        nome: 'fleet_data.csv',         arquivo: fleetUrl       },
+  { id: 'dist_sparse',  nome: 'dist_sparse.csv',        arquivo: distSparseUrl  },
+  { id: 'demand_large', nome: 'Demand_WorldLarge.csv',  arquivo: demandLargeUrl },
+  { id: 'report',       nome: 'part2_report.json',      arquivo: reportUrl      },
 ];
 
-// Remove colunas finais 100% vazias (ex.: vírgula sobrando no fim de cada linha do dist_dense).
 function removerColunasVaziasFinais(rows = []) {
   if (!rows.length) return rows;
   let maxCols = rows.reduce((acc, row) => Math.max(acc, row?.length || 0), 0);
@@ -39,7 +43,6 @@ function removerColunasVaziasFinais(rows = []) {
   return rows.map((row) => row.slice(0, maxCols));
 }
 
-// Remove colunas cujo cabeçalho está vazio (geradas por vírgula extra no header).
 function removerColunasHeaderVazio(rows = []) {
   if (!rows.length) return rows;
   const header = rows[0];
@@ -51,6 +54,7 @@ function removerColunasHeaderVazio(rows = []) {
   return rows.map((row) => colsValidas.map((i) => row[i] ?? ''));
 }
 
+
 const PLANILHAS_ETN = [
   {
     id: 'frente',
@@ -58,15 +62,15 @@ const PLANILHAS_ETN = [
     parte: 'frente',
     tituloParte: 'Frente',
     objetivo:
-      'Registrar os processos operacionais ligados à proa do navio, incluindo aproximação, alinhamento e apoio de entrada em porto.',
+      'Definir os nós do grafo e fornecer os custos portuários que compõem o peso das arestas',
     importancia:
-      'Essa base organiza dados críticos de aproximação e controle da parte frontal da embarcação, apoiando leitura operacional, segurança de atracação e análise de comportamento em manobras portuárias.',
+      'Cumpre dois papéis simultaneamente — é a fonte dos metadados de cada porto (coordenadas, região, nome) e é a fonte de dois dos quatro componentes da fórmula de peso.',
     requisitos: [
-      'Mapeamento das manobras executadas na região frontal do navio.',
-      'Registro dos cenários de aproximação e alinhamento.',
-      'Classificação dos tipos de operação por contexto portuário.',
-      'Consolidação de eventos relevantes para leitura analítica.',
-      'Estruturação dos dados com foco em rastreabilidade operacional.',
+      'Define os nós com identidade única via UNLocode',
+      'Fornece PortCallCostFixed — custo fixo de escala, que pode ser negativo',
+      'Fornece CostPerFULL — custo variável de movimentação de carga no porto de destino',
+      'Fornece Longitude e Latitude para posicionamento geográfico na plotagem',
+      'Fornece D_Region para coloração dos nós por corredor comercial',
     ],
     desc: 'Seção frontal do navio voltada para operação, aproximação e atracação.',
     img: navioFrente,
@@ -109,15 +113,14 @@ const PLANILHAS_ETN = [
     parte: 'meio',
     tituloParte: 'Meio',
     objetivo:
-      'Consolidar informações da área central da embarcação, com foco em fluxo operacional, equilíbrio de carga e suporte funcional.',
+      'Definir as arestas do grafo — cada linha representa uma rota comercial real com demanda documentada entre dois portos.',
     importancia:
-      'A área central representa a porção mais estratégica da estabilidade e da distribuição funcional do navio. Essa base permite avaliar ocupação, suporte interno e comportamento operacional em rota e em porto.',
+      'É o arquivo central do grafo. Sem ele não existem arestas, e portanto não existe grafo. Determina quais portos se conectam, com qual volume de carga e qual receita, sendo a base para o cálculo do peso econômico.',
     requisitos: [
-      'Levantamento das operações concentradas na região central.',
-      'Leitura do equilíbrio estrutural e funcional da embarcação.',
-      'Identificação de pontos de apoio operacional recorrentes.',
-      'Organização da movimentação interna associada ao trecho central.',
-      'Padronização da base para análise comparativa.',
+      'Fornece a topologia do grafo (origem e destino de cada aresta)',
+      'Fornece FFEPerWeek — volume real de carga por rota, usado no cálculo do peso',
+      'Fornece Revenue_1 — receita por contêiner, que ao ser subtraída do custo gera pesos negativos naturais',
+      'Permite que o grafo represente rotas comerciais reais em vez de vizinhança geográfica',
     ],
     desc: 'Parte central do navio, responsável por suporte operacional e equilíbrio estrutural.',
     img: navioMeio,
@@ -160,15 +163,11 @@ const PLANILHAS_ETN = [
     parte: 'cauda',
     tituloParte: 'Cauda',
     objetivo:
-      'Monitorar a parte traseira do navio, incluindo saída, recuo, estabilidade posterior e resposta em deslocamento.',
+      'Fornecer a distância em milhas náuticas entre cada par de portos do WorldSmall para compor o componente de custo de navegação no peso.',
     importancia:
-      'A região traseira é fundamental para propulsão, controle de saída e estabilidade dinâmica da embarcação. Essa planilha auxilia o acompanhamento de desempenho e comportamento em manobras de retirada e navegação.',
+      'Resolve uma lacuna do Demand_WorldSmall — que define quais rotas existem mas não informa a distância entre os portos.',
     requisitos: [
-      'Registro das operações ligadas à saída e deslocamento posterior.',
-      'Monitoramento do comportamento da região traseira em manobras.',
-      'Acompanhamento de estabilidade e resposta funcional.',
-      'Organização de indicadores de propulsão e retirada.',
-      'Leitura operacional da região traseira em cenários distintos.',
+      'Fornece a distância para todos os 1.764 pares do WorldSmall sem exceção',
     ],
     desc: 'Parte traseira do navio, ligada à propulsão e controle de saída.',
     img: navioCauda,
@@ -211,15 +210,12 @@ const PLANILHAS_ETN = [
     parte: 'torre',
     tituloParte: 'Torre',
     objetivo:
-      'Centralizar dados de comando, navegação e supervisão operacional da torre da embarcação.',
+      'Fornecer os parâmetros do navio de referência para derivar o coeficiente de custo por milha náutica.',
     importancia:
-      'A torre concentra decisões de rota, leitura de ambiente e comando integrado. Essa base sustenta a visão gerencial e de controle superior do navio durante as etapas de navegação e manobra.',
+      'Resolve a necessidade de um multiplicador de distância que venha inteiramente do dataset, sem suposições externas.',
     requisitos: [
-      'Registro das rotinas de comando e monitoramento.',
-      'Organização das leituras de navegação e ambiente.',
-      'Consolidação de indicadores críticos para supervisão.',
-      'Suporte à tomada de decisão em operação marítima.',
-      'Padronização de eventos e controles da torre.',
+      'Fornece TC rate daily (fixed Cost) — custo diário de afretamento do navio',
+      'Fornece designSpeed — velocidade de projeto para converter custo diário em custo por milha',
     ],
     desc: 'Torre de comando e navegação da embarcação.',
     img: navioTorre,
@@ -262,15 +258,11 @@ const PLANILHAS_ETN = [
     parte: 'botes',
     tituloParte: 'Botes',
     objetivo:
-      'Documentar os sistemas auxiliares de segurança da embarcação, incluindo botes, kits de apoio e readiness operacional.',
+      'Definir as arestas do primeiro grafo construído no projeto, conectando portos vizinhos diretos na rede marítima global.',
     importancia:
-      'Esse conjunto reforça a camada de segurança e resposta da embarcação, sendo essencial para protocolos de contingência, inspeção e prontidão em operação.',
+      'Foi o ponto de partida da modelagem do grafo antes da migração para o WorldSmall. A diferença entre topologia de vizinhança e rotas comerciais reais foi o que motivou a transição para o Demand como fonte de arestas.',
     requisitos: [
-      'Inventário dos recursos auxiliares de segurança.',
-      'Mapeamento dos itens de apoio distribuídos na embarcação.',
-      'Registro de prontidão dos sistemas de resgate.',
-      'Acompanhamento periódico de inspeção.',
-      'Consolidação da base de readiness operacional.',
+      'Não houve.',
     ],
     desc: 'Botes salva-vidas, recursos auxiliares e itens de segurança.',
     img: navioBotes,
@@ -313,15 +305,11 @@ const PLANILHAS_ETN = [
     parte: 'cargaSuperior',
     tituloParte: 'Carga Superior',
     objetivo:
-      'Apresentar os volumes, posições e indicadores relacionados à área superior de carga da embarcação.',
+      'Definir as arestas do grafo — cada linha representa uma rota comercial real com demanda documentada entre dois portos.',
     importancia:
-      'A carga superior influencia distribuição, leitura logística e controle de operação em convés. Essa base permite acompanhar organização, ocupação e segurança do armazenamento superior.',
+      'Tem a mesma importância do WorldSmall, porém é uma instância muito mais esparsa. O WorldSmall foi escolhido como a base do grafo em vez do WorldLarge por ser menos complexo e mais fácil de visualizar.',
     requisitos: [
-      'Mapeamento dos espaços de carga superior.',
-      'Registro de ocupação e distribuição logística.',
-      'Controle de estabilidade associado à carga elevada.',
-      'Padronização dos dados de posicionamento.',
-      'Leitura de segurança operacional da carga em convés.',
+      'Não houve.',
     ],
     desc: 'Área superior de carga da embarcação.',
     img: navioCargaSuperior,
@@ -364,15 +352,15 @@ const PLANILHAS_ETN = [
     parte: 'cargaInferior',
     tituloParte: 'Carga Inferior',
     objetivo:
-      'Concentrar informações operacionais e logísticas da área inferior de armazenamento do navio.',
+      'Evidenciar o resultado dos testes aplicados ao grafo ETN da parte 2 do projeto.',
     importancia:
-      'A carga inferior é fundamental para estabilidade, capacidade e segurança da embarcação. Essa base organiza os registros centrais de ocupação, peso e controle do armazenamento inferior.',
+      'Demonstra o desempnho, por meio de métricas (tempo de execução, memória e etc.) de cada algoritimo sob vários cenários de teste. Oferece os dados para serem realizados os insights de melhores casos de uso e limites de design, revelando como a estrutura do grafo pode influenciar o algoritimo.',
     requisitos: [
-      'Inventário dos compartimentos inferiores.',
-      'Registro de ocupação, peso e categoria de carga.',
-      'Monitoramento da estabilidade ligada à base do navio.',
-      'Padronização da leitura logística dos porões.',
-      'Estruturação de indicadores de controle da carga inferior.',
+      'Casos de teste BFS/DFS a partir de 3 fontes distintas.',
+      'Possui casos de teste em Bellman-Ford para: Subgrafo Positivo, Subgrafo Negativo e Grafo Completo (com cilos negativos).',
+      'Casos de teste Dijkstra com 5 pares origem-destino.',
+      'Mostra custos máximos de cada cenário de teste.',
+      'Evidencia tempo de execução de cada cenário de teste.',
     ],
     desc: 'Área inferior de carga e armazenamento da embarcação.',
     img: navioCargaInferior,
@@ -475,7 +463,6 @@ export default function DataBaseETN({ onBack }) {
   const [erro, setErro] = useState('');
   const [reqPage, setReqPage] = useState(0);
 
-  // Estado da "Prévia da Base": bases CSV reais do ETN, independentes da parte do navio.
   const [csvSel, setCsvSel] = useState(0);
   const [csvPreview, setCsvPreview] = useState([]);
   const [csvDetalhe, setCsvDetalhe] = useState([]);
@@ -483,40 +470,20 @@ export default function DataBaseETN({ onBack }) {
   const [csvErro, setCsvErro] = useState('');
   const [linhasVisiveis, setLinhasVisiveis] = useState(LINHAS_POR_PAGINA);
 
+  const [csvIsJson, setCsvIsJson] = useState(false);
+  const [csvJsonData, setCsvJsonData] = useState(null);
+  const [jsonTabAtual, setJsonTabAtual] = useState('');
+
   const imagens = useMemo(
     () => ({
-      base: {
-        label: 'Navio completo',
-        src: navioCru,
-      },
-      frente: {
-        label: 'Frente',
-        src: navioFrente,
-      },
-      meio: {
-        label: 'Meio',
-        src: navioMeio,
-      },
-      cauda: {
-        label: 'Cauda',
-        src: navioCauda,
-      },
-      torre: {
-        label: 'Torre',
-        src: navioTorre,
-      },
-      botes: {
-        label: 'Botes',
-        src: navioBotes,
-      },
-      cargaSuperior: {
-        label: 'Carga Superior',
-        src: navioCargaSuperior,
-      },
-      cargaInferior: {
-        label: 'Carga Inferior',
-        src: navioCargaInferior,
-      },
+      base: { label: 'Navio completo', src: navioCru },
+      frente: { label: 'Frente', src: navioFrente },
+      meio: { label: 'Meio', src: navioMeio },
+      cauda: { label: 'Cauda', src: navioCauda },
+      torre: { label: 'Torre', src: navioTorre },
+      botes: { label: 'Botes', src: navioBotes },
+      cargaSuperior: { label: 'Carga Superior', src: navioCargaSuperior },
+      cargaInferior: { label: 'Carga Inferior', src: navioCargaInferior },
     }),
     []
   );
@@ -525,6 +492,60 @@ export default function DataBaseETN({ onBack }) {
   const planilha = PLANILHAS_ETN[selecionada];
   const requisitos = planilha?.requisitos || [];
   const requisitoAtual = requisitos[reqPage] || '';
+
+  const carregarCsv = async (idx) => {
+    const base = BASES_CSV[idx];
+    if (!base) return;
+
+    setCsvSel(idx);
+    setCsvCarregando(true);
+    setCsvErro('');
+    setCsvPreview([]);
+    setCsvDetalhe([]);
+    setCsvIsJson(false);
+    setCsvJsonData(null);
+    setJsonTabAtual('');
+
+    try {
+      const response = await fetch(base.arquivo, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Falha ao carregar arquivo (${response.status})`);
+      }
+
+      const isJson = base.nome.endsWith('.json');
+
+      if (isJson) {
+        const data = await response.json();
+        const sectionNames = Object.keys(data);
+
+        const summaryRows = [['Seção'], ...sectionNames.map((name) => [name])];
+
+        setCsvPreview(summaryRows);
+        setCsvDetalhe([]);
+        setCsvIsJson(true);
+        setCsvJsonData(data);
+        setJsonTabAtual(sectionNames[0] || '');
+      } else {
+        const texto = await response.text();
+        const { data } = Papa.parse(texto, { skipEmptyLines: true });
+        const rows = removerColunasHeaderVazio(removerColunasVaziasFinais(data));
+
+        if (!rows.length) {
+          throw new Error(`A base "${base.nome}" está vazia.`);
+        }
+
+        setCsvPreview(rows.slice(0, 6));
+        setCsvDetalhe(rows);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar base CSV do ETN:', e);
+      setCsvErro(`Não foi possível carregar a base "${base.nome}".`);
+      setCsvPreview([]);
+      setCsvDetalhe([]);
+    } finally {
+      setCsvCarregando(false);
+    }
+  };
 
   const carregarPlanilha = async (idx, abaDesejada = null) => {
     const item = PLANILHAS_ETN[idx];
@@ -565,6 +586,8 @@ export default function DataBaseETN({ onBack }) {
     } finally {
       setCarregando(false);
     }
+
+    carregarCsv(idx);
   };
 
   const handleSelecionarParte = (parte) => {
@@ -574,6 +597,13 @@ export default function DataBaseETN({ onBack }) {
     } else {
       setParteSelecionada('base');
     }
+  };
+
+  const handleSelecionarCsv = (idx) => {
+    carregarCsv(idx);
+    setSelecionada(idx);
+    setParteSelecionada(PLANILHAS_ETN[idx]?.parte || 'base');
+    setReqPage(0);
   };
 
   const handleTrocarAba = (nomeAba) => {
@@ -592,42 +622,6 @@ export default function DataBaseETN({ onBack }) {
     setReqPage((prev) => Math.min(prev + 1, requisitos.length - 1));
   };
 
-  const carregarCsv = async (idx) => {
-    const base = BASES_CSV[idx];
-    if (!base) return;
-
-    setCsvSel(idx);
-    setCsvCarregando(true);
-    setCsvErro('');
-    setCsvPreview([]);
-    setCsvDetalhe([]);
-
-    try {
-      const response = await fetch(base.arquivo, { cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error(`Falha ao carregar arquivo (${response.status})`);
-      }
-
-      const texto = await response.text();
-      const { data } = Papa.parse(texto, { skipEmptyLines: true });
-      const rows = removerColunasHeaderVazio(removerColunasVaziasFinais(data));
-
-      if (!rows.length) {
-        throw new Error(`A base "${base.nome}" está vazia.`);
-      }
-
-      setCsvPreview(rows.slice(0, 6));
-      setCsvDetalhe(rows);
-    } catch (e) {
-      console.error('Erro ao carregar base CSV do ETN:', e);
-      setCsvErro(`Não foi possível carregar a base "${base.nome}".`);
-      setCsvPreview([]);
-      setCsvDetalhe([]);
-    } finally {
-      setCsvCarregando(false);
-    }
-  };
-
   const abrirModal = () => {
     setLinhasVisiveis(LINHAS_POR_PAGINA);
     setModalAberto(true);
@@ -641,10 +635,6 @@ export default function DataBaseETN({ onBack }) {
     carregarPlanilha(0);
   }, []);
 
-  useEffect(() => {
-    carregarCsv(0);
-  }, []);
-
   const baseCsvAtual = BASES_CSV[csvSel];
 
   const headers = csvPreview.length > 0 ? csvPreview[0] : [];
@@ -653,6 +643,7 @@ export default function DataBaseETN({ onBack }) {
   const detalheRows = csvDetalhe.length > 1 ? csvDetalhe.slice(1) : [];
   const detalheRowsVisiveis = detalheRows.slice(0, linhasVisiveis);
   const totalRegistros = detalheRows.length;
+
 
   return (
     <div className="database-page database-etn-theme">
@@ -941,7 +932,7 @@ export default function DataBaseETN({ onBack }) {
                     key={base.id}
                     type="button"
                     className={`sheet-subtab ${csvSel === idx ? 'active' : ''}`}
-                    onClick={() => carregarCsv(idx)}
+                    onClick={() => handleSelecionarCsv(idx)}
                   >
                     {base.nome}
                   </button>
@@ -978,7 +969,11 @@ export default function DataBaseETN({ onBack }) {
                   </thead>
                   <tbody>
                     {bodyRows.map((row, rowIndex) => (
-                      <tr key={rowIndex}>
+                      <tr
+                        key={rowIndex}
+                        onClick={csvIsJson ? () => { setJsonTabAtual(row[0]); abrirModal(); } : undefined}
+                        style={csvIsJson ? { cursor: 'pointer' } : undefined}
+                      >
                         {headers.map((_, colIndex) => (
                           <td key={colIndex} title={String(row[colIndex] ?? '')}>
                             <div className="cell-limit">
@@ -995,15 +990,16 @@ export default function DataBaseETN({ onBack }) {
 
             <div className="preview-footer">
               <span className="preview-note">
-                Exibindo uma amostra inicial da base selecionada
-                {baseCsvAtual ? ` • ${baseCsvAtual.nome}` : ''}.
+                {csvIsJson
+                  ? `Arquivo JSON com ${csvJsonData ? Object.keys(csvJsonData).length : 0} seções — clique em uma seção para explorar.`
+                  : `Exibindo uma amostra inicial da base selecionada${baseCsvAtual ? ` • ${baseCsvAtual.nome}` : ''}.`}
               </span>
 
               <button
                 type="button"
                 className="details-btn"
                 onClick={abrirModal}
-                disabled={csvDetalhe.length === 0}
+                disabled={!csvIsJson && csvDetalhe.length === 0}
               >
                 Ver base completa
               </button>
@@ -1023,7 +1019,9 @@ export default function DataBaseETN({ onBack }) {
               <p className="eyebrow">Visualização completa</p>
               <h2>{baseCsvAtual?.nome}</h2>
               <p className="modal-subtitle">
-                {totalRegistros.toLocaleString('pt-BR')} registros na base.
+                {csvIsJson
+                  ? `${csvJsonData ? Object.keys(csvJsonData).length : 0} seções de algoritmos`
+                  : `${totalRegistros.toLocaleString('pt-BR')} registros na base.`}
               </p>
             </div>
 
@@ -1036,8 +1034,33 @@ export default function DataBaseETN({ onBack }) {
             </button>
           </div>
 
+          {csvIsJson && csvJsonData && (
+            <div className="modal-abas">
+              {Object.keys(csvJsonData).map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={`modal-aba-btn ${jsonTabAtual === name ? 'active' : ''}`}
+                  onClick={() => setJsonTabAtual(name)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="modal-table-wrapper">
-            {csvDetalhe.length > 0 ? (
+            {csvIsJson ? (
+              jsonTabAtual && csvJsonData?.[jsonTabAtual] ? (
+                <pre className="json-raw-block">
+                  {JSON.stringify(csvJsonData[jsonTabAtual], null, 2)}
+                </pre>
+              ) : (
+                <div className="empty-state">
+                  <p>Sem dados para exibir nesta seção.</p>
+                </div>
+              )
+            ) : csvDetalhe.length > 0 ? (
               <table className="modal-table">
                 <thead>
                   <tr>
@@ -1071,7 +1094,7 @@ export default function DataBaseETN({ onBack }) {
             )}
           </div>
 
-          {detalheRows.length > 0 && (
+          {!csvIsJson && detalheRows.length > 0 && (
             <div className="modal-footer">
               <span className="modal-footer-note">
                 Mostrando {Math.min(linhasVisiveis, totalRegistros).toLocaleString('pt-BR')}{' '}

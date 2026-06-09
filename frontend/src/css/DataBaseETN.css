@@ -1594,3 +1594,16 @@
     min-width: 560px;
   }
 }
+.json-raw-block {
+  margin: 0;
+  padding: 16px 20px;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: pre;
+  overflow: auto;
+  color: #c8d8f0;
+  background: transparent;
+  flex: 1;
+  min-height: 0;
+}
