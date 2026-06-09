@@ -1369,38 +1369,40 @@
 /* ─── Airport stop info panel ────────────────────────────────────────────── */
 .airport-stop-panel {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  right: 0; top: 0; bottom: 0;
+  width: 272px;
   background: rgba(5, 10, 22, 0.93);
-  border-top: 1px solid rgba(59, 130, 246, 0.22);
+  border-left: 1px solid rgba(59, 130, 246, 0.22);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   z-index: 20;
   display: flex;
   flex-direction: column;
-  animation: globe-slide-up 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: globe-slide-right 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   font-family: 'Inter', sans-serif;
+  overflow-y: auto;
 }
 
-@keyframes globe-slide-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+@keyframes globe-slide-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
 
 .airport-stop-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.7rem 1.1rem 0.5rem;
+  padding: 0.65rem 1rem 0.5rem;
   border-bottom: 1px solid rgba(59, 130, 246, 0.1);
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
-.airport-stop-identity {
+.airport-stop-code-row {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  flex: 1;
-  min-width: 0;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .airport-stop-code {
@@ -1411,24 +1413,37 @@
   line-height: 1;
 }
 
-.airport-stop-name-city {
+.airport-stop-meta {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 0.18rem;
+  padding-bottom: 0.1rem;
 }
 
-.airport-stop-name {
-  font-size: 0.8rem;
+.airport-stop-fullname {
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+.airport-stop-city-region {
+  font-size: 0.68rem;
+  color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.airport-stop-city {
-  font-size: 0.7rem;
-  color: #475569;
+.airport-stop-capacity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: 0.15rem;
+  font-size: 0.65rem;
+  color: #60a5fa;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .airport-stop-badge {
@@ -1475,9 +1490,11 @@
 
 .airport-stop-body {
   display: flex;
-  gap: 1rem;
-  padding: 0.65rem 1.1rem;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .airport-stop-photos {
@@ -1493,8 +1510,8 @@
 }
 
 .airport-stop-photo {
-  width: 118px;
-  height: 78px;
+  width: 108px;
+  height: 70px;
   object-fit: cover;
   border-radius: 7px;
   border: 1px solid rgba(59, 130, 246, 0.2);
@@ -1511,8 +1528,8 @@
 }
 
 .airport-stop-photo-skeleton {
-  width: 118px;
-  height: 78px;
+  width: 108px;
+  height: 70px;
   border-radius: 7px;
   background: linear-gradient(
     90deg,
@@ -1563,9 +1580,11 @@
 .airport-stop-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 0.45rem 1.1rem 0.6rem;
+  padding: 0.45rem 1rem 0.65rem;
   border-top: 1px solid rgba(59, 130, 246, 0.08);
   gap: 0.5rem;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .airport-stop-btn {
@@ -1601,4 +1620,65 @@
   background: linear-gradient(135deg, rgba(34,197,94,0.24), rgba(16,185,129,0.17));
   border-color: rgba(34, 197, 94, 0.62);
   color: #bbf7d0;
+}
+
+/* ─── Clickable photo wrap ───────────────────────────────────────────────── */
+.airport-stop-photo-clickable {
+  cursor: zoom-in;
+}
+.airport-stop-photo-clickable .airport-stop-photo {
+  transition: opacity 0.15s, transform 0.15s;
+}
+.airport-stop-photo-clickable:hover .airport-stop-photo {
+  opacity: 0.82;
+  transform: scale(1.04);
+}
+
+/* ─── Photo lightbox ─────────────────────────────────────────────────────── */
+.airport-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lightbox-fade-in 0.18s ease;
+}
+
+@keyframes lightbox-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.airport-lightbox-img {
+  max-width: 85vw;
+  max-height: 80vh;
+  border-radius: 10px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7);
+  object-fit: contain;
+  display: block;
+}
+
+.airport-lightbox-close {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.4rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
+  z-index: 1;
+}
+.airport-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.42);
 }

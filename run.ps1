@@ -1,68 +1,92 @@
-# Script para executar o projeto completo
-# Uso: .\run.ps1
+# Script to run the full project
+# Usage: .\run.ps1
 
 $ErrorActionPreference = 'Stop'
 
-Write-Host "🚀 Iniciando Projeto Grafos com Dijkstra" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Yellow
+Write-Host "Starting Projeto Grafos" -ForegroundColor Green
+Write-Host "=======================" -ForegroundColor Yellow
 
-# Verificar se Python está disponível
-$python = Get-Command python.exe -ErrorAction SilentlyContinue
-if (-not $python) {
-    $python = Get-Command python3.exe -ErrorAction SilentlyContinue
-}
-if (-not $python) {
-    $python = "C:\Program Files\Python312\python.exe"
+# Resolve Python executable
+$pythonCmd = Get-Command python.exe -ErrorAction SilentlyContinue
+if (-not $pythonCmd) {
+    $pythonCmd = Get-Command python3.exe -ErrorAction SilentlyContinue
 }
 
-if (-not (Test-Path $python)) {
-    throw "Python não encontrado. Instale o Python e certifique-se de que está no PATH."
+if ($pythonCmd) {
+    $pythonPath = $pythonCmd.Source
+} else {
+    $pythonPath = "C:\Program Files\Python312\python.exe"
 }
 
-# Verificar se Node.js está disponível
-$nodeBin = "C:\Program Files\nodejs"
+if (-not (Test-Path $pythonPath)) {
+    throw "Python not found. Install Python and ensure it is on PATH."
+}
+
+# Resolve npm
+$npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+if ($npmCmd) {
+    $npmPath = $npmCmd.Source
+} else {
+    $npmPath = "C:\Program Files\nodejs\npm.cmd"
+}
+
+if (-not (Test-Path $npmPath)) {
+    throw "npm not found. Install Node.js and ensure npm is on PATH."
+}
+
+$nodeBin = Split-Path -Parent $npmPath
 $env:Path = "$nodeBin;$env:Path"
 
-# Função para iniciar processo em background
 function Start-BackgroundProcess {
-    param([string]$Command, [string]$WorkingDirectory = $null)
+    param(
+        [string]$FilePath,
+        [string[]]$Arguments = @(),
+        [string]$WorkingDirectory = $null
+    )
 
-    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startInfo.FileName = "powershell.exe"
-    $startInfo.Arguments = "-Command `"$Command`""
-    if ($WorkingDirectory) {
-        $startInfo.WorkingDirectory = $WorkingDirectory
+    $params = @{
+        FilePath = $FilePath
+        ArgumentList = $Arguments
+        PassThru = $true
+        WindowStyle = 'Minimized'
     }
-    $startInfo.UseShellExecute = $true
-    $startInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Minimized
 
-    $process = [System.Diagnostics.Process]::Start($startInfo)
-    return $process
+    if ($WorkingDirectory) {
+        $params.WorkingDirectory = $WorkingDirectory
+    }
+
+    return Start-Process @params
 }
 
-Write-Host "📊 Iniciando Backend Flask (API)..." -ForegroundColor Cyan
-$backendCommand = "$python '$PSScriptRoot\src\api.py'"
-$backendProcess = Start-BackgroundProcess -Command $backendCommand
+function Test-PortFree {
+    param([int]$Port)
+    $inUse = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue
+    return -not $inUse
+}
 
-Start-Sleep -Seconds 3  # Aguardar backend iniciar
+function Get-FreePort {
+    param([int[]]$Candidates)
+    foreach ($port in $Candidates) {
+        if (Test-PortFree -Port $port) {
+            return $port
+        }
+    }
+    throw "No free port found in list: $($Candidates -join ', ')"
+}
 
-Write-Host "🌐 Iniciando Frontend React..." -ForegroundColor Cyan
-$frontendCommand = "cd '$PSScriptRoot\frontend'; npm run dev"
-$frontendProcess = Start-BackgroundProcess -Command $frontendCommand -WorkingDirectory "$PSScriptRoot\frontend"
+$backendPort = Get-FreePort -Candidates @(5000, 5001, 5002, 5050)
+$frontendPort = Get-FreePort -Candidates @(5173, 5174, 5175, 5180)
 
-Write-Host "" -ForegroundColor Green
-Write-Host "✅ SERVIDORES INICIADOS COM SUCESSO!" -ForegroundColor Green
-Write-Host "" -ForegroundColor Yellow
-Write-Host "🌐 Frontend (Interface Web): http://localhost:5173/" -ForegroundColor White
-Write-Host "🔧 Backend (API Flask): http://localhost:5000/" -ForegroundColor White
-Write-Host "" -ForegroundColor Cyan
-Write-Host "📋 Funcionalidades:" -ForegroundColor White
-Write-Host "  • Visualização interativa do grafo de aeroportos" -ForegroundColor Gray
-Write-Host "  • Clique nos nós para selecionar origem/destino" -ForegroundColor Gray
-Write-Host "  • Cálculo automático de caminhos usando Dijkstra" -ForegroundColor Gray
-Write-Host "  • Destaque visual do caminho encontrado" -ForegroundColor Gray
-Write-Host "" -ForegroundColor Yellow
-Write-Host "Pressione Ctrl+C para parar os servidores" -ForegroundColor Red
+Write-Host "Starting backend API..." -ForegroundColor Cyan
+$backendScript = Join-Path $PSScriptRoot 'src\api.py'
+$backendProcess = Start-BackgroundProcess -FilePath $pythonPath -Arguments @($backendScript, '--port', "$backendPort") -WorkingDirectory $PSScriptRoot
 
-# Aguardar processos
-Wait-Process -Id $backendProcess.Id, $frontendProcess.Id
+Write-Host "Starting frontend Vite..." -ForegroundColor Cyan
+$frontendProcess = Start-BackgroundProcess -FilePath $npmPath -Arguments @('run', 'dev', '--', '--host', '--port', "$frontendPort") -WorkingDirectory (Join-Path $PSScriptRoot 'frontend')
+
+Write-Host ""
+Write-Host "Servers started" -ForegroundColor Green
+Write-Host "Frontend: http://localhost:$frontendPort/" -ForegroundColor White
+Write-Host "Backend:  http://localhost:$backendPort/" -ForegroundColor White
+Write-Host ""
+Write-Host "Use Stop-Process -Id $($backendProcess.Id),$($frontendProcess.Id) to stop servers" -ForegroundColor Yellow
