@@ -479,7 +479,7 @@
 }
 
 .algorithm-steps-panel {
-  margin: 0 1rem 1rem;
+  margin: 0;
   padding: 1rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.02);
@@ -874,23 +874,9 @@
 .app-modern-graph {
   position: relative;
   overflow: hidden;
-  padding-top: 56px;
+  padding-top: 14px;
 }
 
-.app-modern-graph::before {
-  content: 'Mapa de conexões';
-  position: absolute;
-  top: 16px;
-  left: 18px;
-  z-index: 2;
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: #d9e6f5;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 0.48rem 0.8rem;
-  border-radius: 999px;
-}
 
 .network-canvas {
   width: 100%;
@@ -905,7 +891,7 @@
 }
 
 .airport-connections-panel {
-  margin: 0 1rem 1rem;
+  margin: 0;
   padding: 1rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.02);
@@ -1234,7 +1220,7 @@
   }
 
   .airport-connections-panel {
-    margin: 0 0.8rem 0.8rem;
+    margin: 0;
     padding: 0.85rem;
   }
 
@@ -1243,7 +1229,7 @@
   }
 
   .algorithm-steps-panel {
-    margin: 0 0.8rem 0.8rem;
+    margin: 0;
     padding: 0.85rem;
   }
 }
@@ -1681,4 +1667,219 @@
 .airport-lightbox-close:hover {
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.42);
+}
+
+/* ─── Airport Curiosity Modal ────────────────────────────────────────────────── */
+
+.acm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  background: rgba(2, 8, 20, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: acm-overlay-in 0.2s ease;
+}
+
+@keyframes acm-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.airport-curiosity-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0b1929;
+  border: 1px solid rgba(77, 163, 255, 0.2);
+  border-radius: 22px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  animation: acm-modal-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes acm-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.93) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.acm-hero {
+  padding: 1.4rem 1.4rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.acm-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.acm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.acm-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9db0c7;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  margin-top: 2px;
+}
+
+.acm-close:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: rgba(255, 107, 107, 0.4);
+  color: #ff6b6b;
+}
+
+.acm-code {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.acm-region {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.22rem 0.65rem;
+  border-radius: 99px;
+  letter-spacing: 0.05em;
+}
+
+.acm-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e8eef7;
+  line-height: 1.35;
+  margin-bottom: 0.25rem;
+}
+
+.acm-city {
+  font-size: 0.82rem;
+  color: #9db0c7;
+  margin-bottom: 0.6rem;
+}
+
+.acm-capacity {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #9db0c7;
+}
+
+.acm-photos {
+  display: flex;
+  gap: 0.6rem;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.acm-photo {
+  flex: 1;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.acm-photo-skeleton {
+  flex: 1;
+  height: 110px;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.acm-body {
+  padding: 1rem 1.4rem 1.4rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.acm-curiosities-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #4da3ff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.8rem;
+}
+
+.acm-curiosities {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.acm-curiosity {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.83rem;
+  color: #c4d0de;
+  line-height: 1.6;
+}
+
+.acm-bullet {
+  color: #f6c56f;
+  font-size: 0.62rem;
+  flex-shrink: 0;
+  margin-top: 0.3rem;
+}
+
+.airport-connection-card {
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+
+.airport-connection-card:hover {
+  background: rgba(77, 163, 255, 0.07);
+  border-color: rgba(77, 163, 255, 0.2);
+}
+
+.airport-connection-card.acm-card-active {
+  background: rgba(77, 163, 255, 0.12);
+  border-color: rgba(77, 163, 255, 0.4);
+  transform: scale(0.98);
 }

@@ -400,11 +400,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Recife/Guararapes',
     capacity: '12 milhões pax/ano',
     curiosities: [
-      'Inaugurado em 1958, é o principal hub de conexões aéreas do Nordeste brasileiro.',
-      'O nome homenageia a praia de Guararapes, palco de batalhas históricas no século XVII.',
-      'Recife é chamada de "Veneza do Brasil" por seus 50+ rios, pontes e ilhas.',
-      'É o maior polo médico do Norte-Nordeste, com hospitais de referência nacional.',
-      'A Grande Recife tem 4 milhões de habitantes e é a 5ª maior metrópole brasileira.'
+      'Inaugurado em 1958, é o principal hub aéreo do Nordeste, operando cerca de 200 voos por dia.',
+      'A pista principal tem 3.006 m de comprimento, suficiente para aeronaves de médio e grande porte.',
+      'Movimentou mais de 10 milhões de passageiros em 2023, recorde histórico do aeroporto.',
+      'Opera voos internacionais regulares para Portugal, EUA e Argentina, além de toda a malha doméstica.',
+      'Passou por concessão à Aena Brasil em 2019, que investiu em expansão do terminal e modernização.'
     ],
     wikiAirport: 'Recife/Guararapes–Gilberto_Freyre_International_Airport',
     wikiCity: 'Recife'
@@ -413,11 +413,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional de Salvador',
     capacity: '15 milhões pax/ano',
     curiosities: [
-      'Reformado para a Copa do Mundo de 2014, com terminal moderno e capacidade ampliada.',
-      'Salvador foi a primeira capital do Brasil (1549–1763) e berço do maior Carnaval de rua do mundo.',
-      'Está a 32 km do Pelourinho, centro histórico tombado como Patrimônio da Humanidade pela UNESCO.',
-      'O axé e o samba-reggae nasceram em Salvador, moldando a música popular brasileira.',
-      'A Bahia tem mais de 930 km de litoral, o maior de qualquer estado brasileiro.'
+      'Inaugurado em 1940, foi completamente reformado para a Copa do Mundo de 2014 com R$ 690 milhões investidos.',
+      'Movimentou cerca de 9 milhões de passageiros em 2023, sendo o 5º mais movimentado do Brasil.',
+      'Opera voos diretos para Lisboa, Milão, Paris e Miami, além de toda a rede doméstica brasileira.',
+      'Possui pista de 3.006 m e capacidade para até 35 aeronaves estacionadas simultaneamente.',
+      'Administrado pela VINCI Airports desde 2017, que também opera aeroportos em 12 outros países.'
     ],
     wikiAirport: 'Salvador_International_Airport',
     wikiCity: 'Salvador,_Bahia'
@@ -426,11 +426,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Pinto Martins',
     capacity: '9 milhões pax/ano',
     curiosities: [
-      'O maior hub aéreo do Ceará, com voos para Europa, América do Norte e o Brasil todo.',
-      'O nome homenageia João Ribeiro Pinto Martins, pioneiro da aviação cearense.',
-      'Fortaleza tem 30 km de praias urbanas e é famosa pelo Réveillon na beira-mar.',
-      'A cidade é o maior exportador de lagosta do Brasil, responsável por 60% da produção nacional.',
-      'O Ceará é líder nacional em geração de energia eólica, com ventos constantes o ano todo.'
+      'O nome homenageia João Ribeiro Pinto Martins, pioneiro da aviação cearense que morreu em serviço.',
+      'Concedido à Fraport Brasil em 2017, que investiu mais de R$ 1 bilhão em ampliações.',
+      'Movimentou cerca de 7 milhões de passageiros em 2023, com pico de 150 voos diários.',
+      'Opera conexões diretas para Frankfurt (Alemanha), Lisboa e cidades dos EUA.',
+      'Sua pista de 3.000 m permite operação de wide-bodies como Boeing 777 e Airbus A330.'
     ],
     wikiAirport: 'Pinto_Martins_–_Fortaleza_International_Airport',
     wikiCity: 'Fortaleza'
@@ -439,11 +439,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Gov. Aluízio Alves',
     capacity: '4 milhões pax/ano',
     curiosities: [
-      'Inaugurado em 2014 especialmente para a Copa do Mundo, um dos mais modernos do Brasil.',
-      'Natal é chamada "Cidade do Sol" — tem mais de 300 dias de sol por ano.',
-      'Está em São Gonçalo do Amarante, a 35 km do centro de Natal.',
-      'É o aeroporto mais próximo da África, a apenas 3.170 km da costa africana.',
-      'O Rio Grande do Norte possui as maiores dunas costeiras do mundo, com até 50 m de altura.'
+      'Inaugurado em 2014 para a Copa do Mundo, substituiu o antigo Aeroporto Augusto Severo.',
+      'O terminal principal tem 51.000 m² e custou aproximadamente R$ 2,5 bilhões para ser construído.',
+      'É o aeroporto brasileiro mais próximo da África: apenas 3.170 km da costa senegalesa.',
+      'Por sua posição geográfica privilegiada, já sediou voos transatlânticos de conexão para a Europa.',
+      'Localizado em São Gonçalo do Amarante, a 35 km de Natal, com acesso por rodovia expressa.'
     ],
     wikiAirport: 'Governador_Aluízio_Alves_International_Airport',
     wikiCity: 'Natal,_Rio_Grande_do_Norte'
@@ -452,11 +452,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Int. Presidente Castro Pinto',
     capacity: '3 milhões pax/ano',
     curiosities: [
-      'João Pessoa é o ponto mais oriental das Américas — o sol nasce aqui antes de qualquer outra cidade do continente.',
-      'A cidade tem o segundo maior parque urbano do mundo, o Parque Arruda Câmara.',
-      'O litoral paraibano tem as praias mais verdes do Brasil, com mar transparente e corais.',
-      'Fundada em 1585, João Pessoa é uma das cidades mais antigas do Brasil.',
-      'A Paraíba produz o melhor rapadura do Brasil e tem tradição secular na cultura da cana-de-açúcar.'
+      'Inaugurado em 1975 e administrado pela VINCI Airports, operando 14 balcões de check-in.',
+      'Pista de 2.800 m capaz de operar aeronaves de médio porte como Boeing 737 e Airbus A320.',
+      'Movimentou cerca de 2 milhões de passageiros em 2023, com crescimento contínuo desde 2018.',
+      'Por estar no ponto mais oriental das Américas, teoricamente recebe os primeiros voos do dia no continente.',
+      'O aeroporto passou por reforma em 2019 que ampliou o saguão de embarque e modernizou a infraestrutura.'
     ],
     wikiAirport: 'Presidente_Castro_Pinto_International_Airport',
     wikiCity: 'João_Pessoa'
@@ -465,11 +465,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional São Paulo/Guarulhos',
     capacity: '44 milhões pax/ano',
     curiosities: [
-      'O maior e mais movimentado aeroporto do Brasil e da América Latina.',
-      'É hub principal da LATAM Airlines e opera voos para 70+ destinos internacionais.',
-      'Inaugurado em 1985 e continuamente expandido, tem 2 terminais e 2 pistas.',
-      'São Paulo é o maior centro financeiro do Hemisfério Sul, com PIB maior que Argentina inteira.',
-      'A cidade tem mais de 50 museus, incluindo o maior museu de arte da América Latina, o MASP.'
+      'O maior aeroporto da América Latina, inaugurado em 1985, com 2 terminais e 2 pistas paralelas.',
+      'As pistas têm 3.700 m e 3.000 m — a maior suporta decolagens de aeronaves como o Boeing 747-8F.',
+      'Em 2023 movimentou mais de 38 milhões de passageiros e aproximadamente 600 pousos e decolagens diários.',
+      'É hub principal da LATAM Airlines, com voos diretos para mais de 70 destinos internacionais.',
+      'Operado pela VINCI Airports desde 2022, que investiu bilhões na modernização da infraestrutura.'
     ],
     wikiAirport: 'São_Paulo–Guarulhos_International_Airport',
     wikiCity: 'São_Paulo'
@@ -478,24 +478,24 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto de São Paulo/Congonhas',
     capacity: '21 milhões pax/ano',
     curiosities: [
-      'O aeroporto urbano mais movimentado do Brasil, a poucos km do centro paulistano.',
-      'Situado a apenas 8 km do centro de São Paulo, é o mais conveniente para negócios.',
-      'Totalmente reconstruído após o acidente de 2007, com novos sistemas de segurança.',
-      'Junto com Santos Dumont no Rio, forma a "ponte aérea" mais movimentada do Brasil.',
-      'A runway é cercada por bairros residenciais — um dos aeroportos mais urbanos do mundo.'
+      'Inaugurado em 1936, é o mais antigo grande aeroporto do Brasil ainda em plena operação comercial.',
+      'Em julho de 2007, o acidente do voo TAM 3054 matou 199 pessoas — maior desastre aéreo da história brasileira.',
+      'Após o acidente, a pista foi reconstruída com asfalto antiderrapante e nova zona de escape de segurança.',
+      'Opera a ponte aérea São Paulo–Rio, a rota doméstica mais movimentada do Brasil, com ~30 voos/dia.',
+      'Com pistas de apenas 1.940 m e 1.435 m, é um dos aeroportos de grande porte com pistas mais curtas do mundo.'
     ],
     wikiAirport: 'Congonhas_Airport',
     wikiCity: 'São_Paulo'
   },
   GIG: {
     name: 'Aeroporto Internacional Antonio Carlos Jobim',
-    capacity: '12 milhões pax/ano',
+    capacity: '15 milhões pax/ano',
     curiosities: [
-      'Inaugurado em 1977, é o principal portão de entrada internacional do Rio de Janeiro.',
-      'O nome homenageia Antonio Carlos Jobim, genial compositor da Bossa Nova.',
-      'Está na Ilha do Governador, a 20 km do Centro histórico, com vista para a Baía de Guanabara.',
-      'O Rio de Janeiro sedia o maior carnaval do mundo, atraindo 1 milhão de turistas estrangeiros.',
-      'Tem 2 terminais e 2 pistas paralelas, com capacidade para aeronaves de grande porte como o A380.'
+      'Inaugurado em 1977 na Ilha do Governador, tem 2 terminais e pistas de 4.000 m e 3.200 m.',
+      'A pista de 4.000 m é uma das mais longas do Brasil, permitindo operação do Airbus A380.',
+      'O nome homenageia Antonio Carlos Jobim, o genial compositor que criou a Bossa Nova.',
+      'Movimentou cerca de 8 milhões de passageiros em 2023, num território projetado para 60 milhões.',
+      'A concessão à RIOgaleão em 2014 trouxe R$ 5,6 bilhões em investimentos previstos de modernização.'
     ],
     wikiAirport: 'Rio_de_Janeiro–Galeão_International_Airport',
     wikiCity: 'Rio_de_Janeiro'
@@ -504,11 +504,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Tancredo Neves',
     capacity: '8 milhões pax/ano',
     curiosities: [
-      'Homenageia Tancredo Neves, o presidente eleito que nunca chegou a tomar posse.',
-      'Está a 39 km de Belo Horizonte, capital do maior estado produtor de queijo e cachaça do Brasil.',
-      'Minas Gerais tem a maior rede de cidades históricas barrocas do Novo Mundo: Ouro Preto, Diamantina, Tiradentes.',
-      'O estado é o maior produtor de café do Brasil, responsável por quase 50% da produção nacional.',
-      'Congonhas do Campo, a 80 km, guarda os Profetas de Aleijadinho, obra-prima do barroco americano.'
+      'Inaugurado em 1984, substituiu o antigo Aeroporto Carlos Drummond de Andrade, que ficava na cidade.',
+      'O nome homenageia Tancredo Neves, o presidente eleito em 1985 que faleceu antes de tomar posse.',
+      'Reformado para a Copa do Mundo 2014 com investimentos de R$ 1,3 bilhão e ampliação do terminal.',
+      'Operado pela CCR BH Airport desde 2014, movimentando cerca de 8 milhões de passageiros por ano.',
+      'Possui pista de 3.000 m e plataforma para 46 aeronaves, com voos regulares para Miami e Lisboa.'
     ],
     wikiAirport: 'Tancredo_Neves_International_Airport',
     wikiCity: 'Belo_Horizonte'
@@ -517,11 +517,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto de Vitória/Eurico de Aguiar Salles',
     capacity: '3 milhões pax/ano',
     curiosities: [
-      'Vitória é uma das poucas capitais brasileiras construída em uma ilha rodeada pelo Atlântico.',
-      'A culinária capixaba é única: a moqueca capixaba difere da baiana por não usar dendê.',
-      'A grande imigração italiana e alemã no século XIX deixou marcas profundas na cultura local.',
-      'O Espírito Santo é o 2º maior produtor de petróleo do Brasil e líder em granito exportado.',
-      'A pista do aeroporto foi construída sobre aterro na Baía de Vitória.'
+      'A pista de 1.839 m foi construída sobre aterro na Baía de Vitória, uma engenharia singular no Brasil.',
+      'Por ter a pista mais curta entre os aeroportos de capitais, opera exclusivamente aeronaves de médio porte.',
+      'Inaugurado em 1943, recebeu melhorias em 2015 com a concessão à VINCI Airports.',
+      'Movimentou cerca de 3 milhões de passageiros em 2023, com crescimento impulsionado pelo agronegócio local.',
+      'O aeroporto está a apenas 4 km do centro de Vitória, tornando-o um dos mais centrais do Brasil.'
     ],
     wikiAirport: 'Vitória_Airport',
     wikiCity: 'Vitória,_Espírito_Santo'
@@ -530,11 +530,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Pres. Juscelino Kubitschek',
     capacity: '15 milhões pax/ano',
     curiosities: [
-      'Um dos maiores da América Latina, modernizado para a Copa do Mundo 2014.',
-      'Brasília foi construída em apenas 41 meses e é Patrimônio da Humanidade pela UNESCO desde 1987.',
-      'O plano de Lúcio Costa e Niemeyer desenhou a cidade no formato de um pássaro visto de cima.',
-      'É a capital mais alta do Brasil, a 1.172 m de altitude, com clima ameno e seco.',
-      'Concentra o maior número de embaixadas e representações diplomáticas do país.'
+      'Inaugurado em 1957, três anos antes de Brasília, para servir as obras de construção da nova capital.',
+      'É o 2° aeroporto mais movimentado do Brasil, com ~400 voos por dia e 16 milhões de passageiros em 2023.',
+      'Suas 2 pistas paralelas de 3.300 m cada foram modernizadas para a Copa do Mundo 2014 com R$ 2,8 bilhões.',
+      'Por estar no centro geográfico do Brasil, é o melhor hub de conexões do país — destino de todas as regiões.',
+      'Opera voos internacionais para América do Norte, Europa e América do Sul com rotas diretas regulares.'
     ],
     wikiAirport: 'Presidente_Juscelino_Kubitschek_International_Airport',
     wikiCity: 'Brasília'
@@ -543,11 +543,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Santa Genoveva',
     capacity: '3 milhões pax/ano',
     curiosities: [
-      'Goiânia foi planejada do zero em 1933 e é uma das cidades mais verdes da América Latina.',
-      'Tem o maior número de praças per capita do Brasil, uma para cada 12 mil habitantes.',
-      'O Cerrado em volta é o segundo maior bioma do Brasil e hotspot global de biodiversidade.',
-      'Goiás é o maior produtor nacional de soja, milho e carne bovina do Centro-Oeste.',
-      'A culinária goiana é famosa pelo pequi, guariroba e empadão goiano.'
+      'Inaugurado em 1956, possui uma das pistas mais longas entre aeroportos secundários: 3.240 m.',
+      'Movimentou cerca de 2 milhões de passageiros em 2023, com crescimento puxado pelo agronegócio.',
+      'É um dos principais aeroportos do Centro-Oeste, servindo como alternativa a BSB para cargas e fretamentos.',
+      'O nome Santa Genoveva é uma homenagem à padroeira do local onde o aeroporto foi construído.',
+      'Administrado pela Inframérica, opera voos regulares para São Paulo, Rio, Brasília e outras capitais.'
     ],
     wikiAirport: 'Santa_Genoveva_Airport',
     wikiCity: 'Goiânia'
@@ -556,11 +556,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Afonso Pena',
     capacity: '12 milhões pax/ano',
     curiosities: [
-      'Curitiba é referência mundial em planejamento urbano e transporte público com BRTs inovadores.',
-      'A cidade recebeu o prêmio da ONU de "Cidade Mais Inovadora do Mundo" na década de 1990.',
-      'O Jardim Botânico, com sua estufa art nouveau, é o cartão-postal da capital paranaense.',
-      'Curitiba tem a maior proporção de descendentes de poloneses fora da Europa.',
-      'O Paraná é o maior produtor de trigo do Brasil e um dos líderes na produção de soja.'
+      'Inaugurado como base militar em 1947, tornou-se aeroporto civil na década de 1950.',
+      'Possui 2 pistas (2.498 m e 2.218 m) e movimentou cerca de 9 milhões de passageiros em 2023.',
+      'É hub importante da Azul e LATAM para o Sul do Brasil, com conexões para Buenos Aires e outras capitais.',
+      'A concessão à Inframérica em 2012 trouxe modernizações que dobraram a capacidade do terminal.',
+      'Localizado em São José dos Pinhais, a 18 km do centro de Curitiba, com acesso pela BR-376.'
     ],
     wikiAirport: 'Afonso_Pena_International_Airport',
     wikiCity: 'Curitiba'
@@ -569,11 +569,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Hercílio Luz',
     capacity: '6 milhões pax/ano',
     curiosities: [
-      'Florianópolis é chamada de "Ilha da Magia" e tem 42 praias, destino favorito de argentinos.',
-      'O aeroporto foi completamente renovado e reinaugurado em 2019 com premiado design contemporâneo.',
-      'A ilha tem a maior concentração de descendentes açorianos fora das ilhas dos Açores.',
-      'Santa Catarina tem o maior IDH do Sul do Brasil e um dos maiores do país.',
-      'A lagoa da Conceição é o principal ponto de windsurf e kitesurf do Brasil.'
+      'Um dos aeroportos mais antigos do Brasil, inaugurado em 1927 — quase 100 anos de operação.',
+      'O nome homenageia Hercílio Luz, governador catarinense que inaugurou a famosa ponte homônima.',
+      'Completamente demolido e reconstruído, foi reinaugurado em 2019 com projeto arquitetônico premiado.',
+      'A nova edificação tem 46.000 m² e capacidade para 6 milhões de passageiros anuais com 20 pontes de embarque.',
+      'Movimentou cerca de 5 milhões de passageiros em 2023, com forte sazonalidade no verão austral.'
     ],
     wikiAirport: 'Hercílio_Luz_International_Airport',
     wikiCity: 'Florianópolis'
@@ -582,11 +582,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Salgado Filho',
     capacity: '7 milhões pax/ano',
     curiosities: [
-      'Ficou submerso por semanas durante as históricas enchentes de maio de 2024 no Rio Grande do Sul.',
-      'Porto Alegre é a capital mais meridional do Brasil e coração da cultura gaúcha.',
-      'A Serra Gaúcha, a 2h de carro, é a maior região produtora de vinhos finos do Brasil.',
-      'O Rio Grande do Sul produz 70% do vinho fino nacional e tem influência italiana marcante.',
-      'A cidade é palco do maior festival de cinema da América Latina, o Festival de Cinema de Porto Alegre.'
+      'O nome homenageia Getúlio Salgado Filho, aviador gaúcho e primeiro ministro da Aeronáutica do Brasil.',
+      'Em maio de 2024, ficou completamente submerso pelas enchentes históricas do RS, fechando por ~6 meses.',
+      'A operação de recuperação pós-enchentes envolveu remoção de toneladas de lama e substituição de toda a eletrônica.',
+      'Possui pista de 3.200 m e movimentou cerca de 6 milhões de passageiros em 2023, antes das enchentes.',
+      'Opera voos internacionais diretos para Buenos Aires, Montevidéu e Santiago, além de toda a malha doméstica.'
     ],
     wikiAirport: 'Salgado_Filho_International_Airport',
     wikiCity: 'Porto_Alegre'
@@ -595,11 +595,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Eduardo Gomes',
     capacity: '4 milhões pax/ano',
     curiosities: [
-      'É o gateway para a maior floresta tropical do mundo: a Amazônia, que cobre 60% do Brasil.',
-      'Manaus tem o famoso "Encontro das Águas" onde os rios Negro e Solimões não se misturam por 6 km.',
-      'O Teatro Amazonas (1896) foi construído durante o auge do ciclo da borracha amazônica.',
-      'A cidade fica no meio da floresta, a 1.500 km de qualquer outra grande cidade brasileira.',
-      'A Zona Franca de Manaus produz 80% dos eletrônicos consumidos no Brasil.'
+      'O nome homenageia o Brigadeiro Eduardo Gomes, fundador da Força Aérea Brasileira.',
+      'É o aeroporto mais isolado do Brasil: sem acesso por rodovias ao Sul — só de avião ou barco.',
+      'Serve como hub essencial para dezenas de municípios amazônicos sem acesso terrestre.',
+      'Movimentou cerca de 3 milhões de passageiros em 2023, com alta demanda de carga perecível da floresta.',
+      'A pista de 2.902 m é estratégica para operações da FAB e missões de monitoramento ambiental na Amazônia.'
     ],
     wikiAirport: 'Eduardo_Gomes_International_Airport',
     wikiCity: 'Manaus'
@@ -608,11 +608,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Val de Cans',
     capacity: '5 milhões pax/ano',
     curiosities: [
-      'Belém é a capital do Pará e porta de entrada para a Amazônia Oriental.',
-      'Sedia anualmente o Círio de Nazaré, a maior procissão religiosa do Brasil com 2 milhões de pessoas.',
-      'A culinária paraense é mundialmente celebrada: tacacá, açaí com camarão e maniçoba.',
-      'O mercado do Ver-o-Peso, fundado em 1688, é o maior mercado a céu aberto da América Latina.',
-      'O Pará é o maior produtor de açaí do mundo, responsável por 95% de toda a produção global.'
+      'Inaugurado em 1944 como campo da Força Aérea Brasileira, passou a uso civil na década de 1950.',
+      'O nome "Val de Cans" vem da nomenclatura usada pelos engenheiros franceses que projetaram o campo.',
+      'Administrado pela VINCI Airports, possui pista de 2.999 m e terminal com 45.000 m².',
+      'Movimentou cerca de 4 milhões de passageiros em 2023, sendo portal de entrada para a Amazônia Oriental.',
+      'Opera voos regulares para Lisboa e Miami, além de conexões com todos os estados brasileiros.'
     ],
     wikiAirport: 'Val_de_Cans_International_Airport',
     wikiCity: 'Belém,_Pará'
@@ -621,11 +621,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Gov. Jorge Teixeira',
     capacity: '2 milhões pax/ano',
     curiosities: [
-      'Porto Velho é capital de Rondônia, estado criado apenas em 1981.',
-      'Fica às margens do Rio Madeira, um dos maiores afluentes do Amazonas.',
-      'A usina de Santo Antônio, nas proximidades, é a 4ª maior hidrelétrica do Brasil.',
-      'Rondônia tem a maior taxa de desmatamento histórico — e hoje um dos maiores esforços de recomposição.',
-      'A Estrada de Ferro Madeira-Mamoré, construída no início do século XX, ficou conhecida como "Ferrovia do Diabo".'
+      'Inaugurado em 1994, é o aeroporto mais importante de Rondônia e principal acesso à capital do estado.',
+      'Possui pista de 2.602 m adequada para aeronaves de médio porte como Boeing 737 e ATR 72.',
+      'Movimentou cerca de 1,3 milhão de passageiros em 2023, com concentração de voos para São Paulo e Brasília.',
+      'Administrado pela Infraero, o aeroporto opera como ponto de conexão entre municípios isolados do interior.',
+      'O nome homenageia Jorge Teixeira de Oliveira, governador que liderou a transição de Rondônia a estado.'
     ],
     wikiAirport: 'Governador_Jorge_Teixeira_de_Oliveira_International_Airport',
     wikiCity: 'Porto_Velho'
@@ -634,11 +634,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Internacional Plácido de Castro',
     capacity: '1,5 milhão pax/ano',
     curiosities: [
-      'Rio Branco é capital do Acre, o estado com maior percentual de floresta preservada do Brasil.',
-      'O famoso "Horário do Acre" (UTC-5) é uma hora a mais que o restante do país.',
-      'A borracha extraída aqui no início do século XX mudou o mundo e gerou a "belle époque" amazônica.',
-      'O Acre foi comprado da Bolívia em 1903 pelo Tratado de Petrópolis por 2 milhões de libras.',
-      'A floresta acreana abriga espécies endêmicas de flora e fauna ainda desconhecidas pela ciência.'
+      'É o aeroporto regular mais ocidental do Brasil, operando como porta de entrada para o Acre.',
+      'O nome homenageia Plácido de Castro, herói militar da Revolução Acreana de 1902-1903.',
+      'Possui pista de 2.307 m e operou cerca de 800 mil passageiros em 2023.',
+      'Administrado pela Infraero, conecta o Acre ao restante do Brasil através de voos para São Paulo e Brasília.',
+      'A altitude de 189 m e as condições amazônicas de calor e umidade tornam as operações mais exigentes.'
     ],
     wikiAirport: 'Plácido_de_Castro_International_Airport',
     wikiCity: 'Rio_Branco,_Acre'
@@ -647,11 +647,11 @@ const AIRPORT_CURIOSITIES = {
     name: 'Aeroporto Senador Petrônio Portella',
     capacity: '2 milhões pax/ano',
     curiosities: [
-      'Teresina é a única capital nordestina não litorânea, no interior do Piauí.',
-      'Conhecida como "Cidade Verde", tem palmeiras buriti plantadas em toda a malha urbana.',
-      'Com temperatura média de 27°C, disputa com Cuiabá o título de cidade mais quente do Brasil.',
-      'O Parque Nacional da Serra da Capivara, patrimônio UNESCO, tem pinturas rupestres de 25.000 anos.',
-      'O Piauí é o único estado brasileiro onde o Rio São Francisco nasce — sua nascente está na Serra da Canastra, MG.'
+      'O nome homenageia Petrônio Portella, senador piauiense que foi figura central na redemocratização brasileira.',
+      'Inaugurado em 1980, passou por reformas significativas em 2010 para ampliar a capacidade do terminal.',
+      'Possui pista de 2.400 m e operou cerca de 1,5 milhão de passageiros em 2023.',
+      'Administrado pela Infraero, funciona como hub de distribuição de passageiros para o interior do Piauí.',
+      'O aeroporto opera em condições climáticas extremas: temperaturas que podem ultrapassar 40 °C no verão.'
     ],
     wikiAirport: 'Senador_Petrônio_Portella_Airport',
     wikiCity: 'Teresina'
@@ -720,8 +720,6 @@ function AirportStopPanel({ airportCode, aeroportosData, isOrigin, isDestination
           <span className="airport-stop-code" style={{ color: regionColor }}>
             {airportCode}
           </span>
-          {isOrigin && <span className="airport-stop-badge origin">Origem</span>}
-          {isDestination && <span className="airport-stop-badge destination">Destino final</span>}
         </div>
 
         <button className="airport-stop-close" type="button" onClick={onStop} title="Encerrar viagem">
@@ -1134,43 +1132,6 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
               </button>
             )}
 
-            {flyState !== 'idle' && (
-              <button type="button" className="globe-ctrl-btn travel-btn flying" onClick={handleStop}>
-                <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
-                  <rect x="6" y="4" width="4" height="16" />
-                  <rect x="14" y="4" width="4" height="16" />
-                </svg>
-                Encerrar viagem
-              </button>
-            )}
-
-
-            <button
-              type="button"
-              className={`globe-ctrl-btn${autoRotate && flyState === 'idle' ? ' active' : ''}`}
-              onClick={() => {
-                if (flyState === 'idle') setAutoRotate((v) => !v)
-              }}
-              disabled={flyState !== 'idle'}
-            >
-              {autoRotate && flyState === 'idle' ? (
-                <>
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
-                    <rect x="6" y="4" width="4" height="16" />
-                    <rect x="14" y="4" width="4" height="16" />
-                  </svg>
-                  Pausar rotação
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
-                    <polygon points="5,3 19,12 5,21" />
-                  </svg>
-                  Girar globo
-                </>
-              )}
-            </button>
-
             <button
               type="button"
               className="globe-close-btn"
@@ -1410,6 +1371,120 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
   )
 }
 
+function AirportCuriosityModal({ airportCode, aeroportosData, onClose }) {
+  const info = AIRPORT_CURIOSITIES[airportCode] || {}
+  const aeroInfo = aeroportosData?.[airportCode] || {}
+  const [airportImg, setAirportImg] = useState(null)
+  const [cityImg, setCityImg] = useState(null)
+  const [imgLoading, setImgLoading] = useState(true)
+
+  const regionColor = REGION_COLORS[aeroInfo.regiao] || '#4da3ff'
+
+  useEffect(() => {
+    setAirportImg(null)
+    setCityImg(null)
+    setImgLoading(true)
+    let cancelled = false
+
+    async function fetchImg(wikiTitle, setter) {
+      try {
+        const r = await fetch(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle.replace(/_/g, ' '))}`
+        )
+        const d = await r.json()
+        if (!cancelled && d.thumbnail?.source) setter(d.thumbnail.source)
+      } catch {}
+    }
+
+    const tasks = []
+    if (info.wikiAirport) tasks.push(fetchImg(info.wikiAirport, setAirportImg))
+    if (info.wikiCity) tasks.push(fetchImg(info.wikiCity, setCityImg))
+    Promise.allSettled(tasks).then(() => {
+      if (!cancelled) setImgLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [airportCode])
+
+  return createPortal(
+    <div className="acm-overlay" onClick={onClose}>
+      <div className="airport-curiosity-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="acm-hero"
+          style={{ background: `linear-gradient(135deg, ${regionColor}18 0%, rgba(6,16,32,0) 60%)` }}
+        >
+          <div className="acm-header">
+            <div className="acm-header-left">
+              <span className="acm-code" style={{ color: regionColor }}>{airportCode}</span>
+              {aeroInfo.regiao && (
+                <span className="acm-region" style={{ background: `${regionColor}28`, color: regionColor }}>
+                  {aeroInfo.regiao}
+                </span>
+              )}
+            </div>
+            <button className="acm-close" type="button" onClick={onClose} title="Fechar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="15" height="15">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="acm-name">{info.name || airportCode}</div>
+          {aeroInfo.cidade && <div className="acm-city">{aeroInfo.cidade}</div>}
+
+          {info.capacity && (
+            <div className="acm-capacity">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              {info.capacity}
+            </div>
+          )}
+        </div>
+
+        {(airportImg || cityImg || imgLoading) && (
+          <div className="acm-photos">
+            {airportImg ? (
+              <img src={airportImg} className="acm-photo" alt={`Aeroporto ${airportCode}`} />
+            ) : imgLoading ? (
+              <div className="acm-photo-skeleton" />
+            ) : null}
+            {cityImg ? (
+              <img src={cityImg} className="acm-photo" alt={aeroInfo.cidade || airportCode} />
+            ) : imgLoading ? (
+              <div className="acm-photo-skeleton" />
+            ) : null}
+          </div>
+        )}
+
+        <div className="acm-body">
+          <div className="acm-curiosities-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            Curiosidades
+          </div>
+          <div className="acm-curiosities">
+            {(info.curiosities || ['Aeroporto regional brasileiro.']).map((c, i) => (
+              <div key={i} className="acm-curiosity">
+                <span className="acm-bullet">✦</span>
+                <span>{c}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 function App({ onNavigate }) {
   const [startAirport, setStartAirport] = useState('')
   const [endAirport, setEndAirport] = useState('')
@@ -1427,6 +1502,7 @@ function App({ onNavigate }) {
   const [show3DGlobe, setShow3DGlobe] = useState(false)
   const [hoveredNode, setHoveredNode] = useState(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
+  const [hoveredConnectionModal, setHoveredConnectionModal] = useState(null)
 
   const searchRef = useRef(null)
   const networkRef = useRef(null)
@@ -2481,7 +2557,14 @@ function App({ onNavigate }) {
                     {selectedConnectionAirport.connections.map((connection, index) => (
                       <div
                         key={`${selectedConnectionAirport.id}-${connection.code}-${connection.weight}-${index}`}
-                        className="airport-connection-card"
+                        className={`airport-connection-card${hoveredConnectionModal?.code === connection.code ? ' acm-card-active' : ''}`}
+                        onClick={() => {
+                          if (hoveredConnectionModal?.code === connection.code) {
+                            setHoveredConnectionModal(null)
+                          } else {
+                            setHoveredConnectionModal({ code: connection.code })
+                          }
+                        }}
                       >
                         <div className="airport-connection-info">
                           <div className="airport-connection-code">{connection.code}</div>
@@ -2677,6 +2760,14 @@ function App({ onNavigate }) {
             egoAeroportos={egoAeroportos}
             x={tooltipPos.x}
             y={tooltipPos.y}
+          />
+        )}
+
+        {hoveredConnectionModal && (
+          <AirportCuriosityModal
+            airportCode={hoveredConnectionModal.code}
+            aeroportosData={aeroportosData}
+            onClose={() => setHoveredConnectionModal(null)}
           />
         )}
       </main>
