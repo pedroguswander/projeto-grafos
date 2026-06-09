@@ -833,6 +833,9 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
   const containerRef = useRef(null)
   const flyAnimRef = useRef(null)
   const planeModelRef = useRef(null)
+  const flightAzimuthRef = useRef(0)
+  const isDraggingFlightRef = useRef(false)
+  const lastDragXFlightRef = useRef(0)
 
   const [dimensions, setDimensions] = useState({ w: 900, h: 600 })
   const [autoRotate, setAutoRotate] = useState(true)
@@ -952,7 +955,7 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
     ctrl.autoRotateSpeed = 0.4
     ctrl.enableDamping = true
     ctrl.dampingFactor = 0.08
-    globeRef.current.pointOfView({ lat: -15, lng: -52, altitude: 1.5 }, 800)
+    globeRef.current.pointOfView({ lat: -15, lng: -52, altitude: 0.6 }, 800)
   }, [globeReady])
 
   useEffect(() => {
@@ -977,11 +980,19 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
 
   function handleStop() {
     clearInterval(flyAnimRef.current)
+    flightAzimuthRef.current = 0
+    isDraggingFlightRef.current = false
     setFlyState('idle')
     setPlaneData([])
     setCurrentWpIdx(0)
     if (globeRef.current) {
-      globeRef.current.controls().autoRotate = autoRotate
+      const ctrl = globeRef.current.controls()
+      ctrl.enabled = true
+      ctrl.enableDamping = false
+      ctrl.target.set(0, 0, 0)
+      ctrl.update()
+      ctrl.enableDamping = true
+      ctrl.autoRotate = autoRotate
     }
   }
 
@@ -1019,8 +1030,6 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
     const bearing = computeBearing(fromCoord.lat, fromCoord.lon, toCoord.lat, toCoord.lon)
     setPlaneData([{ lat: fromCoord.lat, lng: fromCoord.lon, bearing }])
 
-    globeRef.current?.pointOfView({ lat: fromCoord.lat - 1.5, lng: fromCoord.lon, altitude: 0.4 }, 700)
-
     const STEPS = 150
     const INTERVAL = 16
     let step = 0
@@ -1030,11 +1039,29 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
         const t = step / STEPS
         const lat = fromCoord.lat + (toCoord.lat - fromCoord.lat) * t
         const lng = fromCoord.lon + (toCoord.lon - fromCoord.lon) * t
-        const alt = 0.3 + Math.sin(t * Math.PI) * 0.25
-        const camLat = lat - (toCoord.lat - fromCoord.lat) * 0.15
-        const camLng = lng - (toCoord.lon - fromCoord.lon) * 0.15
 
-        globeRef.current?.pointOfView({ lat: camLat, lng: camLng, altitude: alt }, 0)
+        if (globeRef.current) {
+          const GLOBE_R = 100
+          const phi = ((90 - lat) * Math.PI) / 180
+          const theta = ((90 - lng) * Math.PI) / 180
+          const r = GLOBE_R * (1 + 0.12)
+          const sinPhi = Math.sin(phi), cosPhi = Math.cos(phi)
+          const cosTheta = Math.cos(theta), sinTheta = Math.sin(theta)
+          const planePos = new THREE.Vector3(r * sinPhi * cosTheta, r * cosPhi, r * sinPhi * sinTheta)
+          const up = new THREE.Vector3(sinPhi * cosTheta, cosPhi, sinPhi * sinTheta).normalize()
+          const north = new THREE.Vector3(0, 1, 0).addScaledVector(up, -up.y).normalize()
+          const east = new THREE.Vector3().crossVectors(north, up).normalize()
+          const az = flightAzimuthRef.current
+          const rotDir = new THREE.Vector3().addScaledVector(east, Math.cos(az)).addScaledVector(north, Math.sin(az))
+          const camPos = new THREE.Vector3().copy(planePos).addScaledVector(rotDir, 18).addScaledVector(up, 10)
+          const camera = globeRef.current.camera()
+          const controls = globeRef.current.controls()
+          controls.enabled = false
+          camera.position.copy(camPos)
+          camera.up.copy(up)
+          camera.lookAt(planePos)
+        }
+
         setPlaneData([{ lat, lng, bearing }])
 
         step++
@@ -1052,7 +1079,17 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
             }
           }
 
-          globeRef.current?.pointOfView({ lat: toCoord.lat - 0.5, lng: toCoord.lon, altitude: 0.45 }, 1000)
+          flightAzimuthRef.current = 0
+          isDraggingFlightRef.current = false
+          const endCtrl = globeRef.current?.controls()
+          if (endCtrl) {
+            endCtrl.enabled = true
+            endCtrl.enableDamping = false
+            endCtrl.target.set(0, 0, 0)
+            endCtrl.update()
+            endCtrl.enableDamping = true
+          }
+          globeRef.current?.pointOfView({ lat: toCoord.lat - 0.5, lng: toCoord.lon, altitude: 0.8 }, 1000)
 
           setPlaneData([{ lat: toCoord.lat, lng: toCoord.lon, bearing: restBearing }])
           setCurrentWpIdx(nextIdx)
@@ -1106,6 +1143,7 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
                 Encerrar viagem
               </button>
             )}
+
 
             <button
               type="button"
@@ -1184,7 +1222,24 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
           </div>
         )}
 
-        <div className="globe-modal-body" ref={containerRef}>
+        <div
+          className="globe-modal-body"
+          ref={containerRef}
+          onPointerDown={(e) => {
+            if (flyState !== 'flying') return
+            isDraggingFlightRef.current = true
+            lastDragXFlightRef.current = e.clientX
+            e.currentTarget.setPointerCapture(e.pointerId)
+          }}
+          onPointerMove={(e) => {
+            if (!isDraggingFlightRef.current || flyState !== 'flying') return
+            const dx = e.clientX - lastDragXFlightRef.current
+            flightAzimuthRef.current -= dx * 0.005
+            lastDragXFlightRef.current = e.clientX
+          }}
+          onPointerUp={() => { isDraggingFlightRef.current = false }}
+          onPointerLeave={() => { isDraggingFlightRef.current = false }}
+        >
           {!globeReady && (
             <div className="globe-loading">
               <div className="globe-loading-spinner eta-spinner" />
@@ -1218,7 +1273,7 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
               return activePath.length > 0 ? 'rgba(255,255,255,0.06)' : 'rgba(59,130,246,0.14)'
             }}
             arcStroke={(d) => {
-              if (d.inPath) return 3.0
+              if (d.inPath) return 1.2
               return activePath.length > 0 ? 0.18 : 0.28
             }}
             arcDashLength={(d) => (d.inPath ? 0.45 : 1)}
@@ -1242,8 +1297,8 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
               if (d.inPath) return '#FFD700'
               return activePath.length > 0 ? 'rgba(200,215,235,0.45)' : regionColor(d.region)
             }}
-            pointRadius={(d) => (d.isStart || d.isEnd ? 0.62 : d.inPath ? 0.5 : 0.3)}
-            pointAltitude={(d) => (d.isStart || d.isEnd ? 0.08 : d.inPath ? 0.05 : 0.01)}
+            pointRadius={(d) => (d.isStart || d.isEnd ? 0.35 : d.inPath ? 0.25 : 0.15)}
+            pointAltitude={(d) => (d.isStart || d.isEnd ? 0.04 : d.inPath ? 0.025 : 0.006)}
             pointLabel={(d) =>
               `<div style="background:rgba(10,18,30,0.97);border:1.5px solid ${regionColor(
                 d.region
