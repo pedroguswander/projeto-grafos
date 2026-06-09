@@ -54,7 +54,7 @@ function removerColunasHeaderVazio(rows = []) {
 const PLANILHAS_ETN = [
   {
     id: 'frente',
-    nome: 'Manobras de Atracação',
+    nome: 'ports.csv',
     parte: 'frente',
     tituloParte: 'Frente',
     objetivo:
@@ -105,7 +105,7 @@ const PLANILHAS_ETN = [
   },
   {
     id: 'meio',
-    nome: 'Operação Central',
+    nome: 'Demand_WorldSmall.csv',
     parte: 'meio',
     tituloParte: 'Meio',
     objetivo:
@@ -156,7 +156,7 @@ const PLANILHAS_ETN = [
   },
   {
     id: 'cauda',
-    nome: 'Propulsão e Saída',
+    nome: 'dist_dense.csv',
     parte: 'cauda',
     tituloParte: 'Cauda',
     objetivo:
@@ -207,7 +207,7 @@ const PLANILHAS_ETN = [
   },
   {
     id: 'torre',
-    nome: 'Comando e Navegação',
+    nome: 'fleet_data.csv',
     parte: 'torre',
     tituloParte: 'Torre',
     objetivo:
@@ -258,7 +258,7 @@ const PLANILHAS_ETN = [
   },
   {
     id: 'botes',
-    nome: 'Segurança e Apoio',
+    nome: 'dist_sparse.csv',
     parte: 'botes',
     tituloParte: 'Botes',
     objetivo:
@@ -309,7 +309,7 @@ const PLANILHAS_ETN = [
   },
   {
     id: 'cargaSuperior',
-    nome: 'Carga Superior',
+    nome: 'Demand_WorldLarge.csv',
     parte: 'cargaSuperior',
     tituloParte: 'Carga Superior',
     objetivo:
@@ -360,7 +360,7 @@ const PLANILHAS_ETN = [
   },
   {
     id: 'cargaInferior',
-    nome: 'Carga Inferior',
+    nome: 'part2_report.json',
     parte: 'cargaInferior',
     tituloParte: 'Carga Inferior',
     objetivo:
