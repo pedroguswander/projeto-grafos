@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import { Network } from 'vis-network/standalone'
+import GlobeGL from 'react-globe.gl'
 
 import logo from './assets/logo/logo_branca_isolada.png'
 import AirportTooltip from './AirportTooltip'
@@ -312,6 +313,770 @@ function BrazilMap({ graphData, pathResult, startAirport, endAirport, aeroportos
   )
 }
 
+// ─── Bearing helper for flight animation ────────────────────────────────────
+function computeBearing(lat1, lon1, lat2, lon2) {
+  const toRad = (d) => d * Math.PI / 180
+  const dLon = toRad(lon2 - lon1)
+  const φ1 = toRad(lat1), φ2 = toRad(lat2)
+  const y = Math.sin(dLon) * Math.cos(φ2)
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLon)
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
+}
+
+// ─── Airport curiosities + Wikipedia article titles ──────────────────────────
+const AIRPORT_CURIOSITIES = {
+  REC: {
+    name: 'Aeroporto Internacional Recife/Guararapes',
+    curiosities: [
+      'Inaugurado em 1958, é o principal hub de conexões aéreas do Nordeste brasileiro.',
+      'O nome homenageia a praia de Guararapes, palco de batalhas históricas no século XVII.',
+      'Recife é chamada de "Veneza do Brasil" por seus 50+ rios, pontes e ilhas.',
+    ],
+    wikiAirport: 'Recife/Guararapes–Gilberto_Freyre_International_Airport',
+    wikiCity: 'Recife',
+  },
+  SSA: {
+    name: 'Aeroporto Internacional de Salvador',
+    curiosities: [
+      'Reformado para a Copa do Mundo de 2014, tem capacidade para 15 milhões de passageiros/ano.',
+      'Salvador foi a primeira capital do Brasil (1549–1763) e berço do maior Carnaval de rua do mundo.',
+      'Está a 32 km do Pelourinho, centro histórico tombado como Patrimônio da Humanidade pela UNESCO.',
+    ],
+    wikiAirport: 'Salvador_International_Airport',
+    wikiCity: 'Salvador,_Bahia',
+  },
+  FOR: {
+    name: 'Aeroporto Internacional Pinto Martins',
+    curiosities: [
+      'O maior hub aéreo do Ceará, com voos para Europa, América do Norte e o Brasil todo.',
+      'O nome homenageia João Ribeiro Pinto Martins, pioneiro da aviação cearense.',
+      'Fortaleza tem 30 km de praias urbanas e é famosa pelo Réveillon na beira-mar.',
+    ],
+    wikiAirport: 'Pinto_Martins_–_Fortaleza_International_Airport',
+    wikiCity: 'Fortaleza',
+  },
+  NAT: {
+    name: 'Aeroporto Internacional Gov. Aluízio Alves',
+    curiosities: [
+      'Inaugurado em 2014 especialmente para a Copa do Mundo, um dos mais modernos do Brasil.',
+      'Natal é chamada "Cidade do Sol" — tem mais de 300 dias de sol por ano.',
+      'Está em São Gonçalo do Amarante, a 35 km do centro de Natal.',
+    ],
+    wikiAirport: 'Governador_Aluízio_Alves_International_Airport',
+    wikiCity: 'Natal,_Rio_Grande_do_Norte',
+  },
+  JPA: {
+    name: 'Aeroporto Int. Presidente Castro Pinto',
+    curiosities: [
+      'João Pessoa é o ponto mais oriental das Américas — o sol nasce aqui antes de qualquer outra cidade do continente.',
+      'A cidade tem o segundo maior parque urbano do mundo, o Parque Arruda Câmara.',
+      'O litoral paraibano tem as praias mais verdes do Brasil, com mar transparente e corais.',
+    ],
+    wikiAirport: 'Presidente_Castro_Pinto_International_Airport',
+    wikiCity: 'João_Pessoa',
+  },
+  GRU: {
+    name: 'Aeroporto Internacional São Paulo/Guarulhos',
+    curiosities: [
+      'O maior e mais movimentado aeroporto do Brasil, com mais de 35 milhões de passageiros/ano.',
+      'É hub principal da LATAM Airlines e opera voos para 70+ destinos internacionais.',
+      'Inaugurado em 1985, é o principal portão de entrada do Brasil ao mundo.',
+    ],
+    wikiAirport: 'São_Paulo–Guarulhos_International_Airport',
+    wikiCity: 'São_Paulo',
+  },
+  CGH: {
+    name: 'Aeroporto de São Paulo/Congonhas',
+    curiosities: [
+      'O aeroporto urbano mais movimentado do Brasil, com mais de 20 milhões de passageiros/ano.',
+      'Situado a apenas 8 km do centro de São Paulo, é o mais conveniente para a metrópole.',
+      'Totalmente reconstruído após o acidente de 2007, com novos sistemas de segurança.',
+    ],
+    wikiAirport: 'Congonhas_Airport',
+    wikiCity: 'São_Paulo',
+  },
+  GIG: {
+    name: 'Aeroporto Internacional Antonio Carlos Jobim/Galeão',
+    curiosities: [
+      'Inaugurado em 1977, é o principal portão de entrada internacional do Rio de Janeiro.',
+      'O nome homenageia Antonio Carlos Jobim, genial compositor da Bossa Nova.',
+      'Está na Ilha do Governador, a 20 km do Centro histórico, com vista para a Baía de Guanabara.',
+    ],
+    wikiAirport: 'Rio_de_Janeiro–Galeão_International_Airport',
+    wikiCity: 'Rio_de_Janeiro',
+  },
+  CNF: {
+    name: 'Aeroporto Internacional Tancredo Neves',
+    curiosities: [
+      'Homenageia Tancredo Neves, o presidente eleito que nunca chegou a tomar posse.',
+      'Está a 39 km de Belo Horizonte, capital do maior estado produtor de queijo e cachaça do Brasil.',
+      'Minas Gerais tem a maior rede de cidades históricas barrocas do Novo Mundo: Ouro Preto, Diamantina, Tiradentes.',
+    ],
+    wikiAirport: 'Tancredo_Neves_International_Airport',
+    wikiCity: 'Belo_Horizonte',
+  },
+  VIX: {
+    name: 'Aeroporto de Vitória/Eurico de Aguiar Salles',
+    curiosities: [
+      'Vitória é uma das poucas capitais brasileiras construída em uma ilha rodeada pelo Atlântico.',
+      'A culinária capixaba é única: a moqueca capixaba difere da baiana por não usar dendê.',
+      'A grande imigração italiana e alemã no século XIX deixou marcas profundas na cultura local.',
+    ],
+    wikiAirport: 'Vitória_Airport',
+    wikiCity: 'Vitória,_Espírito_Santo',
+  },
+  BSB: {
+    name: 'Aeroporto Internacional Pres. Juscelino Kubitschek',
+    curiosities: [
+      'Um dos maiores da América Latina, reformado para a Copa do Mundo 2014.',
+      'Brasília foi construída em apenas 41 meses e é Patrimônio da Humanidade pela UNESCO desde 1987.',
+      'O plano de Lúcio Costa e Niemeyer desenhou a cidade no formato de um pássaro visto de cima.',
+    ],
+    wikiAirport: 'Presidente_Juscelino_Kubitschek_International_Airport',
+    wikiCity: 'Brasília',
+  },
+  GYN: {
+    name: 'Aeroporto Santa Genoveva',
+    curiosities: [
+      'Goiânia foi planejada do zero em 1933 e é uma das cidades mais verdes da América Latina.',
+      'Tem o maior número de praças per capita do Brasil.',
+      'O Cerrado em volta é o segundo maior bioma do Brasil e hotspot global de biodiversidade.',
+    ],
+    wikiAirport: 'Santa_Genoveva_Airport',
+    wikiCity: 'Goiânia',
+  },
+  CWB: {
+    name: 'Aeroporto Internacional Afonso Pena',
+    curiosities: [
+      'Curitiba é referência mundial em planejamento urbano e transporte público com BRTs inovadores.',
+      'A cidade recebeu o prêmio da ONU de "Cidade Mais Inovadora do Mundo" na década de 1990.',
+      'O Jardim Botânico, com sua estufa art nouveau, é o cartão-postal da capital paranaense.',
+    ],
+    wikiAirport: 'Afonso_Pena_International_Airport',
+    wikiCity: 'Curitiba',
+  },
+  FLN: {
+    name: 'Aeroporto Internacional Hercílio Luz',
+    curiosities: [
+      'Florianópolis é chamada de "Ilha da Magia" e tem 42 praias, sendo destino favorito de argentinos.',
+      'O aeroporto foi completamente renovado e reinaugurado em 2019 com premiado design.',
+      'A ilha tem a maior concentração de descendentes açorianos fora das ilhas dos Açores.',
+    ],
+    wikiAirport: 'Hercílio_Luz_International_Airport',
+    wikiCity: 'Florianópolis',
+  },
+  POA: {
+    name: 'Aeroporto Internacional Salgado Filho',
+    curiosities: [
+      'Ficou submerso por semanas durante as históricas enchentes de maio de 2024 no Rio Grande do Sul.',
+      'Porto Alegre é a capital mais meridional do Brasil e coração da cultura gaúcha.',
+      'A Serra Gaúcha, a 2h de carro, é a maior região produtora de vinhos finos do Brasil.',
+    ],
+    wikiAirport: 'Salgado_Filho_International_Airport',
+    wikiCity: 'Porto_Alegre',
+  },
+  MAO: {
+    name: 'Aeroporto Internacional Eduardo Gomes',
+    curiosities: [
+      'É o gateway para a maior floresta tropical do mundo: a Amazônia, que cobre 60% do Brasil.',
+      'Manaus tem o famoso "Encontro das Águas" onde os rios Negro e Solimões não se misturam por 6 km.',
+      'O Teatro Amazonas (1896) foi construído durante o auge do ciclo da borracha amazônica.',
+    ],
+    wikiAirport: 'Eduardo_Gomes_International_Airport',
+    wikiCity: 'Manaus',
+  },
+  BEL: {
+    name: 'Aeroporto Internacional Val de Cans',
+    curiosities: [
+      'Belém é a capital do Pará e porta de entrada para a Amazônia Oriental.',
+      'Sedia anualmente o Círio de Nazaré, a maior procissão religiosa do Brasil com 2 milhões de pessoas.',
+      'A culinária paraense é mundialmente celebrada: tacacá, açaí com camarão e maniçoba.',
+    ],
+    wikiAirport: 'Val_de_Cans_International_Airport',
+    wikiCity: 'Belém,_Pará',
+  },
+  PVH: {
+    name: 'Aeroporto Internacional Gov. Jorge Teixeira',
+    curiosities: [
+      'Porto Velho é capital de Rondônia, estado criado apenas em 1981.',
+      'Fica às margens do Rio Madeira, um dos maiores afluentes do Amazonas.',
+      'A usina de Santo Antônio, nas proximidades, está entre as maiores do mundo.',
+    ],
+    wikiAirport: 'Governador_Jorge_Teixeira_de_Oliveira_International_Airport',
+    wikiCity: 'Porto_Velho',
+  },
+  RBR: {
+    name: 'Aeroporto Internacional Plácido de Castro',
+    curiosities: [
+      'Rio Branco é capital do Acre, o estado com maior percentual de floresta preservada do Brasil.',
+      'O famoso "Horário do Acre" (UTC-5) é uma hora a mais que o restante do país.',
+      'A borracha extraída aqui no início do século XX mudou o mundo e gerou a "belle époque" amazônica.',
+    ],
+    wikiAirport: 'Plácido_de_Castro_International_Airport',
+    wikiCity: 'Rio_Branco,_Acre',
+  },
+  THE: {
+    name: 'Aeroporto Senador Petrônio Portella',
+    curiosities: [
+      'Teresina é a única capital nordestina não litorânea, no interior do Piauí.',
+      'Conhecida como "Cidade Verde", tem palmeiras buriti plantadas em toda a malha urbana.',
+      'Com temperatura média de 27°C, disputa com Cuiabá o título de cidade mais quente do Brasil.',
+    ],
+    wikiAirport: 'Senador_Petrônio_Portella_Airport',
+    wikiCity: 'Teresina',
+  },
+}
+
+// ─── Airport stop panel (shown when plane lands at waypoint) ─────────────────
+function AirportStopPanel({ airportCode, aeroportosData, isOrigin, isDestination, onNext, onStop }) {
+  const info = AIRPORT_CURIOSITIES[airportCode] || {}
+  const aeroInfo = aeroportosData?.[airportCode] || {}
+  const [airportImg, setAirportImg] = useState(null)
+  const [cityImg, setCityImg] = useState(null)
+  const [imgLoading, setImgLoading] = useState(true)
+
+  useEffect(() => {
+    setAirportImg(null)
+    setCityImg(null)
+    setImgLoading(true)
+    let cancelled = false
+
+    async function fetchImg(wikiTitle, setter) {
+      try {
+        const r = await fetch(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle.replace(/_/g, ' '))}`,
+        )
+        const d = await r.json()
+        if (!cancelled && d.thumbnail?.source) setter(d.thumbnail.source)
+      } catch {}
+    }
+
+    const tasks = []
+    if (info.wikiAirport) tasks.push(fetchImg(info.wikiAirport, setAirportImg))
+    if (info.wikiCity) tasks.push(fetchImg(info.wikiCity, setCityImg))
+    Promise.allSettled(tasks).then(() => { if (!cancelled) setImgLoading(false) })
+
+    return () => { cancelled = true }
+  }, [airportCode])
+
+  const regionColor = REGION_COLORS[aeroInfo.regiao] || '#3b82f6'
+
+  return (
+    <div className="airport-stop-panel">
+      <div className="airport-stop-header">
+        <div className="airport-stop-identity">
+          <span className="airport-stop-code" style={{ color: regionColor }}>{airportCode}</span>
+          <div className="airport-stop-name-city">
+            <span className="airport-stop-name">{info.name || airportCode}</span>
+            <span className="airport-stop-city">
+              {aeroInfo.cidade || ''}{aeroInfo.regiao ? ` · ${aeroInfo.regiao}` : ''}
+            </span>
+          </div>
+          {isOrigin && <span className="airport-stop-badge origin">Origem</span>}
+          {isDestination && <span className="airport-stop-badge destination">Destino final</span>}
+        </div>
+        <button className="airport-stop-close" type="button" onClick={onStop} title="Encerrar viagem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Encerrar
+        </button>
+      </div>
+
+      <div className="airport-stop-body">
+        <div className="airport-stop-photos">
+          {airportImg ? (
+            <div className="airport-stop-photo-wrap">
+              <img src={airportImg} alt={`Aeroporto ${airportCode}`} className="airport-stop-photo"
+                onError={(e) => { e.target.closest('.airport-stop-photo-wrap').style.display = 'none' }} />
+              <div className="airport-stop-photo-caption">Aeroporto</div>
+            </div>
+          ) : imgLoading ? <div className="airport-stop-photo-skeleton" /> : null}
+
+          {cityImg ? (
+            <div className="airport-stop-photo-wrap">
+              <img src={cityImg} alt={aeroInfo.cidade || airportCode} className="airport-stop-photo"
+                onError={(e) => { e.target.closest('.airport-stop-photo-wrap').style.display = 'none' }} />
+              <div className="airport-stop-photo-caption">{aeroInfo.cidade || 'Cidade'}</div>
+            </div>
+          ) : imgLoading ? <div className="airport-stop-photo-skeleton" /> : null}
+        </div>
+
+        <div className="airport-stop-curiosities">
+          <div className="airport-stop-curiosities-title">Curiosidades</div>
+          {(info.curiosities || ['Aeroporto regional brasileiro.']).map((c, i) => (
+            <div key={i} className="airport-stop-curiosity">
+              <span className="airport-stop-curiosity-bullet">✦</span>
+              {c}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="airport-stop-actions">
+        {isDestination ? (
+          <button type="button" className="airport-stop-btn finish" onClick={onStop}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13">
+              <polyline points="20,6 9,17 4,12"/>
+            </svg>
+            Viagem concluída!
+          </button>
+        ) : (
+          <button type="button" className="airport-stop-btn next" onClick={onNext}>
+            {isOrigin ? 'Decolar' : 'Próximo voo'}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Globe 3D modal — ETA Airports ──────────────────────────────────────────
+function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirport, aeroportosData }) {
+  const globeRef = useRef(null)
+  const containerRef = useRef(null)
+  const flyAnimRef = useRef(null)
+
+  const [dimensions, setDimensions] = useState({ w: 900, h: 600 })
+  const [autoRotate, setAutoRotate] = useState(true)
+  const [globeReady, setGlobeReady] = useState(false)
+  const [countriesGeoJSON, setCountriesGeoJSON] = useState({ features: [] })
+  const [planeData, setPlaneData] = useState([]) // [{ lat, lng, bearing }]
+  const [flyState, setFlyState] = useState('idle') // 'idle' | 'flying' | 'at_airport'
+  const [currentWpIdx, setCurrentWpIdx] = useState(0)
+
+  const activePath = useMemo(
+    () => (pathResult?.path?.length > 1 ? pathResult.path : []),
+    [pathResult],
+  )
+
+  const arcsData = useMemo(() => {
+    const pathEdgeSet = new Set()
+    for (let i = 0; i < activePath.length - 1; i++) {
+      pathEdgeSet.add(`${activePath[i]}|${activePath[i + 1]}`)
+      pathEdgeSet.add(`${activePath[i + 1]}|${activePath[i]}`)
+    }
+    return graphData.edges
+      .map((e) => {
+        const A = AIRPORT_COORDS[e.from]
+        const B = AIRPORT_COORDS[e.to]
+        if (!A || !B) return null
+        const rawLabel = e.weight ?? e.label ?? e.peso ?? ''
+        const match = String(rawLabel).match(/-?\d+(\.\d+)?/)
+        const weight = match ? Math.trunc(Number(match[0])) : 0
+        return {
+          startLat: A.lat, startLng: A.lon,
+          endLat: B.lat, endLng: B.lon,
+          from: e.from, to: e.to,
+          weight,
+          inPath: pathEdgeSet.has(`${e.from}|${e.to}`) || pathEdgeSet.has(`${e.to}|${e.from}`),
+        }
+      })
+      .filter(Boolean)
+  }, [graphData.edges, activePath])
+
+  const pointsData = useMemo(() => {
+    const pathSet = new Set(activePath)
+    return graphData.nodes
+      .filter((n) => AIRPORT_COORDS[n.id])
+      .map((n) => ({
+        lat: AIRPORT_COORDS[n.id].lat,
+        lng: AIRPORT_COORDS[n.id].lon,
+        id: n.id,
+        region: aeroportosData[n.id]?.regiao || 'Outro',
+        city: aeroportosData[n.id]?.cidade || n.id,
+        isStart: n.id === startAirport,
+        isEnd: n.id === endAirport,
+        inPath: pathSet.has(n.id),
+      }))
+  }, [graphData.nodes, aeroportosData, startAirport, endAirport, activePath])
+
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/countries.geojson')
+      .then((r) => r.json())
+      .then((data) => setCountriesGeoJSON(data))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() =>
+      setDimensions({ w: el.clientWidth, h: el.clientHeight }),
+    )
+    ro.observe(el)
+    setDimensions({ w: el.clientWidth, h: el.clientHeight })
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!globeReady || !globeRef.current) return
+    const ctrl = globeRef.current.controls()
+    ctrl.autoRotate = true
+    ctrl.autoRotateSpeed = 0.4
+    ctrl.enableDamping = true
+    ctrl.dampingFactor = 0.08
+    globeRef.current.pointOfView({ lat: -15, lng: -52, altitude: 1.5 }, 800)
+  }, [globeReady])
+
+  useEffect(() => {
+    if (!globeRef.current) return
+    globeRef.current.controls().autoRotate = autoRotate
+  }, [autoRotate])
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') { handleStop(); onClose() } }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  useEffect(() => () => clearInterval(flyAnimRef.current), [])
+
+  function handleStop() {
+    clearInterval(flyAnimRef.current)
+    setFlyState('idle')
+    setPlaneData([])
+    setCurrentWpIdx(0)
+    if (globeRef.current) {
+      globeRef.current.controls().autoRotate = autoRotate
+    }
+  }
+
+  // Click "Viajar" — show origin airport info
+  function handleViajar() {
+    if (activePath.length < 2) return
+    const coord = AIRPORT_COORDS[activePath[0]]
+    if (!coord) return
+    clearInterval(flyAnimRef.current)
+    setAutoRotate(false)
+    const nextCoord = AIRPORT_COORDS[activePath[1]]
+    const bearing = nextCoord
+      ? computeBearing(coord.lat, coord.lon, nextCoord.lat, nextCoord.lon)
+      : 0
+    setPlaneData([{ lat: coord.lat, lng: coord.lon, bearing }])
+    setCurrentWpIdx(0)
+    setFlyState('at_airport')
+    globeRef.current?.pointOfView({ lat: coord.lat - 1, lng: coord.lon, altitude: 0.55 }, 900)
+  }
+
+  // Fly from currentWpIdx to currentWpIdx+1
+  function handleNextFlight() {
+    const nextIdx = currentWpIdx + 1
+    if (nextIdx >= activePath.length) return
+    const fromCode = activePath[currentWpIdx]
+    const toCode = activePath[nextIdx]
+    const fromCoord = AIRPORT_COORDS[fromCode]
+    const toCoord = AIRPORT_COORDS[toCode]
+    if (!fromCoord || !toCoord) return
+
+    clearInterval(flyAnimRef.current)
+    setFlyState('flying')
+
+    const bearing = computeBearing(fromCoord.lat, fromCoord.lon, toCoord.lat, toCoord.lon)
+    setPlaneData([{ lat: fromCoord.lat, lng: fromCoord.lon, bearing }])
+
+    globeRef.current?.pointOfView(
+      { lat: fromCoord.lat - 1.5, lng: fromCoord.lon, altitude: 0.4 },
+      700,
+    )
+
+    const STEPS = 150
+    const INTERVAL = 16
+    let step = 0
+
+    setTimeout(() => {
+      flyAnimRef.current = setInterval(() => {
+        const t = step / STEPS
+        const lat = fromCoord.lat + (toCoord.lat - fromCoord.lat) * t
+        const lng = fromCoord.lon + (toCoord.lon - fromCoord.lon) * t
+        const alt = 0.22 + Math.sin(t * Math.PI) * 0.42
+
+        const camLat = lat - (toCoord.lat - fromCoord.lat) * 0.08
+        const camLng = lng - (toCoord.lon - fromCoord.lon) * 0.08
+        globeRef.current?.pointOfView({ lat: camLat, lng: camLng, altitude: alt }, 0)
+        // bearing encoded in data so htmlElement applies it on creation
+        setPlaneData([{ lat, lng, bearing }])
+
+        step++
+        if (step > STEPS) {
+          clearInterval(flyAnimRef.current)
+
+          // Compute resting bearing: face toward next destination (or keep landing bearing)
+          const isLastWp = nextIdx === activePath.length - 1
+          let restBearing = bearing
+          if (!isLastWp) {
+            const afterCoord = AIRPORT_COORDS[activePath[nextIdx + 1]]
+            if (afterCoord) {
+              restBearing = computeBearing(toCoord.lat, toCoord.lon, afterCoord.lat, afterCoord.lon)
+            }
+          }
+
+          globeRef.current?.pointOfView(
+            { lat: toCoord.lat - 0.5, lng: toCoord.lon, altitude: 0.5 },
+            1200,
+          )
+          setPlaneData([{ lat: toCoord.lat, lng: toCoord.lon, bearing: restBearing }])
+          setCurrentWpIdx(nextIdx)
+          setFlyState('at_airport')
+        }
+      }, INTERVAL)
+    }, 800)
+  }
+
+  const regionColor = (region) => REGION_COLORS[region] || '#4da3ff'
+  const isFlying = flyState === 'flying'
+  const isAtAirport = flyState === 'at_airport'
+  const currentCode = isAtAirport ? activePath[currentWpIdx] : null
+
+  return (
+    <div
+      className="globe-modal-overlay"
+      onClick={(e) => { if (e.target === e.currentTarget) { stopFlight(); onClose() } }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="globe-modal-container eta-globe">
+        <div className="globe-modal-header">
+          <div className="globe-modal-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.8"
+              width="19" height="19" style={{ flexShrink: 0 }}>
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            Mapa de Voos — Visão 3D
+          </div>
+          <div className="globe-modal-controls">
+            {activePath.length >= 2 && flyState === 'idle' && (
+              <button type="button" className="globe-ctrl-btn travel-btn" onClick={handleViajar}>
+                ✈ Viajar
+              </button>
+            )}
+            {flyState !== 'idle' && (
+              <button
+                type="button"
+                className="globe-ctrl-btn travel-btn flying"
+                onClick={handleStop}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                  <rect x="6" y="4" width="4" height="16"/>
+                  <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+                Encerrar viagem
+              </button>
+            )}
+            <button
+              type="button"
+              className={`globe-ctrl-btn${autoRotate && flyState === 'idle' ? ' active' : ''}`}
+              onClick={() => { if (flyState === 'idle') setAutoRotate((v) => !v) }}
+              disabled={flyState !== 'idle'}
+            >
+              {autoRotate && flyState === 'idle' ? (
+                <>
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                    <rect x="6" y="4" width="4" height="16"/>
+                    <rect x="14" y="4" width="4" height="16"/>
+                  </svg>
+                  Pausar rotação
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                    <polygon points="5,3 19,12 5,21"/>
+                  </svg>
+                  Girar globo
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="globe-close-btn"
+              onClick={() => { handleStop(); onClose() }}
+              aria-label="Fechar"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                width="15" height="15">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {activePath.length > 0 && (
+          <div className="globe-path-bar">
+            <span className="globe-path-label">Rota:</span>
+            <div className="globe-path-ports">
+              {activePath.map((code, i) => (
+                <span key={`gp-${code}-${i}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <span style={{
+                    color: code === startAirport ? '#26c281' : code === endAirport ? '#ff6b6b' : '#FFD700',
+                    fontWeight: 800, fontSize: '0.82rem',
+                    opacity: isAtAirport && currentCode === code ? 1 : 0.65,
+                    textDecoration: isAtAirport && currentCode === code ? 'underline' : 'none',
+                    textUnderlineOffset: 2,
+                  }}>{code}</span>
+                  {i < activePath.length - 1 && (
+                    <span style={{ color: '#334155', fontSize: '0.75rem' }}>›</span>
+                  )}
+                </span>
+              ))}
+            </div>
+            {pathResult?.cost != null && (
+              <span className="globe-path-cost">
+                Peso: {Math.trunc(Number(pathResult.cost))}
+              </span>
+            )}
+          </div>
+        )}
+
+        {isFlying && (
+          <div className="globe-flying-banner">
+            <span>✈</span>
+            Voando de <strong>{activePath[currentWpIdx]}</strong> para <strong>{activePath[currentWpIdx + 1]}</strong>
+            <span style={{ color: '#475569', marginLeft: 8, fontSize: '0.74rem' }}>
+              — arraste para girar a câmera
+            </span>
+          </div>
+        )}
+
+        <div className="globe-modal-body" ref={containerRef}>
+          {!globeReady && (
+            <div className="globe-loading">
+              <div className="globe-loading-spinner eta-spinner" />
+              <div className="globe-loading-text">Carregando globo 3D…</div>
+            </div>
+          )}
+
+          <GlobeGL
+            ref={globeRef}
+            width={dimensions.w}
+            height={dimensions.h}
+            onGlobeReady={() => setGlobeReady(true)}
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+            bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+            backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+            atmosphereColor="rgba(59,130,246,0.65)"
+            atmosphereAltitude={0.2}
+            polygonsData={countriesGeoJSON.features}
+            polygonCapColor={() => 'rgba(0,0,0,0)'}
+            polygonSideColor={() => 'rgba(0,0,0,0)'}
+            polygonStrokeColor={() => 'rgba(59,130,246,0.32)'}
+            polygonAltitude={0.001}
+            polygonLabel={() => ''}
+            arcsData={arcsData}
+            arcStartLat={(d) => d.startLat}
+            arcStartLng={(d) => d.startLng}
+            arcEndLat={(d) => d.endLat}
+            arcEndLng={(d) => d.endLng}
+            arcColor={(d) => {
+              if (d.inPath) return '#FFD700'
+              return activePath.length > 0 ? 'rgba(255,255,255,0.06)' : 'rgba(59,130,246,0.14)'
+            }}
+            arcStroke={(d) => {
+              if (d.inPath) return 3.0
+              return activePath.length > 0 ? 0.18 : 0.28
+            }}
+            arcDashLength={(d) => (d.inPath ? 0.45 : 1)}
+            arcDashGap={(d) => (d.inPath ? 0.2 : 0)}
+            arcDashAnimateTime={(d) => (d.inPath ? 1000 : 0)}
+            arcAltitudeAutoScale={0.3}
+            arcLabel={(d) =>
+              `<div style="background:rgba(${d.inPath ? '20,18,0' : '10,18,30'},0.97);border:1.5px solid rgba(${d.inPath ? '255,215,0' : '59,130,246'},0.55);border-radius:9px;padding:7px 12px;font-family:Inter,sans-serif">` +
+              `<span style="color:#f1f5f9;font-weight:700">${d.from}</span>` +
+              `<span style="color:#334155;margin:0 6px">→</span>` +
+              `<span style="color:#f1f5f9;font-weight:700">${d.to}</span>` +
+              `<div style="color:${d.inPath ? '#FFD700' : '#94a3b8'};font-size:11px;margin-top:3px">` +
+              `Peso: ${d.weight}${d.inPath ? ' · ★ Melhor rota' : ''}</div></div>`
+            }
+            pointsData={pointsData}
+            pointLat={(d) => d.lat}
+            pointLng={(d) => d.lng}
+            pointColor={(d) => {
+              if (d.isStart) return '#26c281'
+              if (d.isEnd) return '#ff6b6b'
+              if (d.inPath) return '#FFD700'
+              return activePath.length > 0 ? 'rgba(200,215,235,0.45)' : regionColor(d.region)
+            }}
+            pointRadius={(d) => (d.isStart || d.isEnd ? 0.62 : d.inPath ? 0.5 : 0.3)}
+            pointAltitude={(d) => (d.isStart || d.isEnd ? 0.08 : d.inPath ? 0.05 : 0.01)}
+            pointLabel={(d) =>
+              `<div style="background:rgba(10,18,30,0.97);border:1.5px solid ${regionColor(d.region)};border-radius:10px;padding:10px 14px;font-family:Inter,sans-serif;min-width:135px;box-shadow:0 6px 28px rgba(0,0,0,0.6)">` +
+              `<div style="font-weight:800;color:#f1f5f9;font-size:15px">${d.id}</div>` +
+              `<div style="color:#94a3b8;font-size:12px;margin-top:3px">${d.city}</div>` +
+              `<div style="color:#475569;font-size:10px;margin-top:2px">${d.region}</div>` +
+              (d.isStart ? `<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">✦ Origem</div>` : '') +
+              (d.isEnd ? `<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">✦ Destino</div>` : '') +
+              (d.inPath && !d.isStart && !d.isEnd ? `<div style="color:#FFD700;font-size:11px;font-weight:700;margin-top:5px">★ Na rota</div>` : '') +
+              `</div>`
+            }
+            htmlElementsData={planeData}
+            htmlLat={(d) => d.lat}
+            htmlLng={(d) => d.lng}
+            htmlAltitude={0.025}
+            htmlElement={(d) => {
+              const el = document.createElement('div')
+              el.style.cssText = 'pointer-events:none;user-select:none;'
+              const bearing = d.bearing ?? 0
+              el.innerHTML =
+                '<svg viewBox="0 0 24 24" width="36" height="36" ' +
+                'style="filter:drop-shadow(0 0 10px rgba(255,215,0,.9)) drop-shadow(0 0 4px rgba(255,165,0,.8));">' +
+                `<g transform="rotate(${bearing},12,12)">` +
+                '<path fill="white" d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>' +
+                '</g></svg>'
+              return el
+            }}
+          />
+
+          <div className="globe-legend">
+            <div className="globe-legend-title">Legenda</div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot" style={{ background: '#26c281' }} />Origem
+            </div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot" style={{ background: '#ff6b6b' }} />Destino
+            </div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot"
+                style={{ background: '#FFD700', boxShadow: '0 0 6px #FFD700' }} />
+              Melhor rota
+            </div>
+            <div className="globe-legend-item">
+              <span className="globe-legend-dot" style={{ background: '#3b82f6' }} />Outros
+            </div>
+            <div className="globe-legend-sep" />
+            {activePath.length >= 2 && flyState === 'idle' && (
+              <div style={{ fontSize: '0.69rem', color: '#3b82f6', fontWeight: 700, lineHeight: 1.5 }}>
+                ✈ Clique em "Viajar"<br />para iniciar o voo!
+              </div>
+            )}
+            {activePath.length === 0 && (
+              <div className="globe-legend-hint">
+                Selecione origem<br />e destino para<br />ver a rota
+              </div>
+            )}
+          </div>
+
+          {isAtAirport && currentCode && (
+            <AirportStopPanel
+              airportCode={currentCode}
+              aeroportosData={aeroportosData}
+              isOrigin={currentWpIdx === 0}
+              isDestination={currentWpIdx === activePath.length - 1}
+              onNext={handleNextFlight}
+              onStop={handleStop}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function App({ onNavigate }) {
   const [startAirport, setStartAirport] = useState('')
   const [endAirport, setEndAirport] = useState('')
@@ -359,6 +1124,7 @@ function App({ onNavigate }) {
   const [visibleTopRoutes, setVisibleTopRoutes] = useState(5)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  const [show3DGlobe, setShow3DGlobe] = useState(false)
   // Tooltip de hover no grafo
   const [hoveredNode, setHoveredNode] = useState(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
@@ -1314,6 +2080,30 @@ function App({ onNavigate }) {
         )}
 
         <section className="glass-card app-modern-graph" style={{ position: 'relative' }}>
+          <div className="map-section-header">
+            <div className="map-section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                width="16" height="16">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              Mapa de Conexões de Voos
+            </div>
+            <button
+              type="button"
+              className="globe-3d-open-btn eta-3d-btn"
+              onClick={() => setShow3DGlobe(true)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                width="13" height="13">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              Ver em 3D
+            </button>
+          </div>
           <BrazilMap
             graphData={graphData}
             pathResult={pathResult}
@@ -1321,7 +2111,7 @@ function App({ onNavigate }) {
             endAirport={endAirport}
             aeroportosData={aeroportosData}
             egoAeroportos={egoAeroportos}
-          onNodeClick={handleMapNodeClick}
+            onNodeClick={handleMapNodeClick}
           />
         </section>
 
@@ -1612,6 +2402,17 @@ function App({ onNavigate }) {
             )}
           </div>
       </main>
+
+      {show3DGlobe && (
+        <Globe3DModalETA
+          onClose={() => setShow3DGlobe(false)}
+          graphData={graphData}
+          pathResult={pathResult}
+          startAirport={startAirport}
+          endAirport={endAirport}
+          aeroportosData={aeroportosData}
+        />
+      )}
     </div>
   )
 }

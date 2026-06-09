@@ -1,17 +1,18 @@
 :root {
-  --bg: #061a14;
-  --bg-secondary: #0b241c;
-  --panel: rgba(10, 31, 24, 0.78);
+  --bg: #1a2e1a;
+  --bg-secondary: #1f3620;
+  --panel: rgba(26, 46, 26, 0.82);
   --border: rgba(255, 255, 255, 0.08);
-  --text: #ecfff7;
-  --muted: #9cc8b6;
+  --text: #e8f5e8;
+  --muted: #9ab89a;
   --primary: #26c281;
-  --primary-2: #34d399;
-  --accent: #f6c56f;
-  --success: #26c281;
-  --danger: #ff6b6b;
-  --info: #2dd4bf;
-  --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  --primary-2: #4ade80;
+  --accent: #00d4aa;
+  --success: #4ade80;
+  --danger: #f87171;
+  --info: #00d4aa;
+  --purple: #7c3aed;
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   --radius: 22px;
 }
 
@@ -31,10 +32,7 @@ body,
 .dashboard-etn-page {
   min-height: 100vh;
   width: 100%;
-  background:
-    radial-gradient(circle at top left, rgba(38, 194, 129, 0.12), transparent 26%),
-    radial-gradient(circle at top right, rgba(52, 211, 153, 0.08), transparent 22%),
-    linear-gradient(180deg, var(--bg) 0%, var(--bg-secondary) 100%);
+  background: linear-gradient(135deg, #102710, #1f3620);
 }
 
 .dashboard-etn-main {
@@ -43,7 +41,7 @@ body,
 
 .dashboard-etn-header-subtitle {
   max-width: 720px;
-  color: #a8d3c2;
+  color: #9ab89a;
   font-size: 1rem;
   line-height: 1.65;
   margin-top: 0.45rem;
@@ -61,8 +59,8 @@ body,
   gap: 0.8rem;
   padding: 1rem 1.1rem;
   border-radius: 18px;
-  background: rgba(255, 107, 107, 0.1);
-  border: 1px solid rgba(255, 107, 107, 0.2);
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
   color: #ffd0d0;
   box-shadow: var(--shadow);
 }
@@ -133,7 +131,7 @@ body,
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 8px;
-  color: #e7fff4;
+  color: #e8f5e8;
   font-size: 12px;
   font-weight: 600;
   padding: 6px 10px;
@@ -142,8 +140,8 @@ body,
 }
 
 .dashboard-etn-select option {
-  background: #10271f;
-  color: #ecfff7;
+  background: #1f3620;
+  color: #e8f5e8;
 }
 
 .dashboard-etn-filter-actions {
@@ -184,7 +182,7 @@ body,
 
 .dashboard-etn-kpi-card {
   min-width: 0;
-  background: var(--panel);
+  background-color: rgba(31, 54, 32, 0.82);
   border: 1px solid var(--border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -210,7 +208,7 @@ body,
 .dashboard-etn-kpi-sub {
   margin-top: 0.35rem;
   font-size: 0.88rem;
-  color: #c2e4d5;
+  color: #9ab89a;
 }
 
 .dashboard-etn-skeleton-pulse {
@@ -232,16 +230,12 @@ body,
 }
 
 .dashboard-etn-skeleton-icon {
-  color: #94c7b3;
+  color: #9ab89a;
 }
 
 @keyframes dashboardPulse {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .dashboard-etn-chart-row {
@@ -290,17 +284,17 @@ body,
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.025);
   border: 1px dashed rgba(255, 255, 255, 0.1);
-  color: #b8d8ca;
+  color: #9ab89a;
   font-size: 0.94rem;
 }
 
 .dashboard-etn-custom-tooltip {
-  background: rgba(10, 24, 19, 0.95);
-  border: 1px solid #24453a;
+  background: rgba(26, 46, 26, 0.97);
+  border: 1px solid rgba(74, 222, 128, 0.2);
   border-radius: 10px;
   padding: 0.7rem 0.85rem;
-  color: #f1fff8;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  color: #e8f5e8;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   font-family: Inter, sans-serif;
 }
 
@@ -383,13 +377,13 @@ body,
   font-size: 12px;
   font-weight: 700;
   background: transparent;
-  color: #8ab5a2;
+  color: #9ab89a;
   transition: 0.2s ease;
 }
 
 .dashboard-etn-view-btn.active {
   background: rgba(255,255,255,0.12);
-  color: #e7fff4;
+  color: #e8f5e8;
 }
 
 .dashboard-etn-inline-error {
@@ -399,8 +393,8 @@ body,
   padding: 10px 14px;
   border-radius: 10px;
   margin: 8px 0;
-  background: rgba(220,38,38,0.1);
-  border: 1px solid rgba(220,38,38,0.2);
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.2);
   font-size: 12px;
   color: #fca5a5;
 }
@@ -438,22 +432,22 @@ body,
 }
 
 .dashboard-etn-mini-stat-value.bfs {
-  color: #2dd4bf;
+  color: #00d4aa;
 }
 
 .dashboard-etn-mini-stat-value.dfs {
-  color: #34d399;
+  color: #4ade80;
 }
 
 .dashboard-etn-mini-stat-value.accent {
-  color: #d97706;
+  color: #7c3aed;
 }
 
 .dashboard-etn-table-wrap {
   overflow-x: auto;
   margin-top: 16px;
   border-radius: 16px;
-  background: rgba(6, 26, 20, 0.2);
+  background: rgba(26, 46, 26, 0.3);
   border: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -471,7 +465,7 @@ body,
 .dashboard-etn-table th {
   padding: 0.8rem 0.9rem;
   text-align: left;
-  color: rgba(236, 255, 247, 0.6);
+  color: rgba(232, 245, 232, 0.6);
   font-weight: 700;
   white-space: nowrap;
   background: rgba(255,255,255,0.03);
@@ -479,7 +473,7 @@ body,
 
 .dashboard-etn-table td {
   padding: 0.8rem 0.9rem;
-  color: #d4f1e4;
+  color: #c5e0c5;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
@@ -493,12 +487,12 @@ body,
 }
 
 .dashboard-etn-table-bfs {
-  color: #2dd4bf;
+  color: #00d4aa;
   font-weight: 700;
 }
 
 .dashboard-etn-table-dfs {
-  color: #34d399;
+  color: #4ade80;
   font-weight: 700;
 }
 
@@ -513,15 +507,15 @@ body,
 }
 
 .dashboard-etn-winner-badge.bfs {
-  background: rgba(45,212,191,0.18);
+  background: rgba(0,212,170,0.18);
   color: #99f6e4;
-  border: 1px solid rgba(45,212,191,0.3);
+  border: 1px solid rgba(0,212,170,0.3);
 }
 
 .dashboard-etn-winner-badge.dfs {
-  background: rgba(52,211,153,0.18);
+  background: rgba(74,222,128,0.18);
   color: #bbf7d0;
-  border: 1px solid rgba(52,211,153,0.3);
+  border: 1px solid rgba(74,222,128,0.3);
 }
 
 .animate-spin {
@@ -529,16 +523,13 @@ body,
 }
 
 @keyframes dashboardSpin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
-.glass-card {
-  background: var(--panel);
+.glass-card-etn.dashboard-etn-filter-bar,
+.glass-card.dashboard-etn-chart-card {
+  background-color: rgba(31, 54, 32, 0.82);
   border: 1px solid var(--border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -560,15 +551,15 @@ body,
 }
 
 .modern-btn.main {
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  background: linear-gradient(135deg, #26c281, #4ade80);
   color: #ffffff;
   border: none;
-  box-shadow: 0 10px 24px rgba(38, 194, 129, 0.2);
+  box-shadow: 0 10px 24px rgba(74, 222, 128, 0.2);
 }
 
 .modern-btn.main:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(38, 194, 129, 0.24);
+  box-shadow: 0 14px 28px rgba(74, 222, 128, 0.28);
   filter: brightness(1.03);
 }
 

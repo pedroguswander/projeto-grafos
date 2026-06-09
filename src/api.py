@@ -5,204 +5,178 @@ from collections import Counter
 import sys, os, csv, json
 
 sys.path.insert(0, os.path.dirname(__file__))
-
 from graphs.algorithms import dijkstra
 from graphs.io import load_graph_from_csvs
 
 app = Flask(__name__)
 CORS(app)
 
-graph = None
+graph = etn_graph = etn_graph_bf = None
 BASE = os.path.dirname(os.path.abspath(__file__))
-
 
 # ─── Helpers ───────────────────────────────────────────────────
 
-def data_path(*parts):
-    return os.path.abspath(os.path.join(BASE, '..', 'data', *parts))
-
+def data_path(*p): return os.path.abspath(os.path.join(BASE, '..', 'data', *p))
 def read_csv(path):
-    with open(path, encoding='utf-8') as f:
-        return list(csv.DictReader(f))
+    with open(path, encoding='utf-8') as f: return list(csv.DictReader(f))
 
 def load_graph():
     global graph
-    if graph is None:
-        graph = load_graph_from_csvs(data_path())
+    if graph is None: graph = load_graph_from_csvs(data_path())
     return graph
 
-def airport_info(airport):
-    return {'code': airport.code, 'name': airport.name, 'city': airport.city}
+def load_etn_graph():
+    global etn_graph
+    if etn_graph is None:
+        root = os.path.abspath(os.path.join(BASE, '..'))
+        if root not in sys.path: sys.path.insert(0, root)
+        from parte2.src.graphs.io import load_graph_from_csvs as _load
+        etn_graph = _load(data_path('ETN'))
+    return etn_graph
+
+def load_etn_graph_sem_ciclos():
+    global etn_graph_bf
+    if etn_graph_bf is None:
+        g = load_etn_graph()
+        from parte2.src.graphs.algorithms import remover_ciclos_negativos
+        etn_graph_bf = remover_ciclos_negativos(g)
+    return etn_graph_bf
+
+def load_etn():
+    vp, ap = data_path('ETN', 'vertices.csv'), data_path('ETN', 'arestas.csv')
+    if not os.path.exists(vp) or not os.path.exists(ap):
+        return None, None, jsonify({'error': 'arquivos ETN não encontrados'}), 404
+    return read_csv(vp), read_csv(ap), None, None
 
 def csv_endpoint(filename):
     path = data_path(filename)
-    if not os.path.exists(path):
-        return jsonify({'error': f'{filename} não encontrado'}), 404
+    if not os.path.exists(path): return jsonify({'error': f'{filename} não encontrado'}), 404
     return jsonify(read_csv(path))
 
 def get_weight(row):
     val = row.get('peso') or row.get('weight')
     return float(val) if val else None
 
-def get_endpoint(row, key_a, key_b):
-    return row.get(key_a) or row.get(key_b)
+def get_ep(row, a, b): return row.get(a) or row.get(b)
 
 def calc_stats(vertices, arestas):
-    """Calcula estatísticas de grafo a partir de listas de vértices e arestas."""
-    total_v = len(vertices)
-    total_e = len(arestas)
-
+    total_v, total_e = len(vertices), len(arestas)
     pesos = [w for a in arestas if (w := get_weight(a)) is not None]
-    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
     pesos_pos = [w for w in pesos if w > 0]
-    peso_medio_positivo = round(sum(pesos_pos) / len(pesos_pos)) if pesos_pos else 0
-    rotas_deficitarias = sum(1 for w in pesos if w < 0)
-    perc_deficitarias = round(rotas_deficitarias / len(pesos) * 100, 1) if pesos else 0
-    peso_min = round(min(pesos)) if pesos else 0
-    peso_max = round(max(pesos)) if pesos else 0
-    grau_medio = round((total_e * 2) / total_v, 2) if total_v else 0
+    graus = Counter(filter(None,
+        [get_ep(a, 'origem', 'from') for a in arestas] +
+        [get_ep(a, 'destino', 'to') for a in arestas]
+    ))
+    grau_para_v = {}
+    for cod, g in graus.items(): grau_para_v.setdefault(g, []).append(cod)
 
-    endpoints = (
-        [get_endpoint(a, 'origem', 'from') for a in arestas] +
-        [get_endpoint(a, 'destino', 'to') for a in arestas]
-    )
-    graus = Counter(filter(None, endpoints))
+    conexoes_map = {}
+    for a in arestas:
+        orig = get_ep(a, 'origem', 'from')
+        dest = get_ep(a, 'destino', 'to')
+        if orig: conexoes_map.setdefault(orig, []).append(dest)
 
-    grau_para_vertices = {}
-    for codigo, grau in graus.items():
-        grau_para_vertices.setdefault(grau, []).append(codigo)
-
-    dist_graus = [
-        {'grau': k, 'quantidade': v, 'vertices': sorted(grau_para_vertices[k])}
-        for k, v in sorted(Counter(graus.values()).items())
-    ]
-
-    regioes = Counter(v['D_Region'] for v in vertices if v.get('D_Region'))
-    dist_regiao = [
-        {'nome': k, 'valor': v}
-        for k, v in sorted(regioes.items(), key=lambda x: x[1], reverse=True)
-    ]
+    vi = {v.get('UNLocode', ''): v for v in vertices}
+    top = [{'nome': n, 'nome_completo': vi.get(n, {}).get('name', n),
+             'grau': g, 'conexoes': conexoes_map.get(n, [])}
+           for n, g in graus.most_common(10)]
 
     return {
-        'totalV': total_v,
-        'totalE': total_e,
-        'pesoMedio': peso_medio,
-        'pesoMedioPositivo': peso_medio_positivo,
-        'rotasDeficitarias': rotas_deficitarias,
-        'percDeficitarias': perc_deficitarias,
-        'pesoMin': peso_min,
-        'pesoMax': peso_max,
-        'grauMedio': grau_medio,
-        'distribuicaoRegiao': dist_regiao,
-        'distribuicaoGraus': dist_graus,
-        'topVertices': [{'nome': n, 'grau': g} for n, g in graus.most_common(10)],
+        'totalV': total_v, 'totalE': total_e,
+        'grauMedio': round((total_e * 2) / total_v, 2) if total_v else 0,
+        'pesoMedio': round(sum(pesos) / len(pesos)) if pesos else 0,
+        'pesoMedioPositivo': round(sum(pesos_pos) / len(pesos_pos)) if pesos_pos else 0,
+        'rotasDeficitarias': sum(1 for w in pesos if w < 0),
+        'percDeficitarias': round(sum(1 for w in pesos if w < 0) / len(pesos) * 100, 1) if pesos else 0,
+        'pesoMin': round(min(pesos)) if pesos else 0,
+        'pesoMax': round(max(pesos)) if pesos else 0,
+        'distribuicaoGraus': [
+            {'grau': k, 'quantidade': v, 'vertices': sorted(grau_para_v[k])}
+            for k, v in sorted(Counter(graus.values()).items())
+        ],
+        'distribuicaoRegiao': [
+            {'nome': k, 'valor': v}
+            for k, v in sorted(Counter(v.get('D_Region') for v in vertices if v.get('D_Region')).items(),
+                                key=lambda x: x[1], reverse=True)
+        ],
+        'topVertices': top,
     }
 
-def load_etn():
-    etn = data_path('ETN')
-    vpath, apath = os.path.join(etn, 'vertices.csv'), os.path.join(etn, 'arestas.csv')
-    if not os.path.exists(vpath) or not os.path.exists(apath):
-        return None, None, jsonify({'error': 'arquivos ETN não encontrados'}), 404
-    return read_csv(vpath), read_csv(apath), None, None
-
-
-# ─── Helpers de Report ─────────────────────────────────────────
-
-def source_key(i):
-    return i.get('source') or i.get('origem') or next(
-        (v for v in i.values() if isinstance(v, str)), None
-    )
-
-def filter_by(items, source=None, target=None):
-    if source:
-        items = [i for i in items if i.get('source') == source]
-    if target:
-        items = [i for i in items if i.get('target') == target]
-    return items
-
-def resultados_comparacoes():
-    return [
-        os.path.join(BASE, '..', 'out', 'part2_report.json'),
-        os.path.join(BASE, 'part2_report.json'),
-        os.path.join(BASE, '..', 'data', 'part2_report.json'),
-        os.path.join(BASE, '..', 'part2_report.json'),
-        os.path.join(BASE, 'data', 'part2_report.json'),
-    ]
-
 def load_report():
-    for p in resultados_comparacoes():
-        r = os.path.abspath(p)
+    for p in ['../out/part2_report.json', 'part2_report.json',
+              '../data/part2_report.json', '../part2_report.json', 'data/part2_report.json']:
+        r = os.path.abspath(os.path.join(BASE, p))
         if os.path.exists(r):
-            with open(r, encoding='utf-8') as f:
-                return json.load(f)
+            with open(r, encoding='utf-8') as f: return json.load(f)
     return None
 
 def require_report():
-    report = load_report()
-    if report is None:
-        return None, (jsonify({'error': 'report não encontrado'}), 404)
-    return report, None
+    r = load_report()
+    return (r, None) if r else (None, (jsonify({'error': 'report não encontrado'}), 404))
+
+def source_key(i):
+    return i.get('source') or i.get('origem') or next(
+        (v for v in i.values() if isinstance(v, str)), None)
+
+def filter_by(items, source=None, target=None):
+    if source: items = [i for i in items if i.get('source') == source]
+    if target: items = [i for i in items if i.get('target') == target]
+    return items
 
 def tempo_stats(items):
     vals = [i.get('tempo', 0) for i in items]
-    return {
-        'total': len(vals),
-        'media': round(sum(vals) / len(vals), 6) if vals else None,
-        'total_s': round(sum(vals), 6),
-    }
+    return {'total': len(vals), 'media': round(sum(vals)/len(vals), 6) if vals else None,
+            'total_s': round(sum(vals), 6)}
 
 def path_stats(items):
     validos = [i for i in items if i.get('custo') is not None]
-    return {
-        **tempo_stats(items),
-        'validos': len(validos),
-        'invalidos': len(items) - len(validos),
-        'custo_medio': round(sum(i['custo'] for i in validos) / len(validos), 2) if validos else None,
-    }
+    return {**tempo_stats(items), 'validos': len(validos), 'invalidos': len(items)-len(validos),
+            'custo_medio': round(sum(i['custo'] for i in validos)/len(validos), 2) if validos else None}
+
+def enrich_airports(g, codes):
+    return [{'code': a.code, 'name': a.name, 'city': a.city}
+            for c in codes if (a := g.get_airport(c))]
+
+def enrich_ports(g, codes):
+    return [{'code': p.code, 'name': p.name, 'country': p.country, 'region': p.region}
+            for c in codes if (p := g.get_port(c))]
 
 
-# ─── Grafo ─────────────────────────────────────────────────────
+# ─── Grafo Aeroportos ──────────────────────────────────────────
 
 @app.route('/api/airports')
 def get_airports():
     g = load_graph()
-    return jsonify([
-        {'code': a.code, 'name': a.name, 'city': a.city,
-         'country': a.country, 'latitude': a.latitude, 'longitude': a.longitude}
-        for a in g.airports.values()
-    ])
+    return jsonify([{'code': a.code, 'name': a.name, 'city': a.city,
+                     'country': a.country, 'latitude': a.latitude, 'longitude': a.longitude}
+                    for a in g.airports.values()])
 
 @app.route('/api/routes')
 def get_routes():
     g = load_graph()
-    return jsonify([
-        {'from': src, 'to': dst, 'distance': dist}
-        for src, neighbors in g.adjacency_list.items()
-        for dst, dist in neighbors
-    ])
+    return jsonify([{'from': src, 'to': dst, 'distance': dist}
+                    for src, nb in g.adjacency_list.items() for dst, dist in nb])
+
+@app.route('/api/adjacencias')
+def get_adjacencias(): return csv_endpoint('adjacencias_aeroportos.csv')
 
 @app.route('/api/aeroportos-data')
-def get_aeroportos_data():
-    return csv_endpoint('aeroportos_data.csv')
+def get_aeroportos_data(): return csv_endpoint('aeroportos_data.csv')
 
 @app.route('/api/ego-aeroportos')
-def get_ego_aeroportos():
-    return csv_endpoint('ego_aeroportos.csv')
+def get_ego_aeroportos(): return csv_endpoint('ego_aeroportos.csv')
 
 @app.route('/api/ego-regiao')
-def get_ego_regiao():
-    return csv_endpoint('ego_regiao.csv')
+def get_ego_regiao(): return csv_endpoint('ego_regiao.csv')
 
 @app.route('/api/graph-data')
 def get_graph_data():
     g = load_graph()
-    nodes = [
-        {'id': c, 'label': f"{c}\n{a.city}", 'title': f"{a.name} - {a.city}"}
-        for c, a in g.airports.items()
-    ]
+    nodes = [{'id': c, 'label': f"{c}\n{a.city}", 'title': f"{a.name} - {a.city}"}
+             for c, a in g.airports.items()]
     seen, edges = set(), []
-    for src, neighbors in g.adjacency_list.items():
-        for dst, dist in neighbors:
+    for src, nb in g.adjacency_list.items():
+        for dst, dist in nb:
             key = tuple(sorted([src, dst]))
             if key not in seen:
                 seen.add(key)
@@ -217,101 +191,81 @@ def get_graph_data():
 def calculate_dijkstra():
     body = request.get_json()
     start, end = body.get('start'), body.get('end')
-
     if not start or not end:
         return jsonify({'error': 'start e end são obrigatórios'}), 400
-
     g = load_graph()
     cost, path = dijkstra(g, start, end)
-
     if cost is None:
         return jsonify({'success': False, 'message': f'Sem caminho entre {start} e {end}'})
 
-    def enrich(codes):
-        return [airport_info(g.get_airport(c)) for c in codes if g.get_airport(c)]
-
     def find_routes(limit=20, max_depth=8):
         routes = []
-
         def dfs(cur, visited, path, cost):
-            if len(path) > max_depth:
-                return
+            if len(path) > max_depth: return
             if cur == end:
-                routes.append({'path': list(path), 'cost': cost,
-                                'connections': max(len(path) - 2, 0)})
-                return
+                routes.append({'path': list(path), 'cost': cost, 'connections': max(len(path)-2, 0)}); return
             for nb, dist in g.adjacency_list.get(cur, []):
                 if nb not in visited:
-                    visited.add(nb)
-                    path.append(nb)
+                    visited.add(nb); path.append(nb)
                     dfs(nb, visited, path, cost + dist)
-                    path.pop()
-                    visited.remove(nb)
-
+                    path.pop(); visited.remove(nb)
         dfs(start, {start}, [start], 0)
         seen = set()
         unique = [r for r in routes if (k := tuple(r['path'])) not in seen and not seen.add(k)]
         return sorted(unique, key=lambda r: (r['cost'], len(r['path'])))[:limit]
 
-    top = [{**r, 'path_info': enrich(r['path'])} for r in find_routes()]
-
-    return jsonify({
-        'success': True, 'cost': cost, 'path': path,
-        'path_info': enrich(path), 'connections': max(len(path) - 2, 0),
-        'topRoutes': top,
-    })
+    top = [{**r, 'path_info': enrich_airports(g, r['path'])} for r in find_routes()]
+    return jsonify({'success': True, 'cost': cost, 'path': path,
+                    'path_info': enrich_airports(g, path), 'connections': max(len(path)-2, 0),
+                    'topRoutes': top})
 
 
-# ─── Dashboard ETN ─────────────────────────────────────────────
+# ─── Dashboard Stats ───────────────────────────────────────────
 
 @app.route('/api/dashboard-stats')
 def get_dashboard_stats():
     vertices, arestas, err, code = load_etn()
-    if err:
-        return err, code
+    if err: return err, code
     return jsonify(calc_stats(vertices, arestas))
 
+@app.route('/api/etn/arestas')
+def get_etn_arestas():
+    _, arestas, err, code = load_etn()
+    if err: return err, code
+    return jsonify(arestas)
+
+@app.route('/api/etn/vertices')
+def get_etn_vertices():
+    vertices, _, err, code = load_etn()
+    if err: return err, code
+    return jsonify(vertices)
 
 @app.route('/api/dashboard-stats/etn/filtros')
 def get_etn_filtros():
     vertices, arestas, err, code = load_etn()
-    if err:
-        return err, code
-
-    # Metadados de região/país (mantidos para compatibilidade)
+    if err: return err, code
     mapa = {}
     for v in vertices:
         r, c = v.get('D_Region', ''), v.get('Country', '')
-        if r and c:
-            mapa.setdefault(r, set()).add(c)
-
-    # Limites de grau
-    endpoints = (
+        if r and c: mapa.setdefault(r, set()).add(c)
+    graus = Counter(filter(None,
         [a.get('source') or a.get('origem') for a in arestas] +
         [a.get('target') or a.get('destino') for a in arestas]
-    )
-    graus = Counter(filter(None, endpoints))
-    grau_vals = list(graus.values()) or [0]
-
-    # Limites de peso
+    ))
     pesos = [w for a in arestas if (w := get_weight(a)) is not None]
-
+    gv = list(graus.values()) or [0]
     return jsonify({
         'regioes': sorted(mapa),
         'paises_por_regiao': {r: sorted(ps) for r, ps in sorted(mapa.items())},
-        'grau_min': min(grau_vals),
-        'grau_max': max(grau_vals),
+        'grau_min': min(gv), 'grau_max': max(gv),
         'peso_min': round(min(pesos)) if pesos else 0,
         'peso_max': round(max(pesos)) if pesos else 0,
     })
 
-
 @app.route('/api/dashboard-stats/etn/filtrado')
 def get_etn_filtrado():
     vertices, arestas, err, code = load_etn()
-    if err:
-        return err, code
-
+    if err: return err, code
     regiao  = request.args.get('regiao')
     pais    = request.args.get('pais')
     grau_min = request.args.get('grau_min', type=float)
@@ -319,75 +273,43 @@ def get_etn_filtrado():
     peso_min = request.args.get('peso_min', type=float)
     peso_max = request.args.get('peso_max', type=float)
 
-    # Filtro por região/país
-    if regiao:
-        vertices = [v for v in vertices if v.get('D_Region') == regiao]
-    if pais:
-        vertices = [v for v in vertices if v.get('Country') == pais]
-
+    if regiao: vertices = [v for v in vertices if v.get('D_Region') == regiao]
+    if pais:   vertices = [v for v in vertices if v.get('Country') == pais]
     codigos = {v['UNLocode'] for v in vertices}
 
-    # Calcula grau de cada nó para filtro de grau
-    endpoints = (
+    graus_full = Counter(filter(None,
         [a.get('source') or a.get('origem') for a in arestas] +
         [a.get('target') or a.get('destino') for a in arestas]
-    )
-    graus_full = Counter(filter(None, endpoints))
+    ))
+    nos_validos = {n for n, g in graus_full.items()
+                   if (grau_min is None or g >= grau_min) and (grau_max is None or g <= grau_max)}
 
-    nos_validos = {
-        n for n, g in graus_full.items()
-        if (grau_min is None or g >= grau_min)
-        and (grau_max is None or g <= grau_max)
-    }
-
-    # Filtra arestas por região, grau e peso
-    arestas_filtradas = []
+    filtradas = []
     for a in arestas:
-        src = a.get('source') or a.get('origem') or get_endpoint(a, 'origem', 'from')
-        tgt = a.get('target') or a.get('destino') or get_endpoint(a, 'destino', 'to')
-
-        # Filtro região/país: ao menos um lado no subgrafo
-        if codigos and src not in codigos and tgt not in codigos:
-            continue
-
-        # Filtro grau
-        if src not in nos_validos or tgt not in nos_validos:
-            continue
-
-        # Filtro peso
+        src = a.get('source') or a.get('origem') or get_ep(a, 'origem', 'from')
+        tgt = a.get('target') or a.get('destino') or get_ep(a, 'destino', 'to')
+        if codigos and src not in codigos and tgt not in codigos: continue
+        if src not in nos_validos or tgt not in nos_validos: continue
         w = get_weight(a)
-        if peso_min is not None and (w is None or w < peso_min):
-            continue
-        if peso_max is not None and (w is None or w > peso_max):
-            continue
-
-        arestas_filtradas.append(a)
-
-    return jsonify(calc_stats(vertices, arestas_filtradas))
-
-
-# ─── Filtros Aeroportos ────────────────────────────────────────
+        if peso_min is not None and (w is None or w < peso_min): continue
+        if peso_max is not None and (w is None or w > peso_max): continue
+        filtradas.append(a)
+    return jsonify(calc_stats(vertices, filtradas))
 
 @app.route('/api/dashboard-stats/aeroportos/filtros')
 def get_aeroportos_filtros():
     g = load_graph()
-    paises = sorted({getattr(a, 'country', None) for a in g.airports.values()} - {None})
     graus = Counter({src: len(nb) for src, nb in g.adjacency_list.items()})
-    all_dists = [d for nb in g.adjacency_list.values() for _, d in nb if d]
-
+    dists = [d for nb in g.adjacency_list.values() for _, d in nb if d]
     return jsonify({
-        'paises': paises,
-        'grau_min': min(graus.values(), default=0),
-        'grau_max': max(graus.values(), default=0),
-        'dist_min': round(min(all_dists, default=0)),
-        'dist_max': round(max(all_dists, default=0)),
+        'paises': sorted({getattr(a, 'country', None) for a in g.airports.values()} - {None}),
+        'grau_min': min(graus.values(), default=0), 'grau_max': max(graus.values(), default=0),
+        'dist_min': round(min(dists, default=0)), 'dist_max': round(max(dists, default=0)),
     })
-
 
 @app.route('/api/dashboard-stats/aeroportos/filtrado')
 def get_aeroportos_filtrado():
     g = load_graph()
-
     pais     = request.args.get('pais')
     grau_min = request.args.get('grau_min', type=int)
     grau_max = request.args.get('grau_max', type=int)
@@ -395,66 +317,42 @@ def get_aeroportos_filtrado():
     dist_max = request.args.get('dist_max', type=float)
 
     graus_full = Counter({src: len(nb) for src, nb in g.adjacency_list.items()})
+    codigos = {c for c, a in g.airports.items()
+               if (not pais or getattr(a, 'country', None) == pais)
+               and (grau_min is None or graus_full.get(c, 0) >= grau_min)
+               and (grau_max is None or graus_full.get(c, 0) <= grau_max)}
 
-    codigos = {
-        code for code, airport in g.airports.items()
-        if (not pais or getattr(airport, 'country', None) == pais)
-        and (grau_min is None or graus_full.get(code, 0) >= grau_min)
-        and (grau_max is None or graus_full.get(code, 0) <= grau_max)
-    }
-
-    seen, all_edges = set(), []
-    for src, neighbors in g.adjacency_list.items():
-        if src not in codigos:
-            continue
-        for dst, dist in neighbors:
-            if dst not in codigos:
-                continue
-            if dist_min is not None and dist < dist_min:
-                continue
-            if dist_max is not None and dist > dist_max:
-                continue
+    seen, edges = set(), []
+    for src, nb in g.adjacency_list.items():
+        if src not in codigos: continue
+        for dst, dist in nb:
+            if dst not in codigos: continue
+            if dist_min is not None and dist < dist_min: continue
+            if dist_max is not None and dist > dist_max: continue
             key = tuple(sorted([src, dst]))
-            if key not in seen:
-                seen.add(key)
-                all_edges.append((src, dst, dist))
+            if key not in seen: seen.add(key); edges.append((src, dst, dist))
 
-    total_v, total_e = len(codigos), len(all_edges)
-    pesos = [d for _, _, d in all_edges if d]
-    peso_medio = round(sum(pesos) / len(pesos)) if pesos else 0
-    grau_medio = round((total_e * 2) / total_v, 2) if total_v else 0
-
+    pesos = [d for _, _, d in edges if d]
     graus = Counter()
-    for src, dst, _ in all_edges:
-        graus[src] += 1
-        graus[dst] += 1
-
-    grau_para_vertices = {}
-    for codigo, grau in graus.items():
-        grau_para_vertices.setdefault(grau, []).append(codigo)
-
-    paises_count = Counter(
-        getattr(g.airports[c], 'country', 'N/A') for c in codigos if c in g.airports
-    )
+    for src, dst, _ in edges: graus[src] += 1; graus[dst] += 1
+    grau_para_v = {}
+    for cod, g_ in graus.items(): grau_para_v.setdefault(g_, []).append(cod)
 
     return jsonify({
-        'totalV': total_v,
-        'totalE': total_e,
-        'pesoMedio': peso_medio,
-        'grauMedio': grau_medio,
-        'distribuicaoGraus': [
-            {'grau': k, 'quantidade': v, 'vertices': sorted(grau_para_vertices[k])}
-            for k, v in sorted(Counter(graus.values()).items())
-        ],
-        'topVertices': [{'nome': n, 'grau': g} for n, g in graus.most_common(10)],
-        'distribuicaoRegiao': [
-            {'nome': k, 'valor': v}
-            for k, v in sorted(paises_count.items(), key=lambda x: x[1], reverse=True)
-        ],
+        'totalV': len(codigos), 'totalE': len(edges),
+        'pesoMedio': round(sum(pesos)/len(pesos)) if pesos else 0,
+        'grauMedio': round((len(edges)*2)/len(codigos), 2) if codigos else 0,
+        'distribuicaoGraus': [{'grau': k, 'quantidade': v, 'vertices': sorted(grau_para_v[k])}
+                               for k, v in sorted(Counter(graus.values()).items())],
+        'topVertices': [{'nome': n, 'grau': g_} for n, g_ in graus.most_common(10)],
+        'distribuicaoRegiao': [{'nome': k, 'valor': v}
+                                for k, v in sorted(
+                                    Counter(getattr(g.airports[c], 'country', 'N/A') for c in codigos if c in g.airports).items(),
+                                    key=lambda x: x[1], reverse=True)],
     })
 
 
-# ─── BFS / DFS ─────────────────────────────────────────────────
+# ─── BFS / DFS / Dijkstra / Bellman-Ford Reports ───────────────
 
 @app.route('/api/report/bfs')
 def get_report_bfs():
@@ -463,11 +361,10 @@ def get_report_bfs():
     items = report.get('BFS', [])
     if src := request.args.get('source'):
         items = [i for i in items if any(v == src for v in i.values() if isinstance(v, str))]
-    return jsonify([{
-        'source': source_key(i), 'tempo_segundos': i.get('tempo'),
-        'total_vertices': i.get('ordem'),
-        'num_camadas': len(i.get('camadas', {})), 'camadas': i.get('camadas', {}),
-    } for i in items])
+    return jsonify([{'source': source_key(i), 'tempo_segundos': i.get('tempo'),
+                     'total_vertices': i.get('ordem'),
+                     'num_camadas': len(i.get('camadas', {})), 'camadas': i.get('camadas', {})}
+                    for i in items])
 
 @app.route('/api/report/dfs')
 def get_report_dfs():
@@ -476,25 +373,20 @@ def get_report_dfs():
     items = report.get('DFS', [])
     if src := request.args.get('source'):
         items = [i for i in items if any(v == src for v in i.values() if isinstance(v, str))]
-    return jsonify([{
-        'source': source_key(i), 'tempo_segundos': i.get('tempo'),
-        'total_vertices': i.get('ordem'), 'ciclos': i.get('ciclos'),
-        'arestas_tree':  len(i.get('arestas', {}).get('tree', [])),
-        'arestas_back':  len(i.get('arestas', {}).get('back', [])),
-        'arestas_cross': len(i.get('arestas', {}).get('cross', [])),
-        'arestas_detalhe': i.get('arestas', {}),
-    } for i in items])
-
-
-# ─── Dijkstra / Bellman-Ford ───────────────────────────────────
+    return jsonify([{'source': source_key(i), 'tempo_segundos': i.get('tempo'),
+                     'total_vertices': i.get('ordem'), 'ciclos': i.get('ciclos'),
+                     'arestas_tree':  len(i.get('arestas', {}).get('tree', [])),
+                     'arestas_back':  len(i.get('arestas', {}).get('back', [])),
+                     'arestas_cross': len(i.get('arestas', {}).get('cross', [])),
+                     'arestas_detalhe': i.get('arestas', {})}
+                    for i in items])
 
 @app.route('/api/report/dijkstra')
 def get_report_dijkstra():
     report, err = require_report()
     if err: return err
     data = filter_by(report.get('DIJKSTRA', []),
-                     source=request.args.get('source'),
-                     target=request.args.get('target'))
+                     source=request.args.get('source'), target=request.args.get('target'))
     if request.args.get('apenas_validos') == 'true':
         data = [d for d in data if d.get('custo') is not None]
     return jsonify(data)
@@ -504,29 +396,23 @@ def get_report_bellman_ford():
     report, err = require_report()
     if err: return err
     data = filter_by(report.get('BELLMAN-FORD', []),
-                     source=request.args.get('source'),
-                     target=request.args.get('target'))
+                     source=request.args.get('source'), target=request.args.get('target'))
     for flag in ('tem_peso_negativo', 'tem_ciclo_negativo'):
         if (val := request.args.get(flag)) is not None:
             data = [d for d in data if d.get(flag) == (val.lower() == 'true')]
     return jsonify(data)
 
-
-# ─── Comparações ───────────────────────────────────────────────
-
 @app.route('/api/report/comparacao/bfs-dfs')
 def comparar_bfs_dfs():
     report, err = require_report()
     if err: return err
-
     bfs_map = {source_key(i): i for i in report.get('BFS', [])}
     dfs_map = {source_key(i): i for i in report.get('DFS', [])}
-
-    comparacoes = []
+    out = []
     for src in sorted(set(bfs_map) & set(dfs_map)):
         b, d = bfs_map[src], dfs_map[src]
         bt, dt = b.get('tempo', 0), d.get('tempo', 0)
-        comparacoes.append({
+        out.append({
             'source': src,
             'bfs': {'tempo_segundos': bt, 'total_vertices': b.get('ordem'),
                     'num_camadas': len(b.get('camadas', {}))},
@@ -537,230 +423,155 @@ def comparar_bfs_dfs():
             'delta_tempo_ms': round((dt - bt) * 1000, 4),
             'mais_rapido': 'BFS' if bt < dt else 'DFS',
         })
-    return jsonify({'total_comparacoes': len(comparacoes), 'comparacoes': comparacoes})
+    return jsonify({'total_comparacoes': len(out), 'comparacoes': out})
 
 @app.route('/api/report/comparacao/dijkstra-bellman')
 def comparar_dijkstra_bellman():
     report, err = require_report()
     if err: return err
+    dmap = {(i.get('source'), i.get('target')): i for i in report.get('DIJKSTRA', [])}
+    bmap = {(i.get('source'), i.get('target')): i for i in report.get('BELLMAN-FORD', [])}
 
-    def pair(i): return (i.get('source'), i.get('target'))
-    dmap = {pair(i): i for i in report.get('DIJKSTRA', [])}
-    bmap = {pair(i): i for i in report.get('BELLMAN-FORD', [])}
+    def fmt(i, extra=None):
+        r = {'tempo_segundos': i.get('tempo'), 'custo': i.get('custo'),
+             'tamanho_caminho': i.get('tamanho_caminho'), 'caminho': i.get('caminho'),
+             'eh_subgrafo': i.get('eh_subgrafo'), 'tem_peso_negativo': i.get('tem_peso_negativo')}
+        if extra: r.update({k: i.get(k) for k in extra})
+        return r
 
-    def fmt_d(i): return {
-        'tempo_segundos': i.get('tempo'), 'custo': i.get('custo'),
-        'tamanho_caminho': i.get('tamanho_caminho'), 'caminho': i.get('caminho'),
-        'eh_subgrafo': i.get('eh_subgrafo'), 'tem_peso_negativo': i.get('tem_peso_negativo'),
-    }
-    def fmt_b(i): return {
-        **fmt_d(i),
-        'tem_ciclo_negativo': i.get('tem_ciclo_negativo'), 'descricao': i.get('descricao'),
-    }
-
-    comparacoes = []
+    out = []
     for par in sorted(set(dmap) & set(bmap)):
         d, b = dmap[par], bmap[par]
         dt, bt = d.get('tempo', 0), b.get('tempo', 0)
         dc, bc = d.get('custo'), b.get('custo')
-        comparacoes.append({
+        out.append({
             'source': par[0], 'target': par[1],
-            'dijkstra': fmt_d(d), 'bellman_ford': fmt_b(b),
+            'dijkstra': fmt(d), 'bellman_ford': fmt(b, ['tem_ciclo_negativo', 'descricao']),
             'custo_identico': (dc == bc) if None not in (dc, bc) else None,
             'delta_tempo_ms': round((bt - dt) * 1000, 4),
             'mais_rapido': 'Dijkstra' if dt < bt else 'Bellman-Ford',
         })
-
     return jsonify({
-        'total_comparacoes': len(comparacoes), 'comparacoes': comparacoes,
-        'apenas_dijkstra':    [{**dmap[k], 'nota': 'apenas_dijkstra'}    for k in set(dmap) - set(bmap)],
-        'apenas_bellman_ford': [{**bmap[k], 'nota': 'apenas_bellman_ford'} for k in set(bmap) - set(dmap)],
+        'total_comparacoes': len(out), 'comparacoes': out,
+        'apenas_dijkstra': [{**dmap[k], 'nota': 'apenas_dijkstra'} for k in set(dmap)-set(bmap)],
+        'apenas_bellman_ford': [{**bmap[k], 'nota': 'apenas_bellman_ford'} for k in set(bmap)-set(dmap)],
     })
-
-
-# ─── Resumo ────────────────────────────────────────────────────
 
 @app.route('/api/report/resumo')
 def get_report_resumo():
     report, err = require_report()
     if err: return err
-
-    bfs = report.get('BFS', [])
-    dfs = report.get('DFS', [])
-    bf  = report.get('BELLMAN-FORD', [])
-
+    bfs, dfs, bf = report.get('BFS', []), report.get('DFS', []), report.get('BELLMAN-FORD', [])
     return jsonify({
         'BFS': tempo_stats(bfs),
-        'DFS': {
-            **tempo_stats(dfs),
-            'ciclos_medio': round(sum(i.get('ciclos', 0) for i in dfs) / len(dfs), 2) if dfs else None,
-        },
+        'DFS': {**tempo_stats(dfs),
+                'ciclos_medio': round(sum(i.get('ciclos', 0) for i in dfs)/len(dfs), 2) if dfs else None},
         'DIJKSTRA': path_stats(report.get('DIJKSTRA', [])),
-        'BELLMAN_FORD': {
-            **path_stats(bf),
-            'com_ciclo_negativo': sum(1 for i in bf if i.get('tem_ciclo_negativo')),
-        },
+        'BELLMAN_FORD': {**path_stats(bf),
+                         'com_ciclo_negativo': sum(1 for i in bf if i.get('tem_ciclo_negativo'))},
     })
 
 
-# ─── ETN: Painel de Rotas (Bellman-Ford / parte 2) ─────────────
-
-etn_graph = None
-
-
-def load_etn_graph():
-    """Carrega (lazy + cache) o grafo de portos da parte 2.
-
-    Insere a raiz do projeto no sys.path para importar `parte2.src.graphs`
-    como pacote de topo `parte2`, evitando colisão com o pacote `graphs`
-    da parte 1 já importado acima. Mesmo padrão de tests/test_part2_report.py.
-    """
-    global etn_graph
-    if etn_graph is None:
-        root = os.path.abspath(os.path.join(BASE, '..'))
-        if root not in sys.path:
-            sys.path.insert(0, root)
-        from parte2.src.graphs.io import load_graph_from_csvs as _load_etn_csvs
-        etn_graph = _load_etn_csvs(data_path('ETN'))
-    return etn_graph
-
-
-def port_info(port):
-    return {'code': port.code, 'name': port.name,
-            'country': port.country, 'region': port.region}
-
+# ─── ETN Graph ─────────────────────────────────────────────────
 
 @app.route('/api/etn/graph-data')
 def get_etn_graph_data():
     g = load_etn_graph()
-    nodes = [
-        {'id': c, 'label': c, 'title': f"{c} — {p.name} ({p.country})",
-         'name': p.name, 'country': p.country, 'region': p.region}
-        for c, p in g.ports.items()
-    ]
-    edges = [
-        {'from': src, 'to': dst, 'weight': w}
-        for src, neighbors in g.adjacency_list.items()
-        for dst, w in neighbors
-    ]
-    return jsonify({'nodes': nodes, 'edges': edges})
-
+    return jsonify({
+        'nodes': [{'id': c, 'label': c, 'title': f"{c} — {p.name} ({p.country})",
+                   'name': p.name, 'country': p.country, 'region': p.region}
+                  for c, p in g.ports.items()],
+        'edges': [{'from': src, 'to': dst, 'weight': w}
+                  for src, nb in g.adjacency_list.items() for dst, w in nb],
+    })
 
 @app.route('/api/etn/dfs-path', methods=['POST'])
 def calculate_etn_dfs_path():
     body = request.get_json() or {}
     start, end = body.get('start'), body.get('end')
-    max_depth = int(body.get('max_depth', 8))
-
     if not start or not end:
         return jsonify({'error': 'start e end são obrigatórios'}), 400
-
     g = load_etn_graph()
-
     if start not in g.adjacency_list or end not in g.adjacency_list:
-        return jsonify({'success': False,
-                        'message': f'Porto inválido: {start} ou {end}'}), 400
+        return jsonify({'success': False, 'message': f'Porto inválido: {start} ou {end}'}), 400
 
-    # DFS de caminho simples (sem ciclos), com limite de profundidade e de
-    # chamadas recursivas para garantir tempo de resposta no grafo denso.
-    MAX_DFS_CALLS = 50_000
-    best_cost = [float('inf')]
-    best_path = [None]
-    calls = [0]
+    max_depth = int(body.get('max_depth', 8))
+    best_cost, best_path, calls = [float('inf')], [None], [0]
 
     def _dfs(node, path, visited, cost):
         calls[0] += 1
-        if calls[0] > MAX_DFS_CALLS:
-            return
+        if calls[0] > 50_000 or len(path) > max_depth: return
         if node == end:
-            if cost < best_cost[0]:
-                best_cost[0] = cost
-                best_path[0] = path.copy()
+            if cost < best_cost[0]: best_cost[0] = cost; best_path[0] = path.copy()
             return
-        if len(path) > max_depth:
-            return
-        for neighbor, weight in g.get_neighbors(node):
-            if neighbor not in visited:
-                visited.add(neighbor)
-                path.append(neighbor)
-                _dfs(neighbor, path, visited, cost + weight)
-                path.pop()
-                visited.remove(neighbor)
+        for nb, w in g.get_neighbors(node):
+            if nb not in visited:
+                visited.add(nb); path.append(nb)
+                _dfs(nb, path, visited, cost + w)
+                path.pop(); visited.remove(nb)
 
     _dfs(start, [start], {start}, 0.0)
-
     if best_path[0] is None:
-        return jsonify({
-            'success': False,
-            'message': (f'Nenhum caminho simples encontrado de {start} a {end} '
-                        f'com até {max_depth} saltos.')
-        })
-
-    def enrich(codes):
-        return [port_info(g.get_port(c)) for c in codes if g.get_port(c)]
-
-    return jsonify({
-        'success': True,
-        'cost': best_cost[0],
-        'path': best_path[0],
-        'path_info': enrich(best_path[0]),
-        'connections': max(len(best_path[0]) - 2, 0),
-        'max_depth': max_depth,
-    })
-
+        return jsonify({'success': False,
+                        'message': f'Nenhum caminho encontrado de {start} a {end} com até {max_depth} saltos.'})
+    return jsonify({'success': True, 'cost': best_cost[0], 'path': best_path[0],
+                    'path_info': enrich_ports(g, best_path[0]),
+                    'connections': max(len(best_path[0])-2, 0), 'max_depth': max_depth})
 
 @app.route('/api/etn/bellman-ford', methods=['POST'])
 def calculate_etn_bellman_ford():
     body = request.get_json() or {}
     start, end = body.get('start'), body.get('end')
-
     if not start or not end:
         return jsonify({'error': 'start e end são obrigatórios'}), 400
-
-    g = load_etn_graph()  # garante sys.path + grafo carregado
+    g = load_etn_graph()
     from parte2.src.graphs.algorithms import bellman_ford
-
     if start not in g.adjacency_list or end not in g.adjacency_list:
         return jsonify({'success': False, 'hasNegativeCycle': False,
                         'message': f'Porto inválido: {start} ou {end}'}), 400
-
-    cost, path, has_cycle = bellman_ford(g, start, end)
-
+    g_bf = load_etn_graph_sem_ciclos()
+    cost, path, has_cycle = bellman_ford(g_bf, start, end)
     if has_cycle:
+        # Ciclo negativo — usa DFS para obter um caminho visualizável no mapa
+        best_cost_v, best_path_v, calls_v = [float('inf')], [None], [0]
+        def _dfs_viz(node, p, visited, c):
+            calls_v[0] += 1
+            if calls_v[0] > 30_000 or len(p) > 8:
+                return
+            if node == end:
+                if c < best_cost_v[0]:
+                    best_cost_v[0] = c
+                    best_path_v[0] = p.copy()
+                return
+            for nb, w in g.get_neighbors(node):
+                if nb not in visited:
+                    visited.add(nb); p.append(nb)
+                    _dfs_viz(nb, p, visited, c + w)
+                    p.pop(); visited.remove(nb)
+        _dfs_viz(start, [start], {start}, 0.0)
+        viz_path = best_path_v[0] or []
         return jsonify({
             'success': False, 'hasNegativeCycle': True,
-            'message': 'Ciclo negativo detectado — o problema do menor caminho é indefinido.',
+            'path': viz_path,
+            'path_info': enrich_ports(g, viz_path) if viz_path else [],
+            'connections': max(len(viz_path) - 2, 0),
+            'message': 'Ciclo negativo detectado.',
         })
-
-    if cost is None or path is None:
+    if cost is None:
         return jsonify({'success': False, 'hasNegativeCycle': False,
                         'message': f'Não há caminho entre {start} e {end}.'})
-
-    def enrich(codes):
-        return [port_info(g.get_port(c)) for c in codes if g.get_port(c)]
-
-    return jsonify({
-        'success': True,
-        'hasNegativeCycle': False,
-        'cost': cost,
-        'path': path,
-        'path_info': enrich(path),
-        'connections': max(len(path) - 2, 0),
-    })
+    return jsonify({'success': True, 'hasNegativeCycle': False, 'cost': cost, 'path': path,
+                    'path_info': enrich_ports(g, path), 'connections': max(len(path)-2, 0)})
 
 
-# ─── Airport Game ──────────────────────────────────────────────
+# ─── Misc ──────────────────────────────────────────────────────
 
 @app.route('/api/launch-game', methods=['POST'])
 def launch_game():
     import subprocess
-    game_main = os.path.abspath(os.path.join(BASE, '..', 'atc', 'main.py'))
-    if not os.path.exists(game_main):
-        return jsonify({'error': 'atc/main.py não encontrado'}), 404
-    subprocess.Popen(
-        [sys.executable, game_main],
-        cwd=os.path.dirname(game_main),
-    )
+    gm = os.path.abspath(os.path.join(BASE, '..', 'atc', 'main.py'))
+    if not os.path.exists(gm): return jsonify({'error': 'atc/main.py não encontrado'}), 404
+    subprocess.Popen([sys.executable, gm], cwd=os.path.dirname(gm))
     return jsonify({'status': 'launched'})
 
 
