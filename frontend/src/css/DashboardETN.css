@@ -969,6 +969,167 @@ body,
   font-size: 12px;
 }
 
+/* ─── BFS vs DFS donut tooltip ───────────────────────────────── */
+@keyframes etn-tooltip-in {
+  0%   { opacity: 0; transform: scale(0.80) translateY(10px); }
+  65%  { transform: scale(1.03) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes etn-bar-grow {
+  from { width: 0 !important; }
+}
+
+@keyframes etn-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 191, 155, 0); }
+  50%       { box-shadow: 0 0 10px 3px rgba(47, 191, 155, 0.35); }
+}
+
+.dashboard-etn-donut-tooltip {
+  animation: etn-tooltip-in 0.32s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+  background: linear-gradient(155deg, #060f0a 0%, #0c2319 55%, #071510 100%);
+  border: 1px solid rgba(47, 191, 155, 0.30);
+  border-radius: 16px;
+  padding: 0.9rem 1rem 0.75rem;
+  min-width: 210px;
+  box-shadow:
+    0 0 0 1px rgba(47, 191, 155, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.65),
+    0 0 40px rgba(47, 191, 155, 0.07);
+}
+
+/* Header */
+.dashboard-etn-donut-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.dashboard-etn-donut-header .dashboard-etn-donut-badge {
+  flex-shrink: 0;
+}
+
+.dashboard-etn-donut-source {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #eefef7;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dashboard-etn-donut-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  animation: etn-badge-pulse 1.8s ease-in-out infinite;
+}
+
+.dashboard-etn-donut-badge.bfs {
+  background: rgba(47, 191, 155, 0.16);
+  color: #2fbf9b;
+  border: 1px solid rgba(47, 191, 155, 0.40);
+}
+
+.dashboard-etn-donut-badge.dfs {
+  background: rgba(99, 217, 177, 0.14);
+  color: #63d9b1;
+  border: 1px solid rgba(99, 217, 177, 0.38);
+}
+
+/* Donut + centre */
+.dashboard-etn-donut-chart-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.7rem;
+  filter: drop-shadow(0 0 12px rgba(47, 191, 155, 0.18));
+}
+
+.dashboard-etn-donut-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.dashboard-etn-donut-speedup {
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-etn-donut-speedup-sub {
+  font-size: 0.5rem;
+  color: #8fbca8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Progress bars */
+.dashboard-etn-donut-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.dashboard-etn-donut-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.dashboard-etn-donut-bar-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+}
+
+.dashboard-etn-donut-bar-ms {
+  color: #eefef7;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.dashboard-etn-donut-bar-track {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dashboard-etn-donut-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  animation: etn-bar-grow 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+}
+
+/* Delta row */
+.dashboard-etn-donut-delta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  color: #4a7a64;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.45rem;
+}
+
+.dashboard-etn-donut-delta-row span:last-child {
+  color: #7abca0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
 @media (max-width: 1100px) {
 
   .dashboard-etn-chart-row {
@@ -1112,4 +1273,820 @@ body,
   .dashboard-etn-header-title {
     font-size: 1.75rem;
   }
+}
+
+/* ─── Hyperbolic Tree 3D ──────────────────────────────────────── */
+.etn-tree3d-section {
+  display: block;    /* override any inherited grid behaviour */
+  width: 100%;
+}
+
+.etn-tree3d-wrap {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #081c16;
+  border: 1px solid rgba(38, 194, 129, 0.10);
+}
+
+.etn-tree3d-wrap canvas {
+  display: block;
+}
+
+/* Canvas area: fills remaining width after legend */
+.etn-tree3d-canvas-area {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+/* Controls */
+.etn-tree3d-controls {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.etn-tree3d-route-group {
+  display: flex;
+  gap: 0;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(38, 194, 129, 0.22);
+}
+
+.etn-tree3d-route-group .etn-tree3d-btn {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid rgba(38, 194, 129, 0.15);
+}
+
+.etn-tree3d-route-group .etn-tree3d-btn:last-child {
+  border-right: none;
+}
+
+.etn-tree3d-btn {
+  background: rgba(8, 28, 22, 0.88);
+  border: 1px solid rgba(38, 194, 129, 0.25);
+  color: #9fc7b8;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9px;
+  font-size: 0.72rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.16s;
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.etn-tree3d-btn:hover {
+  background: rgba(38, 194, 129, 0.14);
+  color: #63d9b1;
+}
+
+.etn-tree3d-btn.active {
+  background: rgba(38, 194, 129, 0.20);
+  border-color: rgba(38, 194, 129, 0.5);
+  color: #36d699;
+  font-weight: 600;
+}
+
+/* Legend — static flex sidebar */
+.etn-tree3d-legend {
+  flex-shrink: 0;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  background: rgba(8, 28, 22, 0.60);
+  border-right: 1px solid rgba(38, 194, 129, 0.10);
+  padding: 0.9rem 0.85rem;
+  overflow-y: auto;
+}
+
+.etn-tree3d-legend-section-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #4a7a64;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.05rem;
+}
+
+.etn-tree3d-legend-reset {
+  background: none;
+  border: 1px solid rgba(38, 194, 129, 0.25);
+  color: #4a9e78;
+  font-size: 0.58rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  transition: all 0.14s;
+}
+
+.etn-tree3d-legend-reset:hover {
+  background: rgba(38, 194, 129, 0.12);
+  color: #63d9b1;
+}
+
+.etn-tree3d-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.67rem;
+  color: #afd6c2;
+  white-space: nowrap;
+}
+
+.etn-tree3d-legend-btn {
+  background: none;
+  border: none;
+  padding: 0.05rem 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  text-align: left;
+}
+
+.etn-tree3d-legend-btn:hover {
+  color: #eefef7;
+}
+
+.etn-tree3d-legend-btn.dim {
+  opacity: 0.38;
+}
+
+.etn-tree3d-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.etn-tree3d-legend-line {
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.etn-tree3d-legend-sep {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0.1rem 0;
+}
+
+.etn-tree3d-legend-hint {
+  font-size: 0.61rem;
+  color: #4a7a64;
+  line-height: 1.45;
+}
+
+/* Info panel */
+.etn-tree3d-info {
+  position: absolute;
+  bottom: 1rem;
+  right: 0.85rem;
+  z-index: 10;
+  width: 230px;
+  background: rgba(8, 28, 22, 0.93);
+  border: 1px solid rgba(38, 194, 129, 0.25);
+  border-radius: 13px;
+  padding: 0.9rem 1rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.etn-tree3d-info-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.etn-tree3d-info-code {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.etn-tree3d-info-name {
+  margin: 0.15rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #eefef7;
+  line-height: 1.25;
+}
+
+.etn-tree3d-info-close {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #9fc7b8;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.etn-tree3d-info-close:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #f87171;
+}
+
+.etn-tree3d-info-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.etn-tree3d-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.73rem;
+  gap: 0.5rem;
+}
+
+.etn-tree3d-info-row > span:first-child {
+  color: #8fbca8;
+  flex-shrink: 0;
+}
+
+.etn-tree3d-info-row > span:last-child {
+  color: #eefef7;
+  text-align: right;
+  font-weight: 500;
+}
+
+.etn-tree3d-info-hint {
+  margin: 0.6rem 0 0;
+  font-size: 0.63rem;
+  color: #4a7a64;
+  text-align: center;
+}
+
+/* Loading / Error states */
+.etn-tree3d-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  height: 200px;
+  color: #8fbca8;
+  font-size: 0.88rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(38, 194, 129, 0.10);
+  border-radius: 18px;
+}
+
+.etn-tree3d-err {
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
+.etn-tree3d-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(38, 194, 129, 0.2);
+  border-top-color: #26c281;
+  border-radius: 50%;
+  animation: etn-spin 0.8s linear infinite;
+}
+
+@keyframes etn-spin {
+  to { transform: rotate(360deg); }
+}
+/* ─── Treemap: Impacto Financeiro por Porto ──────────────────── */
+.etn-treemap-legend-pills {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.etn-treemap-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.etn-treemap-pill.pos { color: #2fbf9b; }
+.etn-treemap-pill.neg { color: #f87171; }
+
+.etn-treemap-hover-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  min-height: 36px;
+  font-size: 0.78rem;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.etn-treemap-hover-bar.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.etn-treemap-hover-code {
+  font-weight: 800;
+  color: #eefef7;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.etn-treemap-hover-name {
+  color: #9fc7b8;
+  font-size: 0.78rem;
+}
+
+.etn-treemap-hover-sep {
+  color: rgba(255,255,255,0.22);
+  font-size: 0.9rem;
+}
+
+.etn-treemap-hover-bal {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  margin-left: auto;
+}
+
+.etn-treemap-hover-bal.pos { color: #2fbf9b; }
+.etn-treemap-hover-bal.neg { color: #f87171; }
+
+/* ─── Balanço tooltip badge variants ─────────────────────────── */
+.dashboard-etn-donut-badge.lucr {
+  background: rgba(99, 217, 177, 0.14);
+  color: #63d9b1;
+  border: 1px solid rgba(99, 217, 177, 0.38);
+}
+
+.dashboard-etn-donut-badge.def {
+  background: rgba(248, 113, 113, 0.14);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.38);
+}
+
+/* ─── Tooltip click hint ──────────────────────────────────────── */
+.dashboard-etn-donut-click-hint {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.30);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Balanço detail panel ───────────────────────────────────── */
+.bal-detail {
+  animation: etn-tooltip-in 0.28s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+}
+
+.bal-detail-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.bal-detail-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 72px;
+  gap: 3px;
+}
+
+.bal-detail-kpi-num {
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.bal-detail-kpi.lucr .bal-detail-kpi-num { color: #63d9b1; }
+.bal-detail-kpi.def  .bal-detail-kpi-num { color: #f87171; }
+
+.bal-detail-kpi-lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bal-detail-kpi.lucr .bal-detail-kpi-lbl { color: rgba(99, 217, 177, 0.65); }
+.bal-detail-kpi.def  .bal-detail-kpi-lbl { color: rgba(248, 113, 113, 0.65); }
+
+.bal-detail-progress-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bal-detail-progress-bar {
+  height: 9px;
+  background: rgba(248, 113, 113, 0.22);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bal-detail-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2fbf9b, #63d9b1);
+  border-radius: 999px;
+  animation: etn-bar-grow 0.75s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+}
+
+.bal-detail-progress-label {
+  font-size: 0.67rem;
+  color: rgba(255, 255, 255, 0.32);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* Two-column lists */
+.bal-detail-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.bal-detail-col {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid;
+}
+
+.bal-detail-col.lucr { border-color: rgba(99, 217, 177, 0.16); }
+.bal-detail-col.def  { border-color: rgba(248, 113, 113, 0.16); }
+
+.bal-detail-col-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bal-detail-col.lucr .bal-detail-col-header {
+  background: rgba(99, 217, 177, 0.10);
+  color: #63d9b1;
+}
+
+.bal-detail-col.def .bal-detail-col-header {
+  background: rgba(248, 113, 113, 0.10);
+  color: #f87171;
+}
+
+.bal-detail-col-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 900;
+  opacity: 0.80;
+}
+
+.bal-detail-col-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bal-detail-col-list::-webkit-scrollbar { width: 4px; }
+.bal-detail-col-list::-webkit-scrollbar-track { background: transparent; }
+.bal-detail-col-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.bal-detail-route {
+  padding: 0.38rem 0.65rem;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-left: 2px solid;
+  line-height: 1.4;
+  transition: background 0.15s ease;
+}
+
+.bal-detail-route.lucr {
+  background: rgba(99, 217, 177, 0.06);
+  border-left-color: rgba(99, 217, 177, 0.45);
+  color: #cdf5eb;
+}
+
+.bal-detail-route.lucr:hover { background: rgba(99, 217, 177, 0.12); }
+
+.bal-detail-route.def {
+  background: rgba(248, 113, 113, 0.06);
+  border-left-color: rgba(248, 113, 113, 0.45);
+  color: #fddada;
+}
+
+.bal-detail-route.def:hover { background: rgba(248, 113, 113, 0.12); }
+
+/* ─── Portos por País detail panel ──────────────────────────── */
+.pais-detail {
+  animation: etn-tooltip-in 0.28s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+}
+
+.pais-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 0.9rem;
+}
+
+.pais-detail-country {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #eefef7;
+  letter-spacing: -0.01em;
+}
+
+.pais-detail-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.pais-detail-count-num {
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: #2fbf9b;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pais-detail-count-lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(47, 191, 155, 0.60);
+}
+
+.pais-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 0.5rem;
+}
+
+.pais-detail-porto {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(47, 191, 155, 0.07);
+  border: 1px solid rgba(47, 191, 155, 0.14);
+  border-radius: 12px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.pais-detail-porto:hover {
+  background: rgba(47, 191, 155, 0.13);
+  border-color: rgba(47, 191, 155, 0.30);
+  transform: translateY(-2px);
+}
+
+.pais-detail-porto-code {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #2fbf9b;
+  letter-spacing: 0.05em;
+}
+
+.pais-detail-porto-name {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.3;
+}
+
+/* ─── Weight bin tooltip ─────────────────────────────────────── */
+.wbin-tooltip-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.7rem;
+}
+
+.wbin-tooltip-num {
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.wbin-tooltip-num-lbl {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* ─── Weight bin detail panel ────────────────────────────────── */
+.wbin-detail {
+  animation: etn-tooltip-in 0.28s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+}
+
+.wbin-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.wbin-detail-range {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wbin-detail-range-lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.wbin-detail-range-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #eefef7;
+  letter-spacing: -0.01em;
+}
+
+.wbin-detail-stats {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.wbin-detail-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.wbin-detail-stat-num {
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.wbin-detail-stat-lbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.wbin-detail-progress {
+  margin-bottom: 0.85rem;
+}
+
+/* Route grid */
+.wbin-detail-routes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 0.35rem;
+  max-height: 290px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.wbin-detail-routes::-webkit-scrollbar { width: 4px; }
+.wbin-detail-routes::-webkit-scrollbar-track { background: transparent; }
+.wbin-detail-routes::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.wbin-detail-route {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.38rem 0.6rem;
+  border-radius: 8px;
+  border-left: 2px solid;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: background 0.12s ease;
+}
+
+.wbin-detail-route.pos {
+  background: rgba(99, 217, 177, 0.06);
+  border-left-color: rgba(99, 217, 177, 0.40);
+}
+
+.wbin-detail-route.pos:hover { background: rgba(99, 217, 177, 0.12); }
+
+.wbin-detail-route.neg {
+  background: rgba(248, 113, 113, 0.06);
+  border-left-color: rgba(248, 113, 113, 0.40);
+}
+
+.wbin-detail-route.neg:hover { background: rgba(248, 113, 113, 0.12); }
+
+.wbin-route-code {
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #eefef7;
+}
+
+.wbin-route-arrow {
+  color: rgba(255, 255, 255, 0.30);
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+/* hub code subtitle in pais-detail-header */
+.pais-detail-hub-code {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(47, 191, 155, 0.55);
+  margin-top: 3px;
+  font-family: monospace;
+}
+
+/* scroll on port grids */
+.pais-detail-grid {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.pais-detail-grid::-webkit-scrollbar { width: 4px; }
+.pais-detail-grid::-webkit-scrollbar-track { background: transparent; }
+.pais-detail-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* exactly 3 rows visible */
+.pais-detail-grid {
+  max-height: 255px;
 }

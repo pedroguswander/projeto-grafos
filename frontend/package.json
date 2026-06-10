@@ -15,10 +15,12 @@
     "papaparse": "^5.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-force-graph-3d": "^1.29.1",
     "react-globe.gl": "^2.38.0",
     "react-modal": "^3.16.3",
     "react-simple-maps": "^3.0.0",
     "recharts": "^2.15.4",
+    "three-spritetext": "^1.10.0",
     "vis-network": "^10.0.3",
     "xlsx": "^0.18.5"
   },

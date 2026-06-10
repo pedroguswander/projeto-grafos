@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, Loader2, Zap } from "lucide-react"
 import {
   AreaChart, Area, BarChart, Bar, Cell,
+  PieChart, Pie, Treemap,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts"
 import logoCompleta from "../assets/logo-2/logo-branca-completa2.png"
 import "../css/DashboardETN.css"
 import InsightPanel from "../../components/InsightPanel"
 import { useAIInsightETN } from "../hooks/useAIInsightETN"
+import HyperbolicTree3D from "./HyperbolicTree3D"
 
 const API = "http://localhost:5000"
 
@@ -79,6 +81,75 @@ function buildWeightBins(arestas, numBins) {
   return bins
 }
 
+// ─── Half-Donut gauge ──────────────────────────────────────────
+const HalfDonut = ({ pct = 0, count = 0 }) => {
+  const R = 64, sw = 13
+  const C = 2 * Math.PI * R
+  const halfC = C / 2
+  const p = Math.max(0, Math.min(pct, 100))
+  const filled = (p / 100) * halfC
+
+  return (
+    <svg
+      viewBox="12 26 176 84"
+      width="100%"
+      style={{ display: "block", maxWidth: 200, margin: "0 auto 0.15rem" }}
+      aria-label={`${p}% de rotas deficitárias`}
+    >
+      {/* Track */}
+      <circle
+        cx={100} cy={100} r={R}
+        fill="none"
+        stroke="rgba(248,113,113,0.15)"
+        strokeWidth={sw}
+        strokeDasharray={`${halfC} ${C}`}
+        strokeDashoffset={0}
+        transform="rotate(180 100 100)"
+        strokeLinecap="round"
+      />
+      {/* Fill */}
+      {p > 0 && (
+        <circle
+          cx={100} cy={100} r={R}
+          fill="none"
+          stroke="#f87171"
+          strokeWidth={sw}
+          strokeDasharray={`${halfC} ${C}`}
+          strokeDashoffset={halfC - filled}
+          transform="rotate(180 100 100)"
+          strokeLinecap="round"
+        >
+          <animate
+            attributeName="stroke-dashoffset"
+            from={halfC}
+            to={halfC - filled}
+            dur="1s"
+            calcMode="spline"
+            keySplines="0.22 1 0.36 1"
+            fill="freeze"
+          />
+        </circle>
+      )}
+      {/* Percentage */}
+      <text
+        x={100} y={92}
+        textAnchor="middle"
+        fill="#f87171" fontSize={26} fontWeight={900}
+      >
+        {p}%
+      </text>
+      {/* Count */}
+      <text
+        x={100} y={106}
+        textAnchor="middle"
+        fill="rgba(255,255,255,0.42)" fontSize={10}
+      >
+        {Number(count).toLocaleString("pt-BR")} rotas
+      </text>
+    </svg>
+  )
+}
+
 // ─── UI Atoms ──────────────────────────────────────────────────
 const KPICard = ({ title, value, sub, loading, accent }) => (
   <div className="dashboard-etn-kpi-card">
@@ -141,23 +212,488 @@ const TTList = ({ items }) => (
   </div>
 )
 
+const DONUT_COLORS = { BFS: "#2fbf9b", DFS: "#63d9b1" }
+
 const ComparisonTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
+
+  const bfsVal  = payload.find(p => p.name === "BFS")?.value ?? 0
+  const dfsVal  = payload.find(p => p.name === "DFS")?.value ?? 0
+  const bfsMs   = (bfsVal * 1000).toFixed(4)
+  const dfsMs   = (dfsVal * 1000).toFixed(4)
+  const delta   = Math.abs(bfsVal - dfsVal) * 1000
+  const winner  = bfsVal <= dfsVal ? "BFS" : "DFS"
+  const loserV  = winner === "BFS" ? dfsVal : bfsVal
+  const winnerV = winner === "BFS" ? bfsVal : dfsVal
+  const speedup = winnerV > 0 ? (loserV / winnerV).toFixed(1) : "∞"
+  const total   = bfsVal + dfsVal || 1
+  const bfsPct  = Math.round((bfsVal / total) * 100)
+  const dfsPct  = 100 - bfsPct
+
+  const donutData = [
+    { name: "BFS", value: bfsVal || 0.000001 },
+    { name: "DFS", value: dfsVal || 0.000001 },
+  ]
+
   return (
-    <TT cls="dashboard-etn-comparison-tooltip">
-      <p className="dashboard-etn-comparison-tooltip-title">Source: {label}</p>
-      {payload.map((p, i) => (
-        <div key={i} className="dashboard-etn-comparison-row">
-          <span style={{ color: p.color }}>{p.name}</span>
-          <span>{(p.value * 1000).toFixed(4)} ms</span>
+    <div className="dashboard-etn-donut-tooltip">
+      {/* Header */}
+      <div className="dashboard-etn-donut-header">
+        <span className="dashboard-etn-donut-source">{label}</span>
+        <span className={`dashboard-etn-donut-badge ${winner.toLowerCase()}`}>
+          ⚡ {winner}
+        </span>
+      </div>
+
+      {/* Donut + center */}
+      <div className="dashboard-etn-donut-chart-wrap">
+        <PieChart width={136} height={136}>
+          <Pie
+            data={donutData}
+            cx={63}
+            cy={63}
+            innerRadius={40}
+            outerRadius={62}
+            dataKey="value"
+            startAngle={90}
+            endAngle={-270}
+            strokeWidth={0}
+            isAnimationActive
+            animationBegin={0}
+            animationDuration={650}
+            animationEasing="ease-out"
+          >
+            {donutData.map(entry => (
+              <Cell
+                key={entry.name}
+                fill={DONUT_COLORS[entry.name]}
+                opacity={entry.name === winner ? 1 : 0.45}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+        <div className="dashboard-etn-donut-center">
+          <span className="dashboard-etn-donut-speedup" style={{ color: DONUT_COLORS[winner] }}>
+            {speedup}x
+          </span>
+          <span className="dashboard-etn-donut-speedup-sub">mais rápido</span>
+        </div>
+      </div>
+
+      {/* Progress bars */}
+      <div className="dashboard-etn-donut-bars">
+        {[
+          { name: "BFS", ms: bfsMs, pct: bfsPct },
+          { name: "DFS", ms: dfsMs, pct: dfsPct },
+        ].map(({ name, ms, pct }) => (
+          <div key={name} className="dashboard-etn-donut-bar-row">
+            <div className="dashboard-etn-donut-bar-meta">
+              <span style={{ color: DONUT_COLORS[name] }}>● {name}</span>
+              <span className="dashboard-etn-donut-bar-ms">{ms} ms</span>
+            </div>
+            <div className="dashboard-etn-donut-bar-track">
+              <div
+                className="dashboard-etn-donut-bar-fill"
+                style={{
+                  width: `${pct}%`,
+                  background: DONUT_COLORS[name],
+                  opacity: name === winner ? 1 : 0.45,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Delta */}
+      <div className="dashboard-etn-donut-delta-row">
+        <span>Δ diferença</span>
+        <span>{delta.toFixed(4)} ms</span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Distribuição de Pesos tooltip ─────────────────────────────
+const WeightBinTooltip = ({ active, payload, totalArestas }) => {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  const isRange = Math.abs(d.label - d.rangeEnd) > 0.01
+  const positive = d.label >= 0
+  const pct = totalArestas > 0 ? Math.round((d.count / totalArestas) * 100 * 10) / 10 : 0
+  const rangeLabel = isRange
+    ? `${Number(d.label).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} → ${Number(d.rangeEnd).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`
+    : Number(d.label).toLocaleString("pt-BR")
+  return (
+    <div className="dashboard-etn-donut-tooltip">
+      <div className="dashboard-etn-donut-header">
+        <span className="dashboard-etn-donut-source" style={{ fontSize: "0.74rem" }}>{rangeLabel}</span>
+        <span className={`dashboard-etn-donut-badge ${positive ? "lucr" : "def"}`}>
+          {positive ? "✓ Lucrativo" : "✗ Deficitário"}
+        </span>
+      </div>
+      <div className="wbin-tooltip-count">
+        <span className="wbin-tooltip-num" style={{ color: positive ? "#63d9b1" : "#f87171" }}>
+          {d.count.toLocaleString("pt-BR")}
+        </span>
+        <span className="wbin-tooltip-num-lbl">arestas nesta faixa</span>
+      </div>
+      <div className="dashboard-etn-donut-bars">
+        <div className="dashboard-etn-donut-bar-row">
+          <div className="dashboard-etn-donut-bar-meta">
+            <span style={{ color: positive ? "#63d9b1" : "#f87171" }}>● % do total</span>
+            <span className="dashboard-etn-donut-bar-ms">{pct}%</span>
+          </div>
+          <div className="dashboard-etn-donut-bar-track">
+            <div className="dashboard-etn-donut-bar-fill"
+              style={{ width: `${pct}%`, background: positive ? "#63d9b1" : "#f87171" }}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="dashboard-etn-donut-click-hint">↵ clique para ver as arestas</div>
+    </div>
+  )
+}
+
+// ─── Distribuição de Pesos detail panel ────────────────────────
+const WeightBinDetail = ({ bin, totalArestas }) => {
+  const isRange = Math.abs(bin.label - bin.rangeEnd) > 0.01
+  const positive = bin.label >= 0
+  const pct = totalArestas > 0 ? Math.round((bin.count / totalArestas) * 100) : 0
+  const rangeLabel = isRange
+    ? `${Number(bin.label).toLocaleString("pt-BR")} — ${Number(bin.rangeEnd).toLocaleString("pt-BR")}`
+    : `Peso ${Number(bin.label).toLocaleString("pt-BR")}`
+
+  return (
+    <div className="wbin-detail">
+      <div className="wbin-detail-header">
+        <div className="wbin-detail-range">
+          <span className="wbin-detail-range-lbl">Faixa de peso</span>
+          <span className="wbin-detail-range-val">{rangeLabel}</span>
+        </div>
+        <div className="wbin-detail-stats">
+          <div className="wbin-detail-stat">
+            <span className="wbin-detail-stat-num" style={{ color: positive ? "#63d9b1" : "#f87171" }}>
+              {bin.count.toLocaleString("pt-BR")}
+            </span>
+            <span className="wbin-detail-stat-lbl">arestas</span>
+          </div>
+          <div className="wbin-detail-stat">
+            <span className="wbin-detail-stat-num" style={{ color: positive ? "#63d9b1" : "#f87171" }}>
+              {pct}%
+            </span>
+            <span className="wbin-detail-stat-lbl">do total</span>
+          </div>
+          <span className={`dashboard-etn-donut-badge ${positive ? "lucr" : "def"}`} style={{ alignSelf: "center" }}>
+            {positive ? "✓ Lucrativo" : "✗ Deficitário"}
+          </span>
+        </div>
+      </div>
+
+      <div className="wbin-detail-progress">
+        <div className="bal-detail-progress-bar">
+          <div className="bal-detail-progress-fill"
+            style={{
+              width: `${pct}%`,
+              background: positive
+                ? "linear-gradient(90deg,#2fbf9b,#63d9b1)"
+                : "linear-gradient(90deg,#ef4444,#f87171)",
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="wbin-detail-routes">
+        {(bin.arestas || []).map((r, i) => {
+          const parts = r.split(" – ")
+          return (
+            <div key={i} className={`wbin-detail-route ${positive ? "pos" : "neg"}`}>
+              {parts.length === 2 ? (
+                <>
+                  <span className="wbin-route-code">{parts[0]}</span>
+                  <span className="wbin-route-arrow">→</span>
+                  <span className="wbin-route-code">{parts[1]}</span>
+                </>
+              ) : r}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Portos por País detail panel ──────────────────────────────
+const PaisDetail = ({ p }) => (
+  <div className="pais-detail">
+    <div className="pais-detail-header">
+      <div className="pais-detail-country">{p.nome}</div>
+      <div className="pais-detail-count">
+        <span className="pais-detail-count-num">{p.valor}</span>
+        <span className="pais-detail-count-lbl">porto{p.valor !== 1 ? "s" : ""} na rede</span>
+      </div>
+    </div>
+    <div className="pais-detail-grid">
+      {p.portos.map((porto, i) => (
+        <div key={i} className="pais-detail-porto">
+          <span className="pais-detail-porto-code">{porto.code}</span>
+          <span className="pais-detail-porto-name">{porto.name}</span>
         </div>
       ))}
-      {payload.length === 2 && (
-        <p className="dashboard-etn-comparison-delta">
-          Δ {Math.abs((payload[0].value - payload[1].value) * 1000).toFixed(4)} ms
-        </p>
-      )}
-    </TT>
+    </div>
+  </div>
+)
+
+// ─── Top 10 Hubs tooltip + detail ──────────────────────────────
+const HubTooltip = ({ active, payload, maxGrau }) => {
+  if (!active || !payload?.length) return null
+  const v = payload[0].payload
+  const pct = maxGrau > 0 ? Math.round((v.grau / maxGrau) * 100) : 0
+  return (
+    <div className="dashboard-etn-donut-tooltip">
+      <div className="dashboard-etn-donut-header">
+        <span className="dashboard-etn-donut-source" style={{ fontSize: "0.76rem" }}>
+          {v.nome_completo || v.nome}
+        </span>
+        <span className="dashboard-etn-donut-badge lucr" style={{ fontFamily: "monospace", letterSpacing: "0.06em" }}>
+          {v.nome}
+        </span>
+      </div>
+      <div className="wbin-tooltip-count">
+        <span className="wbin-tooltip-num" style={{ color: "#26c281" }}>{v.grau}</span>
+        <span className="wbin-tooltip-num-lbl">conexões</span>
+      </div>
+      <div className="dashboard-etn-donut-bars">
+        <div className="dashboard-etn-donut-bar-row">
+          <div className="dashboard-etn-donut-bar-meta">
+            <span style={{ color: "#26c281" }}>● vs. maior hub</span>
+            <span className="dashboard-etn-donut-bar-ms">{pct}%</span>
+          </div>
+          <div className="dashboard-etn-donut-bar-track">
+            <div className="dashboard-etn-donut-bar-fill" style={{ width: `${pct}%`, background: "#26c281" }} />
+          </div>
+        </div>
+      </div>
+      <div className="dashboard-etn-donut-click-hint">↵ clique para ver destinos</div>
+    </div>
+  )
+}
+
+const HubDetail = ({ hub, vertexMap }) => (
+  <div className="pais-detail">
+    <div className="pais-detail-header">
+      <div>
+        <div className="pais-detail-country">{hub.nome_completo || hub.nome}</div>
+        <div className="pais-detail-hub-code">{hub.nome}</div>
+      </div>
+      <div className="pais-detail-count">
+        <span className="pais-detail-count-num">{hub.grau}</span>
+        <span className="pais-detail-count-lbl">conexões</span>
+      </div>
+    </div>
+    <div className="pais-detail-grid">
+      {(hub.conexoes || []).map((code, i) => (
+        <div key={i} className="pais-detail-porto">
+          <span className="pais-detail-porto-code">{code}</span>
+          <span className="pais-detail-porto-name">{vertexMap.get(code) || code}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
+// ─── Distribuição por Região tooltip + detail ──────────────────
+const RegiaoDistribTooltip = ({ active, payload, label, total }) => {
+  if (!active || !payload?.length) return null
+  const count = payload[0].value
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div className="dashboard-etn-donut-tooltip">
+      <div className="dashboard-etn-donut-header">
+        <span className="dashboard-etn-donut-source" style={{ fontSize: "0.78rem" }}>{label}</span>
+      </div>
+      <div className="wbin-tooltip-count">
+        <span className="wbin-tooltip-num" style={{ color: "#26c281" }}>
+          {Number(count).toLocaleString("pt-BR")}
+        </span>
+        <span className="wbin-tooltip-num-lbl">porto{count !== 1 ? "s" : ""} na região</span>
+      </div>
+      <div className="dashboard-etn-donut-bars">
+        <div className="dashboard-etn-donut-bar-row">
+          <div className="dashboard-etn-donut-bar-meta">
+            <span style={{ color: "#26c281" }}>● % dos portos</span>
+            <span className="dashboard-etn-donut-bar-ms">{pct}%</span>
+          </div>
+          <div className="dashboard-etn-donut-bar-track">
+            <div className="dashboard-etn-donut-bar-fill" style={{ width: `${pct}%`, background: "#26c281" }} />
+          </div>
+        </div>
+      </div>
+      <div className="dashboard-etn-donut-click-hint">↵ clique para ver portos</div>
+    </div>
+  )
+}
+
+const RegiaoDistribDetail = ({ r, vertices }) => {
+  const ports = vertices.filter(v => v.D_Region === r.nome)
+  return (
+    <div className="pais-detail">
+      <div className="pais-detail-header">
+        <div className="pais-detail-country">{r.nome}</div>
+        <div className="pais-detail-count">
+          <span className="pais-detail-count-num">{r.valor}</span>
+          <span className="pais-detail-count-lbl">porto{r.valor !== 1 ? "s" : ""} na região</span>
+        </div>
+      </div>
+      <div className="pais-detail-grid">
+        {ports.map((porto, i) => (
+          <div key={i} className="pais-detail-porto">
+            <span className="pais-detail-porto-code">{porto.UNLocode}</span>
+            <span className="pais-detail-porto-name">{porto.name || porto.UNLocode}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Balanço detail panel ──────────────────────────────────────
+const BalancoDetail = ({ r }) => {
+  const total   = r.lucrativas + r.deficitarias || 1
+  const lucrPct = Math.round((r.lucrativas / total) * 100)
+  const defPct  = 100 - lucrPct
+  return (
+    <div className="bal-detail">
+      <div className="bal-detail-summary">
+        <div className="bal-detail-kpi lucr">
+          <span className="bal-detail-kpi-num">{r.lucrativas}</span>
+          <span className="bal-detail-kpi-lbl">✓ Lucrativas</span>
+        </div>
+        <div className="bal-detail-progress-wrap">
+          <div className="bal-detail-progress-bar">
+            <div className="bal-detail-progress-fill" style={{ width: `${lucrPct}%` }} />
+          </div>
+          <span className="bal-detail-progress-label">
+            {lucrPct}% lucrativas · {defPct}% deficitárias · {total} rotas
+          </span>
+        </div>
+        <div className="bal-detail-kpi def">
+          <span className="bal-detail-kpi-num">{r.deficitarias}</span>
+          <span className="bal-detail-kpi-lbl">✗ Deficitárias</span>
+        </div>
+      </div>
+
+      <div className="bal-detail-cols">
+        <div className="bal-detail-col lucr">
+          <div className="bal-detail-col-header">
+            <span>✓</span><span>Lucrativas</span>
+            <span className="bal-detail-col-count">{r.lucrativas}</span>
+          </div>
+          <div className="bal-detail-col-list">
+            {r.rotasLucr.map((rt, i) => <div key={i} className="bal-detail-route lucr">{rt}</div>)}
+          </div>
+        </div>
+        <div className="bal-detail-col def">
+          <div className="bal-detail-col-header">
+            <span>✗</span><span>Deficitárias</span>
+            <span className="bal-detail-col-count">{r.deficitarias}</span>
+          </div>
+          <div className="bal-detail-col-list">
+            {r.rotasDef.map((rt, i) => <div key={i} className="bal-detail-route def">{rt}</div>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Balanço por Região tooltip (pizza) ────────────────────────
+const BAL_COLORS = { lucrativas: "#63d9b1", deficitarias: "#f87171" }
+
+const BalancoTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+
+  const lucr  = payload.find(p => p.name === "lucrativas")?.value  ?? 0
+  const def   = payload.find(p => p.name === "deficitarias")?.value ?? 0
+  const total = lucr + def || 1
+  const lucrPct = Math.round((lucr / total) * 100)
+  const defPct  = 100 - lucrPct
+  const dominant = lucr >= def ? "lucrativas" : "deficitarias"
+
+  const pieData = [
+    { name: "lucrativas",   value: lucr || 0.000001 },
+    { name: "deficitarias", value: def  || 0.000001 },
+  ]
+
+  return (
+    <div className="dashboard-etn-donut-tooltip">
+      <div className="dashboard-etn-donut-header">
+        <span className="dashboard-etn-donut-source">{label}</span>
+        <span className={`dashboard-etn-donut-badge ${dominant === "lucrativas" ? "lucr" : "def"}`}>
+          {dominant === "lucrativas" ? "✓ Lucrativa" : "✗ Deficitária"}
+        </span>
+      </div>
+
+      <div className="dashboard-etn-donut-chart-wrap" style={{ filter: "none" }}>
+        <PieChart width={136} height={136}>
+          <Pie
+            data={pieData}
+            cx={63} cy={63}
+            innerRadius={0}
+            outerRadius={60}
+            dataKey="value"
+            startAngle={90} endAngle={-270}
+            stroke="rgba(6,20,16,0.55)" strokeWidth={2}
+            isAnimationActive
+            animationBegin={0}
+            animationDuration={650}
+            animationEasing="ease-out"
+          >
+            {pieData.map(entry => (
+              <Cell
+                key={entry.name}
+                fill={BAL_COLORS[entry.name]}
+                opacity={entry.name === dominant ? 1 : 0.42}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+      </div>
+
+      <div className="dashboard-etn-donut-bars">
+        {[
+          { name: "lucrativas",   label: "Lucrativas",   count: lucr, pct: lucrPct },
+          { name: "deficitarias", label: "Deficitárias", count: def,  pct: defPct  },
+        ].map(({ name, label: lbl, count, pct }) => (
+          <div key={name} className="dashboard-etn-donut-bar-row">
+            <div className="dashboard-etn-donut-bar-meta">
+              <span style={{ color: BAL_COLORS[name] }}>● {lbl}</span>
+              <span className="dashboard-etn-donut-bar-ms">{count} rotas · {pct}%</span>
+            </div>
+            <div className="dashboard-etn-donut-bar-track">
+              <div
+                className="dashboard-etn-donut-bar-fill"
+                style={{
+                  width: `${pct}%`,
+                  background: BAL_COLORS[name],
+                  opacity: name === dominant ? 1 : 0.45,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="dashboard-etn-donut-delta-row">
+        <span>Total de rotas</span>
+        <span>{lucr + def}</span>
+      </div>
+
+      <div className="dashboard-etn-donut-click-hint">
+        ↵ clique para ver as rotas
+      </div>
+    </div>
   )
 }
 
@@ -319,6 +855,7 @@ export const DashboardETN = ({ onBack }) => {
   const [selectedRegiao, setSelectedRegiao] = useState(null)
   const [selectedWeightBin, setSelectedWeightBin] = useState(null)
   const [selectedRegioDistrib, setSelectedRegioDistrib] = useState(null)
+  const [hoveredPort, setHoveredPort] = useState(null)
   const [ranges, setRanges] = useState(null)
   const [grauRange, setGrauRange] = useState([0, 9999])
   const [pesoRange, setPesoRange] = useState([-9999999, 9999999])
@@ -411,6 +948,17 @@ export const DashboardETN = ({ onBack }) => {
     debounceRef.current = setTimeout(fetchAll, 400)
     return () => clearTimeout(debounceRef.current)
   }, [fetchAll])
+
+  // Fetch BFS vs DFS comparison (independent of filters)
+  useEffect(() => {
+    fetch(`${API}/api/report/comparacao/bfs-dfs`)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then(data => setBfsDfs(data))
+      .catch(err => setBfsErr(err.message || "Erro ao carregar comparação BFS/DFS"))
+  }, [])
 
   const d = stats || {}
   const comparacoes = bfsDfs?.comparacoes || []
@@ -512,6 +1060,44 @@ export const DashboardETN = ({ onBack }) => {
       .sort((a, b) => (b.lucrativas + b.deficitarias) - (a.lucrativas + a.deficitarias))
   }, [arestas, vertices, vertexMap])
 
+  const portImpactData = useMemo(() => {
+    if (!arestas.length || !vertices.length) return []
+
+    const balMap = {}
+    arestas.forEach(a => {
+      const peso = parseFloat(a.peso ?? 0)
+      if (isNaN(peso)) return
+      if (a.origem) balMap[a.origem] = (balMap[a.origem] || 0) + peso
+      if (a.destino) balMap[a.destino] = (balMap[a.destino] || 0) + peso
+    })
+
+    const regionMap = {}
+    vertices.forEach(v => {
+      const code = v.UNLocode
+      if (!(code in balMap)) return
+      const balance = balMap[code]
+      const region = v.D_Region || "Sem Região"
+      if (!regionMap[region]) regionMap[region] = []
+      regionMap[region].push({
+        name: code,
+        fullName: v.name || code,
+        value: Math.max(Math.abs(balance), 1),
+        balance,
+        positive: balance >= 0,
+      })
+    })
+
+    return Object.entries(regionMap)
+      .map(([name, children]) => ({
+        name,
+        children: children.sort((a, b) => b.value - a.value),
+      }))
+      .sort((a, b) =>
+        b.children.reduce((s, c) => s + c.value, 0) -
+        a.children.reduce((s, c) => s + c.value, 0)
+      )
+  }, [arestas, vertices])
+
   return (
     <div className="dashboard-etn-page">
       <header className="dashboard-etn-top-header">
@@ -566,13 +1152,18 @@ export const DashboardETN = ({ onBack }) => {
             <KPICard loading={loading} title="Grau Médio" value={d.grauMedio != null ? Number(d.grauMedio).toFixed(2) : "—"} sub="conexões por porto" />
             <KPICard loading={loading} title="Peso Médio (geral)" value={d.pesoMedio?.toLocaleString("pt-BR") || "—"} sub="incluindo rotas deficitárias" />
             <KPICard loading={loading} title="Peso Médio (positivo)" value={d.pesoMedioPositivo?.toLocaleString("pt-BR") || "—"} sub="apenas rotas lucrativas" accent="#63d9b1" />
-            <KPICard
-              loading={loading}
-              title="Rotas Deficitárias"
-              value={d.rotasDeficitarias != null ? `${d.rotasDeficitarias.toLocaleString("pt-BR")} (${d.percDeficitarias}%)` : "—"}
-              sub="peso negativo"
-              accent="#f87171"
-            />
+            <div className="dashboard-etn-kpi-card">
+              <p className="dashboard-etn-kpi-title">Rotas Deficitárias</p>
+              {loading ? (
+                <div className="dashboard-etn-skeleton-pulse" />
+              ) : (
+                <HalfDonut
+                  pct={d.percDeficitarias ?? 0}
+                  count={d.rotasDeficitarias ?? 0}
+                />
+              )}
+              <p className="dashboard-etn-kpi-sub">peso negativo</p>
+            </div>
           </section>
 
           <section className="dashboard-etn-chart-row">
@@ -623,18 +1214,7 @@ export const DashboardETN = ({ onBack }) => {
               </div>
 
               {loading ? <Skeleton /> : selectedHub ? (
-                <div className="dashboard-etn-detail-panel">
-                  <p className="dashboard-etn-detail-title">
-                    {selectedHub.nome_completo || selectedHub.nome} — {selectedHub.grau} conexões
-                  </p>
-                  <div className="dashboard-etn-detail-list">
-                    {(selectedHub.conexoes || []).map((c, i) => (
-                      <div key={i} className="dashboard-etn-detail-item">
-                        → {vertexMap.get(c) ? `${vertexMap.get(c)} (${c})` : c}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <HubDetail hub={selectedHub} vertexMap={vertexMap} />
               ) : (
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart
@@ -646,17 +1226,10 @@ export const DashboardETN = ({ onBack }) => {
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={GRID} />
                     <XAxis type="number" tick={TICK_ETN} />
                     <YAxis dataKey="label" type="category" width={110} tick={{ fontSize: 10, fill: "#9fc7b8" }} />
-                    <Tooltip content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null
-                      const v = payload[0].payload
-                      return (
-                        <TT>
-                          <TTH c={`${v.nome_completo || v.nome} (${v.nome})`} />
-                          <TTV c={`${v.grau} conexões`} />
-                          <p className="dashboard-etn-tooltip-click">Clique para ver destinos</p>
-                        </TT>
-                      )
-                    }} />
+                    <Tooltip
+                      content={props => <HubTooltip {...props} maxGrau={d.topVertices?.[0]?.grau || 1} />}
+                      cursor={{ fill: "rgba(255,255,255,0.035)" }}
+                    />
                     <Bar dataKey="grau" radius={[0, 6, 6, 0]}>
                       {(d.topVertices || []).map((_, i) => (
                         <Cell key={i} fill={`rgba(54,214,153,${0.92 - i * 0.07})`} />
@@ -675,18 +1248,7 @@ export const DashboardETN = ({ onBack }) => {
             </div>
 
             {loading ? <Skeleton height={260} /> : selectedRegioDistrib ? (
-              <div className="dashboard-etn-detail-panel">
-                <p className="dashboard-etn-detail-title">
-                  {selectedRegioDistrib.nome} — {selectedRegioDistrib.valor} porto(s)
-                </p>
-                <div className="dashboard-etn-detail-list">
-                  {vertices.filter(v => v.D_Region === selectedRegioDistrib.nome).map((v, i) => (
-                    <div key={i} className="dashboard-etn-detail-item">
-                      {v.name || v.UNLocode} <span className="dashboard-etn-detail-muted">({v.UNLocode})</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <RegiaoDistribDetail r={selectedRegioDistrib} vertices={vertices} />
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(260, (d.distribuicaoRegiao || []).slice(0, 10).length * 36)}>
                 <BarChart
@@ -701,16 +1263,7 @@ export const DashboardETN = ({ onBack }) => {
                   <YAxis dataKey="nome" type="category" width={130} tick={{ fontSize: 12, fill: "#dff7ee", fontWeight: 500 }} axisLine={false} tickLine={false} />
                   <Tooltip
                     cursor={{ fill: "rgba(255,255,255,0.035)" }}
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null
-                      return (
-                        <TT>
-                          <TTH c={label} />
-                          <TTV c={`${Number(payload[0].value).toLocaleString("pt-BR")} portos`} />
-                          <p className="dashboard-etn-tooltip-click">Clique para ver portos</p>
-                        </TT>
-                      )
-                    }}
+                    content={props => <RegiaoDistribTooltip {...props} total={vertices.length} />}
                   />
                   <Bar dataKey="valor" radius={[0, 6, 6, 0]} maxBarSize={22} label={{ position: "right", fill: "#9fc7b8", fontSize: 11, fontWeight: 700 }}>
                     {(d.distribuicaoRegiao || []).slice(0, 10).map((_, i) => (
@@ -746,20 +1299,7 @@ export const DashboardETN = ({ onBack }) => {
             </div>
 
             {loading ? <Skeleton height={260} /> : selectedWeightBin ? (
-              <div className="dashboard-etn-detail-panel">
-                <p className="dashboard-etn-detail-title">
-                  Peso {Number(selectedWeightBin.label).toLocaleString("pt-BR")}
-                  {Math.abs(selectedWeightBin.label - selectedWeightBin.rangeEnd) > 0.01
-                    ? ` – ${Number(selectedWeightBin.rangeEnd).toLocaleString("pt-BR")}`
-                    : ""}
-                  {" "}— {selectedWeightBin.count} aresta(s)
-                </p>
-                <div className="dashboard-etn-detail-list">
-                  {(selectedWeightBin.arestas || []).map((r, i) => (
-                    <div key={i} className="dashboard-etn-detail-item">• {r}</div>
-                  ))}
-                </div>
-              </div>
+              <WeightBinDetail bin={selectedWeightBin} totalArestas={weightStats?.total || 0} />
             ) : weightBinsData.length === 0 ? (
               <div className="dashboard-etn-empty-state">Nenhuma aresta com peso carregada</div>
             ) : (
@@ -783,17 +1323,7 @@ export const DashboardETN = ({ onBack }) => {
                     label={{ value: "Arestas", angle: -90, position: "insideLeft", offset: 12, fontSize: 11, fill: "#9fc7b8" }}
                   />
                   <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null
-                      const d = payload[0].payload
-                      return (
-                        <TT>
-                          <TTH c={Number(d.label).toLocaleString("pt-BR")} />
-                          <TTV c={`${d.count} arestas`} />
-                          <p className="dashboard-etn-tooltip-click">Clique para ver arestas</p>
-                        </TT>
-                      )
-                    }}
+                    content={props => <WeightBinTooltip {...props} totalArestas={weightStats?.total || 0} />}
                     cursor={{ fill: "rgba(255,255,255,0.035)" }}
                   />
                   <Bar dataKey="count" radius={[3, 3, 0, 0]}>
@@ -913,18 +1443,7 @@ export const DashboardETN = ({ onBack }) => {
               </div>
 
               {loading ? <Skeleton /> : selectedPais ? (
-                <div className="dashboard-etn-detail-panel">
-                  <p className="dashboard-etn-detail-title">
-                    {selectedPais.nome} — {selectedPais.valor} porto(s)
-                  </p>
-                  <div className="dashboard-etn-detail-list">
-                    {selectedPais.portos.map((p, i) => (
-                      <div key={i} className="dashboard-etn-detail-item">
-                        {p.name} <span className="dashboard-etn-detail-muted">({p.code})</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <PaisDetail p={selectedPais} />
               ) : portosPorPais.length === 0 ? (
                 <div className="dashboard-etn-empty-state">Sem dados de vértices.</div>
               ) : (
@@ -958,6 +1477,121 @@ export const DashboardETN = ({ onBack }) => {
             </div>
           </section>
 
+          {/* ── Treemap: Impacto Financeiro Líquido por Porto ── */}
+          <section className="glass-card dashboard-etn-chart-card">
+            <div className="dashboard-etn-chart-header dashboard-etn-chart-header-wrap">
+              <div>
+                <h3 className="dashboard-etn-chart-title">Impacto Financeiro Líquido por Porto</h3>
+                <p className="dashboard-etn-chart-meta">
+                  Balanço acumulado de todas as rotas por porto — tamanho = magnitude financeira, cor = lucro/déficit.
+                </p>
+              </div>
+              <div className="etn-treemap-legend-pills">
+                <span className="etn-treemap-pill pos">&#9632; Lucrativo</span>
+                <span className="etn-treemap-pill neg">&#9632; Deficitário</span>
+              </div>
+            </div>
+
+            {loading ? <Skeleton height={340} /> : portImpactData.length === 0 ? (
+              <div className="dashboard-etn-empty-state">Sem dados.</div>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={340}>
+                  <Treemap
+                    data={portImpactData}
+                    dataKey="value"
+                    aspectRatio={4 / 3}
+                    isAnimationActive={false}
+                    content={(props) => {
+                      const { depth, x, y, width, height, name, balance, positive, fullName } = props
+                      if (!width || !height || width < 2 || height < 2) return null
+
+                      if (depth < 2) {
+                        return (
+                          <g>
+                            <rect
+                              x={x} y={y} width={width} height={height}
+                              fill="transparent"
+                              stroke="rgba(6,20,16,0.95)"
+                              strokeWidth={2}
+                            />
+                            {width > 72 && height > 20 && (
+                              <text
+                                x={x + 7} y={y + 15}
+                                fill="rgba(255,255,255,0.36)"
+                                fontSize={9}
+                                fontWeight="700"
+                              >
+                                {(name || "").toUpperCase()}
+                              </text>
+                            )}
+                          </g>
+                        )
+                      }
+
+                      const tooSmall = width < 36 || height < 22
+                      return (
+                        <g
+                          onMouseEnter={() => setHoveredPort({ name, fullName, balance, positive })}
+                          onMouseLeave={() => setHoveredPort(null)}
+                        >
+                          <rect
+                            x={x + 1} y={y + 1} width={width - 2} height={height - 2}
+                            fill={positive ? "rgba(47,191,155,0.78)" : "rgba(248,113,113,0.70)"}
+                            rx={3}
+                            stroke={positive ? "rgba(47,191,155,0.22)" : "rgba(248,113,113,0.20)"}
+                            strokeWidth={1}
+                          />
+                          {!tooSmall && (
+                            <>
+                              <text
+                                x={x + width / 2}
+                                y={y + (height > 44 ? height / 2 - 5 : height / 2)}
+                                textAnchor="middle"
+                                dominantBaseline={height <= 44 ? "middle" : "auto"}
+                                fill="white"
+                                fontSize={Math.min(11, Math.floor(width / 3.2))}
+                                fontWeight="800"
+                              >
+                                {name}
+                              </text>
+                              {height > 44 && (
+                                <text
+                                  x={x + width / 2} y={y + height / 2 + 10}
+                                  textAnchor="middle"
+                                  fill="rgba(255,255,255,0.60)"
+                                  fontSize={8}
+                                >
+                                  {(positive ? "+" : "") + Number(balance).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                                </text>
+                              )}
+                            </>
+                          )}
+                        </g>
+                      )
+                    }}
+                  />
+                </ResponsiveContainer>
+
+                <div className={`etn-treemap-hover-bar${hoveredPort ? " visible" : ""}`}>
+                  {hoveredPort ? (
+                    <>
+                      <span className="etn-treemap-hover-code">{hoveredPort.name}</span>
+                      <span className="etn-treemap-hover-sep">·</span>
+                      <span className="etn-treemap-hover-name">{hoveredPort.fullName}</span>
+                      <span className="etn-treemap-hover-sep">·</span>
+                      <span className={`etn-treemap-hover-bal ${hoveredPort.positive ? "pos" : "neg"}`}>
+                        Balanço líquido:&nbsp;
+                        {hoveredPort.positive ? "+" : ""}
+                        {Number(hoveredPort.balance).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                      </span>
+                    </>
+                  ) : <span style={{ opacity: 0 }}>—</span>}
+                </div>
+              </>
+            )}
+          </section>
+
           <section className="glass-card dashboard-etn-chart-card">
             <div className="dashboard-etn-chart-header">
               <div>
@@ -968,31 +1602,7 @@ export const DashboardETN = ({ onBack }) => {
             </div>
 
             {loading ? <Skeleton height={300} /> : selectedRegiao ? (
-              <div className="dashboard-etn-detail-panel">
-                <p className="dashboard-etn-detail-title">{selectedRegiao.nome}</p>
-                <div className="dashboard-etn-detail-grid">
-                  <div>
-                    <p className="dashboard-etn-detail-section-title ok">
-                      ✔ Lucrativas ({selectedRegiao.lucrativas})
-                    </p>
-                    <div className="dashboard-etn-detail-list small">
-                      {selectedRegiao.rotasLucr.map((r, i) => (
-                        <div key={i} className="dashboard-etn-detail-item ok-bg">{r}</div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="dashboard-etn-detail-section-title danger">
-                      ✖ Deficitárias ({selectedRegiao.deficitarias})
-                    </p>
-                    <div className="dashboard-etn-detail-list small">
-                      {selectedRegiao.rotasDef.map((r, i) => (
-                        <div key={i} className="dashboard-etn-detail-item danger-bg">{r}</div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <BalancoDetail r={selectedRegiao} />
             ) : balancoPorRegiao.length === 0 ? (
               <div className="dashboard-etn-empty-state">Sem dados de balanço.</div>
             ) : (
@@ -1008,24 +1618,25 @@ export const DashboardETN = ({ onBack }) => {
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
                   <XAxis type="number" tick={TICK_ETN} />
                   <YAxis dataKey="nome" type="category" width={180} tick={TICK_ETN} />
-                  <Tooltip content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null
-                    return (
-                      <TT>
-                        <TTH c={label} />
-                        {payload.map((p, i) => (
-                          <p key={i} style={{ color: p.color }}>{p.name}: {p.value}</p>
-                        ))}
-                        <p className="dashboard-etn-tooltip-click">Clique para ver rotas</p>
-                      </TT>
-                    )
-                  }} />
+                  <Tooltip content={<BalancoTooltip />} cursor={{ fill: "rgba(255,255,255,0.035)" }} />
                   <Legend formatter={v => <span style={{ color: v === "lucrativas" ? "#63d9b1" : "#f87171", fontWeight: 700 }}>{v}</span>} />
                   <Bar dataKey="lucrativas" fill="#63d9b1" radius={[0, 4, 4, 0]} maxBarSize={18} />
                   <Bar dataKey="deficitarias" fill="#f87171" radius={[0, 4, 4, 0]} maxBarSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             )}
+          </section>
+
+          <section className="etn-tree3d-section">
+            <div className="glass-card dashboard-etn-chart-card" style={{ padding: "1.25rem 1.25rem 1.25rem" }}>
+              <div className="dashboard-etn-chart-header">
+                <h3 className="dashboard-etn-chart-title">Árvore Hiperbólica 3D — Rede ETN</h3>
+                <p className="dashboard-etn-chart-subtitle" style={{ fontSize: "0.75rem", color: "#8fbca8", marginTop: "0.2rem" }}>
+                  Hierarquia: Continente → Região → Porto · Clique num porto para ver detalhes · Arraste para rodar
+                </p>
+              </div>
+              <HyperbolicTree3D />
+            </div>
           </section>
         </main>
       </div>
