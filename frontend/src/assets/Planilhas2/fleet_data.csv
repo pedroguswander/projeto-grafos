@@ -1,0 +1,7 @@
+Vessel class,Capacity FFE,TC rate daily,designSpeed
+Feeder_450,450,5000,12
+Feeder_800,800,8000,14
+Panamax_1200,1200,11000,18
+Panamax_2400,2400,21000,16
+Post_panamax,4200,35000,16.5
+Super_panamax,7500,55000,17
