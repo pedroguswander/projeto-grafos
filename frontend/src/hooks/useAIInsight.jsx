@@ -14,7 +14,7 @@ export const SUGGESTED_QUESTIONS = [
   "Como a região Sul se conecta ao restante do país?",
 ]
 
-const SYSTEM_PROMPT = `Você é um analista de redes de transporte aéreo brasileiro. Responda SEMPRE em português, de forma direta e concisa (máx 3 frases). Use apenas os dados fornecidos.
+const SYSTEM_PROMPT = `Você é um analista de redes de transporte aéreo brasileiro. Responda SEMPRE em português, de forma direta e concisa (máx 4 frases). Use apenas os dados fornecidos. Seja específico com códigos IATA e valores.
 
 Dataset de rotas (formato: ORIGEM->DESTINO(peso,tipo)):
 ${DATASET_AEROPORTOS}
@@ -29,13 +29,16 @@ async function callGroq(apiKey, messages) {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      max_tokens: 200,
-      temperature: 0.4,
+      model: "llama-3.3-70b-versatile",
+      max_tokens: 500,
+      temperature: 0.5,
       messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
     }),
   })
-  if (!res.ok) throw new Error(`Groq ${res.status}`)
+  if (!res.ok) {
+    const body = await res.text().catch(() => "")
+    throw new Error(`Groq ${res.status}${body ? ": " + body.slice(0, 120) : ""}`)
+  }
   const data = await res.json()
   return data.choices?.[0]?.message?.content?.trim() ?? "Sem resposta."
 }
@@ -43,27 +46,27 @@ async function callGroq(apiKey, messages) {
 function buildAutoPrompt(summary) {
   const { filtro, grafo, topVertices } = summary
   const hubs = (topVertices || []).slice(0, 5).map(h => `${h.iata}(grau=${h.grau})`).join(", ")
-  return `Estado atual do dashboard:
+  return `Estado atual do dashboard ETA Airlines:
 - Filtro grau: ${filtro?.grauRange?.[0]}–${filtro?.grauRange?.[1]}, peso: ${filtro?.pesoRange?.[0]}–${filtro?.pesoRange?.[1]}
 - Vértices visíveis: ${grafo?.vertices}, arestas: ${grafo?.arestas}, grau médio: ${Number(grafo?.grauMedio ?? 0).toFixed(1)}
 - Top hubs: ${hubs || "—"}
 
-Gere um insight analítico sobre este recorte do grafo aéreo brasileiro.`
+Gere um insight analítico conciso sobre este recorte do grafo aéreo brasileiro, destacando o padrão mais relevante.`
 }
 
 // ─── Cache ───
-const PREFIX = "air_groq_v1_"
+const PREFIX = "air_groq_v2_"
 const memCache = {}
 const getCache = k => { try { return sessionStorage.getItem(PREFIX + k) } catch { return null } }
 const setCache = (k, v) => { try { sessionStorage.setItem(PREFIX + k, v) } catch {} }
 
 export function useAIInsight(groqApiKey) {
-  const [insight, setInsight]             = useState(null)
+  const [history, setHistory]               = useState([])
   const [loadingInsight, setLoadingInsight] = useState(false)
-  const [error, setError]                 = useState(null)
-  const debounceRef = useRef(null)
+  const [error, setError]                   = useState(null)
+  const debounceRef    = useRef(null)
+  const apiHistoryRef  = useRef([])
 
-  // Insight automático — dispara com mudança de filtro
   const generate = useCallback((summaryObject) => {
     if (!groqApiKey) return
     clearTimeout(debounceRef.current)
@@ -73,14 +76,39 @@ export function useAIInsight(groqApiKey) {
         pr: summaryObject.filtro?.pesoRange,
         v:  summaryObject.grafo?.vertices,
       })
-      if (memCache[key])       { setInsight(memCache[key]); return }
-      const cached = getCache(key)
-      if (cached)              { memCache[key] = cached; setInsight(cached); return }
+      if (memCache[key]) {
+        const cached = memCache[key]
+        apiHistoryRef.current = [
+          { role: "user", content: buildAutoPrompt(summaryObject) },
+          { role: "assistant", content: cached },
+        ]
+        setHistory([{ q: null, a: cached }])
+        return
+      }
+      const stored = getCache(key)
+      if (stored) {
+        memCache[key] = stored
+        apiHistoryRef.current = [
+          { role: "user", content: buildAutoPrompt(summaryObject) },
+          { role: "assistant", content: stored },
+        ]
+        setHistory([{ q: null, a: stored }])
+        return
+      }
 
-      setLoadingInsight(true); setError(null)
+      setLoadingInsight(true)
+      setError(null)
       try {
-        const text = await callGroq(groqApiKey, [{ role: "user", content: buildAutoPrompt(summaryObject) }])
-        memCache[key] = text; setCache(key, text); setInsight(text)
+        const prompt = buildAutoPrompt(summaryObject)
+        const msgs = [{ role: "user", content: prompt }]
+        const text = await callGroq(groqApiKey, msgs)
+        memCache[key] = text
+        setCache(key, text)
+        apiHistoryRef.current = [
+          { role: "user", content: prompt },
+          { role: "assistant", content: text },
+        ]
+        setHistory([{ q: null, a: text }])
       } catch (e) {
         setError(e.message)
       } finally {
@@ -89,19 +117,36 @@ export function useAIInsight(groqApiKey) {
     }, 900)
   }, [groqApiKey])
 
-  // Pergunta customizada do usuário
   const ask = useCallback(async (question) => {
     if (!groqApiKey || !question.trim()) return
-    setLoadingInsight(true); setError(null)
+    setLoadingInsight(true)
+    setError(null)
+    setHistory(prev => [...prev, { q: question, a: null }])
     try {
-      const text = await callGroq(groqApiKey, [{ role: "user", content: question }])
-      setInsight(text)
+      const msgs = [...apiHistoryRef.current, { role: "user", content: question }]
+      const text = await callGroq(groqApiKey, msgs)
+      apiHistoryRef.current = [...msgs, { role: "assistant", content: text }]
+      setHistory(prev => {
+        const next = [...prev]
+        next[next.length - 1] = { q: question, a: text }
+        return next
+      })
     } catch (e) {
       setError(e.message)
+      setHistory(prev => prev.slice(0, -1))
     } finally {
       setLoadingInsight(false)
     }
   }, [groqApiKey])
 
-  return { insight, loadingInsight, error, generate, ask }
+  const clearHistory = useCallback(() => {
+    setHistory([])
+    setError(null)
+    apiHistoryRef.current = []
+  }, [])
+
+  // insight = última resposta (compatibilidade com InsightPanel)
+  const insight = history.length > 0 ? history[history.length - 1].a : null
+
+  return { insight, history, loadingInsight, error, generate, ask, clearHistory }
 }

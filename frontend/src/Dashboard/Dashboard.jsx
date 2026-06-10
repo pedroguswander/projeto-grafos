@@ -241,7 +241,7 @@ export const Dashboard = ({ onBack }) => {
   const [grauRange, setGrauRange] = useState([0, 9999])
   const [distRange, setDistRange] = useState([0, 9999999])
   const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
-  const { insight, loadingInsight, error: insightError, generate, ask } = useAIInsight(GROQ_KEY)
+  const { insight, history, loadingInsight, error: insightError, generate, ask, clearHistory } = useAIInsight(GROQ_KEY)
   const [insightOpen, setInsightOpen] = useState(false)
 
   const hasFilter = !!(pais ||
@@ -409,6 +409,21 @@ export const Dashboard = ({ onBack }) => {
             <p className="dashboard-header-subtitle">Indicadores, distribuição de graus, distâncias das rotas e comparação entre BFS e DFS.</p>
           </div>
         </div>
+
+        <div className="dashboard-header-ia-row">
+          <button
+            className="dashboard-ia-btn"
+            onClick={() => setInsightOpen(true)}
+            type="button"
+            aria-label="Abrir painel de IA"
+          >
+            <span className="dashboard-ia-icon" aria-hidden="true">
+              <Zap size={18} />
+            </span>
+            <span className="dashboard-ia-text">IA Insight</span>
+            {insight && <span className="dashboard-ia-dot" />}
+          </button>
+        </div>
       </header>
 
       <main className="app-modern-main dashboard-main">
@@ -421,36 +436,20 @@ export const Dashboard = ({ onBack }) => {
           onClear={() => { setPais(""); if (ranges) { setGrauRange([ranges.grau_min, ranges.grau_max]); setDistRange([ranges.dist_min, ranges.dist_max]) } }}
         />
 
-        {/* ── Botão flutuante IA ── */}
-        <button
-          className="insight-fab insight-fab--blue"
-          onClick={() => setInsightOpen(true)}
-          title="Abrir IA Insight"
-          type="button"
-          aria-label="Abrir painel de IA"
-        >
-          <Zap size={18} />
-          <span>IA Insight</span>
-          {insight && <span className="insight-fab-dot" />}
-        </button>
-
         {/* ── Modal IA ── */}
         {insightOpen && (
           <div className="insight-modal-overlay" onClick={() => setInsightOpen(false)}>
             <div className="insight-modal insight-modal--blue" onClick={e => e.stopPropagation()}>
-              <button
-                className="insight-modal-close"
-                onClick={() => setInsightOpen(false)}
-                type="button"
-                aria-label="Fechar"
-              >✕</button>
               <InsightPanel
                 insight={insight}
+                history={history}
                 loading={loadingInsight}
                 error={insightError}
                 theme="blue"
                 suggestedQuestions={SUGGESTED_QUESTIONS}
                 onAsk={ask}
+                onClear={clearHistory}
+                onClose={() => setInsightOpen(false)}
               />
             </div>
           </div>

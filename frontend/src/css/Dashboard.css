@@ -109,6 +109,97 @@
   padding-right: 0.2rem;
 }
 
+.dashboard-header-ia-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.dashboard-ia-btn {
+  appearance: none;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.045);
+  color: #eaf2fb;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem 0.5rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition:
+    transform 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    color 0.22s ease;
+}
+
+.dashboard-ia-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.065);
+  border-color: rgba(77, 163, 255, 0.32);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(77, 163, 255, 0.08);
+  color: #ffffff;
+}
+
+.dashboard-ia-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #4da3ff, #7c5cff);
+  box-shadow:
+    0 10px 18px rgba(77, 163, 255, 0.28),
+    0 0 0 1px rgba(77, 163, 255, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition:
+    filter 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.dashboard-ia-btn:hover .dashboard-ia-icon {
+  filter: brightness(1.1);
+  box-shadow:
+    0 10px 24px rgba(77, 163, 255, 0.36),
+    0 0 0 1px rgba(77, 163, 255, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.dashboard-ia-text {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 0.94rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  padding-right: 0.2rem;
+}
+
+.dashboard-ia-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #93c5fd;
+  box-shadow: 0 0 6px rgba(147, 197, 253, 0.75);
+  animation: eta-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+  margin-right: 0.1rem;
+}
+
 .dashboard-clean-header {
   display: grid;
   grid-template-columns: 220px 1fr auto;
@@ -874,6 +965,17 @@
     justify-content: center;
   }
 
+  .dashboard-header-ia-row {
+    justify-content: center;
+    margin-top: 0.75rem;
+  }
+
+  .dashboard-ia-btn {
+    width: 100%;
+    max-width: 260px;
+    justify-content: center;
+  }
+
   .dashboard-clean-header {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -1246,9 +1348,10 @@
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 1rem;
+  padding: 6vh 1rem 1.5rem;
+  overflow-y: auto;
   animation: insight-overlay-in 0.18s ease;
 }
 
@@ -1261,10 +1364,13 @@
 .insight-modal {
   position: relative;
   width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-width: 640px;
+  height: min(82vh, 660px);
+  overflow: hidden;
   border-radius: 24px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
   animation: insight-modal-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1282,28 +1388,52 @@
     inset 0 1px 0 rgba(77, 163, 255, 0.10);
 }
 
-.insight-modal-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 10;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(77, 163, 255, 0.2);
-  background: rgba(77, 163, 255, 0.08);
-  color: #93c5fd;
-  font-size: 14px;
-  cursor: pointer;
+/* Painel dentro do modal azul — fill + scroll interno */
+.insight-modal--blue .insight-panel {
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+  padding: 1.4rem 1.75rem 1.4rem;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
-  font-family: inherit;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
-.insight-modal-close:hover {
-  background: rgba(77, 163, 255, 0.18);
-  color: #ffffff;
-  transform: scale(1.08);
+.insight-modal--blue .insight-panel-history::-webkit-scrollbar {
+  width: 4px;
+}
+.insight-modal--blue .insight-panel-history::-webkit-scrollbar-track {
+  background: transparent;
+}
+.insight-modal--blue .insight-panel-history::-webkit-scrollbar-thumb {
+  background: rgba(77, 163, 255, 0.22);
+  border-radius: 4px;
+}
+
+.insight-modal--blue .insight-panel-header {
+  align-items: center;
+  margin-bottom: 0.85rem;
+  flex-shrink: 0;
+}
+
+.insight-modal--blue .insight-panel-suggestions-wrap {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(77, 163, 255, 0.10);
+  padding-top: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.insight-modal--blue .insight-panel-input-row {
+  flex-shrink: 0;
+}
+
+.insight-modal--blue .insight-panel-empty {
+  color: #93c5fd;
+}
+
+.insight-panel-thinking span {
+  background: #4da3ff;
 }
