@@ -21,10 +21,10 @@
   --border: rgba(255, 255, 255, 0.08);
   --text: #ecfff7;
   --muted: #9cc8b6;
-  --primary: #26c281;
-  --primary-2: #34d399;
+  --primary: #0e9e6b;
+  --primary-2: #17b07b;
   --accent: #f6c56f;
-  --success: #26c281;
+  --success: #0e9e6b;
   --danger: #ff6b6b;
   --info: #2dd4bf;
 
@@ -184,7 +184,7 @@
 }
 
 .etn-algo-btn.active {
-  background: var(--primary, #26c281);
+  background: var(--primary, #0e9e6b);
   color: #042018;
   box-shadow: 0 2px 10px rgba(38, 194, 129, 0.3);
 }
@@ -217,7 +217,7 @@
   gap: 0.45rem;
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--muted, #9cc8b6);
+  color: var(--muted, #9cc8b6)!important;
   letter-spacing: 0.02em;
 }
 
@@ -230,7 +230,7 @@
   background: linear-gradient(135deg, rgba(38, 194, 129, 0.13), rgba(45, 212, 191, 0.06));
   border: 1px solid rgba(38, 194, 129, 0.38);
   border-radius: 999px;
-  color: #26c281;
+  color: #0e9e6b;
   font-size: 0.8rem;
   font-weight: 700;
   font-family: inherit;
@@ -338,7 +338,7 @@
 .globe-ctrl-btn.active {
   background: rgba(38, 194, 129, 0.16);
   border-color: rgba(38, 194, 129, 0.5);
-  color: #26c281;
+  color: #0e9e6b;
 }
 
 .globe-ctrl-btn:hover {
@@ -437,7 +437,7 @@
   width: 44px;
   height: 44px;
   border: 3px solid rgba(38, 194, 129, 0.2);
-  border-top-color: #26c281;
+  border-top-color: #0e9e6b;
   border-radius: 50%;
   animation: globe-spin 0.75s linear infinite;
 }
@@ -654,7 +654,7 @@
   border-radius: 50%;
   background: rgba(38, 194, 129, 0.15);
   border: 1px solid rgba(38, 194, 129, 0.35);
-  color: #26c281;
+  color: #0e9e6b;
   font-size: 0.8rem;
   font-weight: 800;
   display: flex;
@@ -745,7 +745,7 @@
 .globe-ctrl-btn.etn-sail-btn {
   background: rgba(38, 194, 129, 0.18);
   border: 1px solid rgba(38, 194, 129, 0.45);
-  color: #26c281;
+  color: #0e9e6b;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -777,7 +777,7 @@
   animation: etn-banner-fade 0.3s ease;
 }
 .etn-sailing-banner strong {
-  color: #26c281;
+  color: #0e9e6b;
 }
 @keyframes etn-banner-fade {
   from { opacity: 0; transform: translateY(-4px); }
@@ -832,7 +832,7 @@
   font-size: 1.22rem;
   font-weight: 900;
   letter-spacing: 0.04em;
-  color: #26c281;
+  color: #0e9e6b;
   white-space: nowrap;
 }
 
@@ -847,7 +847,7 @@
 }
 .port-stop-badge.origin {
   background: rgba(38, 194, 129, 0.18);
-  color: #26c281;
+  color: #0e9e6b;
   border: 1px solid rgba(38, 194, 129, 0.4);
 }
 .port-stop-badge.destination {
@@ -904,7 +904,7 @@
   align-items: center;
   gap: 4px;
   font-size: 0.69rem;
-  color: #26c281;
+  color: #0e9e6b;
   background: rgba(38, 194, 129, 0.1);
   border: 1px solid rgba(38, 194, 129, 0.25);
   border-radius: 5px;
@@ -975,7 +975,7 @@
 .port-stop-curiosities-title {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #26c281;
+  color: #0e9e6b;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 7px;
@@ -1016,7 +1016,7 @@
 .port-stop-btn.next {
   background: rgba(38, 194, 129, 0.18);
   border: 1px solid rgba(38, 194, 129, 0.4);
-  color: #26c281;
+  color: #0e9e6b;
 }
 .port-stop-btn.next:hover {
   background: rgba(38, 194, 129, 0.3);
@@ -1024,8 +1024,191 @@
 .port-stop-btn.finish {
   background: rgba(38, 194, 129, 0.25);
   border: 1px solid rgba(38, 194, 129, 0.55);
-  color: #26c281;
+  color: #0e9e6b;
 }
 .port-stop-btn.finish:hover {
   background: rgba(38, 194, 129, 0.4);
 }
+
+/* ── Cards de conexão clicáveis (ETN) ──────────────────────── */
+.etn-conn-card {
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+.etn-conn-card:hover {
+  background: rgba(14, 158, 107, 0.08);
+  border-color: rgba(14, 158, 107, 0.25);
+}
+.etn-conn-card-active {
+  background: rgba(14, 158, 107, 0.14) !important;
+  border-color: rgba(14, 158, 107, 0.45) !important;
+  transform: scale(0.98);
+}
+
+/* ── Botão "Mostrar mais" ───────────────────────────────────── */
+.etn-show-more-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  appearance: none;
+  border: 1px solid rgba(14, 158, 107, 0.35);
+  outline: none;
+  background: transparent;
+  color: #0e9e6b;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  letter-spacing: 0.01em;
+}
+.etn-show-more-btn:hover {
+  background: rgba(14, 158, 107, 0.1);
+  border-color: rgba(14, 158, 107, 0.6);
+  color: #17b07b;
+}
+
+/* ── Modal de curiosidades do porto (PCM) ───────────────────── */
+.pcm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  background: rgba(2, 12, 8, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: pcm-overlay-in 0.2s ease;
+}
+@keyframes pcm-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.pcm-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #091a12;
+  border: 1px solid rgba(14, 158, 107, 0.28);
+  border-radius: 22px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  animation: pcm-modal-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes pcm-modal-in {
+  from { opacity: 0; transform: scale(0.93) translateY(16px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.pcm-hero {
+  padding: 1.4rem 1.4rem 1rem;
+  border-bottom: 1px solid rgba(14, 158, 107, 0.1);
+  flex-shrink: 0;
+}
+.pcm-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+.pcm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.pcm-code {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.pcm-region {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.22rem 0.65rem;
+  border-radius: 99px;
+  letter-spacing: 0.05em;
+}
+.pcm-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9cc8b6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  margin-top: 2px;
+}
+.pcm-close:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: rgba(255, 107, 107, 0.4);
+  color: #ff6b6b;
+}
+.pcm-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #d4f5e9;
+  line-height: 1.35;
+  margin-bottom: 0.25rem;
+}
+.pcm-capacity {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #7fbfa8;
+  margin-top: 0.4rem;
+}
+.pcm-body {
+  padding: 1rem 1.4rem 1.4rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.pcm-curiosities-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0e9e6b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.8rem;
+}
+.pcm-curiosities {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.pcm-curiosity {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.83rem;
+  color: #b8d8cc;
+  line-height: 1.6;
+}
+.pcm-bullet {
+  color: #f6c56f;
+  font-size: 0.62rem;
+  flex-shrink: 0;
+  margin-top: 0.3rem;
+}
+

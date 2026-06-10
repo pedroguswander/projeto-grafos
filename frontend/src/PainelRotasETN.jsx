@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
 import GlobeGL from 'react-globe.gl'
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import logoEtn from './assets/logo-2/logo-branca-isolada2.png'
 
@@ -467,8 +469,6 @@ function PortStopPanel({ portCode, portMeta, isOrigin, isDestination, onNext, on
       <div className="port-stop-header">
         <div className="port-stop-code-row">
           <span className="port-stop-code" style={{ color: regionColor }}>{portCode}</span>
-          {isOrigin && <span className="port-stop-badge origin">Origem</span>}
-          {isDestination && <span className="port-stop-badge destination">Destino</span>}
         </div>
         <button className="port-stop-close" type="button" onClick={onStop} title="Encerrar viagem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="14" height="14">
@@ -560,6 +560,7 @@ function Globe3DModal({ onClose, graphData, pathResult, startPort, endPort, port
   const globeRef = useRef(null)
   const containerRef = useRef(null)
   const flyAnimRef = useRef(null)
+  const shipModelRef = useRef(null)
   const [dimensions, setDimensions] = useState({ w: 900, h: 600 })
   const [autoRotate, setAutoRotate] = useState(true)
   const [globeReady, setGlobeReady] = useState(false)
@@ -619,6 +620,30 @@ function Globe3DModal({ onClose, graphData, pathResult, startPort, endPort, port
   }, [])
 
   useEffect(() => () => clearInterval(flyAnimRef.current), [])
+
+  // Carrega o modelo 3D do navio (GLB)
+  useEffect(() => {
+    const loader = new GLTFLoader()
+    loader.load(
+      '/ship.glb',
+      (gltf) => {
+        const model = gltf.scene
+        model.scale.setScalar(0.25)
+        model.traverse((child) => {
+          if (child.isMesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material]
+            mats.forEach((m) => {
+              if ('emissive' in m) m.emissive = new THREE.Color(0xffffff)
+              if ('emissiveIntensity' in m) m.emissiveIntensity = 0.3
+            })
+          }
+        })
+        shipModelRef.current = model
+      },
+      undefined,
+      (err) => console.warn('ship.glb load error:', err),
+    )
+  }, [])
 
   // Carrega bordas de países (GeoJSON) para exibir no globo
   useEffect(() => {
@@ -922,15 +947,47 @@ function Globe3DModal({ onClose, graphData, pathResult, startPort, endPort, port
             }}
             pointAltitude={(d) => (d.isStart || d.isEnd) ? 0.08 : d.inPath ? 0.05 : 0.01}
             pointLabel={(d) => `<div style="background:rgba(6,26,20,0.97);border:1.5px solid ${getRegionColor(d.region)};border-radius:10px;padding:10px 14px;font-family:Inter,sans-serif;min-width:150px;box-shadow:0 6px 28px rgba(0,0,0,0.6)"><div style="font-weight:800;color:#ecfff7;font-size:15px;letter-spacing:0.03em">${d.id}</div><div style="color:#bfe0d2;font-size:12px;margin-top:3px">${d.name}</div><div style="color:#6f9a89;font-size:10px;margin-top:3px">${d.country} &middot; ${d.region}</div>${d.isStart ? '<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">✦ Porto de origem</div>' : ''}${d.isEnd ? '<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">✦ Porto de destino</div>' : ''}${d.inPath && !d.isStart && !d.isEnd ? '<div style="color:#FFD700;font-size:11px;font-weight:700;margin-top:5px">★ Melhor rota</div>' : ''}</div>`}
-            htmlElementsData={shipData}
-            htmlLat={(d) => d.lat}
-            htmlLng={(d) => d.lng}
-            htmlAltitude={0.01}
-            htmlElement={(d) => {
-              const el = document.createElement('div')
-              el.style.cssText = `transform:rotate(${d.bearing}deg);font-size:26px;line-height:1;filter:drop-shadow(0 0 6px rgba(38,194,129,0.9)) drop-shadow(0 0 3px #fff);pointer-events:none;user-select:none;`
-              el.textContent = '⛵'
-              return el
+            customLayerData={shipData}
+            customThreeObject={() => {
+              if (!shipModelRef.current) return new THREE.Object3D()
+              return shipModelRef.current.clone(true)
+            }}
+            customThreeObjectUpdate={(obj, d) => {
+              const GLOBE_R = 100
+              const alt = flyState === 'sailing' ? 0.10 : 0.08
+              const phi = ((90 - d.lat) * Math.PI) / 180
+              const theta = ((90 - d.lng) * Math.PI) / 180
+              const r = GLOBE_R * (1 + alt)
+
+              const sinPhi = Math.sin(phi)
+              const cosPhi = Math.cos(phi)
+              const cosTheta = Math.cos(theta)
+              const sinTheta = Math.sin(theta)
+
+              obj.position.set(
+                r * sinPhi * cosTheta,
+                r * cosPhi,
+                r * sinPhi * sinTheta,
+              )
+
+              const up = new THREE.Vector3(sinPhi * cosTheta, cosPhi, sinPhi * sinTheta).normalize()
+              const worldY = new THREE.Vector3(0, 1, 0)
+              const north = new THREE.Vector3()
+                .copy(worldY)
+                .addScaledVector(up, -worldY.dot(up))
+                .normalize()
+
+              const east = new THREE.Vector3().crossVectors(north, up).normalize()
+              const bearingRad = ((d.bearing ?? 0) * Math.PI) / 180
+
+              const forward = new THREE.Vector3()
+                .addScaledVector(north, Math.cos(bearingRad))
+                .addScaledVector(east, Math.sin(bearingRad))
+                .normalize()
+
+              const right = new THREE.Vector3().crossVectors(up, forward).normalize()
+
+              obj.setRotationFromMatrix(new THREE.Matrix4().makeBasis(right, up, forward))
             }}
           />
 
@@ -983,6 +1040,69 @@ function Globe3DModal({ onClose, graphData, pathResult, startPort, endPort, port
 }
 
 // ===========================================================================
+// Modal de curiosidades do porto — abre ao clicar num card de conexão
+// ===========================================================================
+function PortCuriosityModal({ portCode, onClose }) {
+  const info = PORT_CURIOSITIES[portCode] || {}
+  const regionColor = getRegionColor(info.region || '')
+  const accentColor = '#0e9e6b'
+
+  return createPortal(
+    <div className="pcm-overlay" onClick={onClose}>
+      <div className="pcm-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="pcm-hero" style={{ background: `linear-gradient(135deg, rgba(14,158,107,0.12) 0%, rgba(6,26,20,0) 60%)` }}>
+          <div className="pcm-header">
+            <div className="pcm-header-left">
+              <span className="pcm-code" style={{ color: accentColor }}>{portCode}</span>
+              {info.country && (
+                <span className="pcm-region" style={{ background: 'rgba(14,158,107,0.15)', color: accentColor }}>
+                  {info.country}
+                </span>
+              )}
+            </div>
+            <button className="pcm-close" type="button" onClick={onClose} title="Fechar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="15" height="15">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <div className="pcm-name">{info.name || portCode}</div>
+          {info.capacity && (
+            <div className="pcm-capacity">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              {info.capacity}
+            </div>
+          )}
+        </div>
+        <div className="pcm-body">
+          <div className="pcm-curiosities-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            Curiosidades
+          </div>
+          <div className="pcm-curiosities">
+            {(info.curiosities || ['Porto sem curiosidades cadastradas.']).map((c, i) => (
+              <div key={i} className="pcm-curiosity">
+                <span className="pcm-bullet">✦</span>
+                <span>{c}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+// ===========================================================================
 // Painel de Rotas & Portos — ETN Shipping
 // ===========================================================================
 function PainelRotasETN({ onBack }) {
@@ -996,6 +1116,8 @@ function PainelRotasETN({ onBack }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [show3DGlobe, setShow3DGlobe] = useState(false)
+  const [hoveredPortModal, setHoveredPortModal] = useState(null)
+  const [visibleConns, setVisibleConns] = useState(9)
 
   // Algoritmo selecionado
   const [algorithm, setAlgorithm] = useState('bellman-ford') // 'bellman-ford' | 'dfs'
@@ -1062,6 +1184,8 @@ function PainelRotasETN({ onBack }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => { setVisibleConns(9) }, [selectedConnectionPort])
 
   // ─── Estruturas derivadas ────────────────────────────────────
   const portOptions = useMemo(() => {
@@ -1436,7 +1560,7 @@ function PainelRotasETN({ onBack }) {
       <header className="app-modern-header">
         <div className="header-top-actions">
           <button onClick={onBack} className="global-metrics-back-button" type="button" title="Voltar">
-            <span className="global-metrics-back-icon" aria-hidden="true">
+            <span className="global-metrics-back-icon-etn" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
                 <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -1840,17 +1964,34 @@ function PainelRotasETN({ onBack }) {
               </div>
               <div className="airport-connections-content">
                 {selectedConnectionPort.connections.length > 0 ? (
-                  <div className="airport-connections-list">
-                    {selectedConnectionPort.connections.map((connection, index) => (
-                      <div key={`${selectedConnectionPort.id}-${connection.code}-${index}`} className="airport-connection-card">
-                        <div className="airport-connection-info">
-                          <div className="airport-connection-code">{connection.code}</div>
-                          {connection.name && <div className="airport-connection-city">{connection.name}</div>}
+                  <>
+                    <div className="airport-connections-list">
+                      {selectedConnectionPort.connections.slice(0, visibleConns).map((connection, index) => (
+                        <div
+                          key={`${selectedConnectionPort.id}-${connection.code}-${index}`}
+                          className={`airport-connection-card etn-conn-card${hoveredPortModal?.code === connection.code ? ' etn-conn-card-active' : ''}`}
+                          onClick={() => setHoveredPortModal(
+                            hoveredPortModal?.code === connection.code ? null : { code: connection.code }
+                          )}
+                        >
+                          <div className="airport-connection-info">
+                            <div className="airport-connection-code">{connection.code}</div>
+                            {connection.name && <div className="airport-connection-city">{connection.name}</div>}
+                          </div>
+                          <div className="airport-connection-weight">Peso {formatWeight(connection.weight)}</div>
                         </div>
-                        <div className="airport-connection-weight">Peso {formatWeight(connection.weight)}</div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                    {visibleConns < selectedConnectionPort.connections.length && (
+                      <button
+                        type="button"
+                        className="etn-show-more-btn"
+                        onClick={() => setVisibleConns((v) => v + 9)}
+                      >
+                        Mostrar mais ({selectedConnectionPort.connections.length - visibleConns} restantes)
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <div className="airport-connections-no-data">Este porto não possui rotas de saída cadastradas.</div>
                 )}
@@ -1956,6 +2097,13 @@ function PainelRotasETN({ onBack }) {
           )}
         </div>
       </main>
+
+      {hoveredPortModal && (
+        <PortCuriosityModal
+          portCode={hoveredPortModal.code}
+          onClose={() => setHoveredPortModal(null)}
+        />
+      )}
     </div>
   )
 }
