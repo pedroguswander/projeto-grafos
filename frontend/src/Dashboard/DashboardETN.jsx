@@ -823,7 +823,7 @@ export const DashboardETN = ({ onBack }) => {
   const [pesoRange, setPesoRange] = useState([-9999999, 9999999])
 
   const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
-  const { insight, loadingInsight, error: insightError, generate, ask } = useAIInsightETN(GROQ_KEY)
+  const { insight, history, loadingInsight, error: insightError, generate, ask, clearHistory } = useAIInsightETN(GROQ_KEY)
   const [insightOpen, setInsightOpen] = useState(false)
 
   const hasFilter = !!(
@@ -911,17 +911,6 @@ export const DashboardETN = ({ onBack }) => {
     debounceRef.current = setTimeout(fetchAll, 400)
     return () => clearTimeout(debounceRef.current)
   }, [fetchAll])
-
-  // Fetch BFS vs DFS comparison (independent of filters)
-  useEffect(() => {
-    fetch(`${API}/api/report/comparacao/bfs-dfs`)
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
-      .then(data => setBfsDfs(data))
-      .catch(err => setBfsErr(err.message || "Erro ao carregar comparação BFS/DFS"))
-  }, [])
 
   const d = stats || {}
 
@@ -1073,6 +1062,23 @@ export const DashboardETN = ({ onBack }) => {
             </p>
           </div>
         </div>
+
+        <div className="dashboard-etn-header-ia-row">
+          <button
+            className="dashboard-etn-back-btn dashboard-etn-ia-btn"
+            onClick={() => setInsightOpen(true)}
+            type="button"
+            aria-label="Abrir painel de IA"
+          >
+            <span className="dashboard-etn-back-icon dashboard-etn-ia-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </span>
+            <span className="dashboard-etn-back-text">IA Insight</span>
+            {insight && <span className="dashboard-etn-ia-dot" />}
+          </button>
+        </div>
       </header>
 
       <div className="dashboard-etn-shell">
@@ -1094,36 +1100,20 @@ export const DashboardETN = ({ onBack }) => {
             }}
           />
 
-          {/* ── Botão flutuante IA ── */}
-          <button
-            className="insight-fab insight-fab--green"
-            onClick={() => setInsightOpen(true)}
-            title="Abrir IA Insight"
-            type="button"
-            aria-label="Abrir painel de IA"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>IA Insight</span>
-            {insight && <span className="insight-fab-dot" />}
-          </button>
-
           {/* ── Modal IA ── */}
           {insightOpen && (
             <div className="insight-modal-overlay" onClick={() => setInsightOpen(false)}>
               <div className="insight-modal insight-modal--green" onClick={e => e.stopPropagation()}>
-                <button
-                  className="insight-modal-close"
-                  onClick={() => setInsightOpen(false)}
-                  type="button"
-                  aria-label="Fechar"
-                >✕</button>
                 <InsightPanel
                   insight={insight}
+                  history={history}
                   loading={loadingInsight}
                   error={insightError}
                   theme="green"
                   suggestedQuestions={SUGGESTED_QUESTIONS_ETN}
                   onAsk={ask}
+                  onClear={clearHistory}
+                  onClose={() => setInsightOpen(false)}
                 />
               </div>
             </div>
