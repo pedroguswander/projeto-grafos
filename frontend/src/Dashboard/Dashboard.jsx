@@ -140,19 +140,27 @@ const ComparisonTable = ({ rows }) => (
 )
 
 const RangeSlider = ({ label, min, max, value, onChange }) => {
-  const pct = v => ((v - min) / (max - min)) * 100
+  const safeMax = max > min ? max : min + 1
+  const pct = v => ((v - min) / (safeMax - min)) * 100
   return (
     <div className="dashboard-range-slider">
-      <label className="dashboard-range-label">
-        {label} <span>{value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}</span>
-      </label>
+      <div className="dashboard-range-header">
+        <span className="dashboard-range-label">{label}</span>
+        <span className="dashboard-range-value">
+          {value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}
+        </span>
+      </div>
       <div className="dashboard-range-track-wrap">
         <div className="dashboard-range-track" />
         <div className="dashboard-range-track-active" style={{ left: `${pct(value[0])}%`, width: `${pct(value[1]) - pct(value[0])}%` }} />
-        <input type="range" min={min} max={max} value={value[0]} className="dashboard-range-input dashboard-range-input-left"
+        <input type="range" min={min} max={safeMax} value={value[0]} className="dashboard-range-input dashboard-range-input-left"
           onChange={e => onChange([Math.min(+e.target.value, value[1] - 1), value[1]])} />
-        <input type="range" min={min} max={max} value={value[1]} className="dashboard-range-input dashboard-range-input-right"
+        <input type="range" min={min} max={safeMax} value={value[1]} className="dashboard-range-input dashboard-range-input-right"
           onChange={e => onChange([value[0], Math.max(+e.target.value, value[0] + 1)])} />
+      </div>
+      <div className="dashboard-range-bounds">
+        <span>{Number(min).toLocaleString("pt-BR")}</span>
+        <span>{Number(max).toLocaleString("pt-BR")}</span>
       </div>
     </div>
   )
@@ -162,19 +170,32 @@ const FilterBar = ({ ranges, pais, setPais, grauRange, setGrauRange, distRange, 
   if (!ranges) return null
   return (
     <section className="glass-card dashboard-filter-bar">
-      <div className="dashboard-section-header">
-        <div className="dashboard-section-title">Filtros do painel</div>
-        <div className="dashboard-section-subtitle">Ajuste os intervalos para refinar os dados exibidos.</div>
+      <div className="dashboard-filter-toprow">
+        <div className="dashboard-filter-heading">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+            <line x1="11" y1="18" x2="13" y2="18" />
+          </svg>
+          Filtros do painel
+        </div>
+        {hasFilter && (
+          <div className="dashboard-filter-actions">
+            <span className="dashboard-filter-badge">
+              <span className="dashboard-filter-badge-dot" />
+              Filtro ativo
+            </span>
+            <button onClick={onClear} className="dashboard-clear-btn" type="button">
+              ✕ Limpar
+            </button>
+          </div>
+        )}
       </div>
+      <p className="dashboard-filter-desc">Ajuste os intervalos para refinar os dados exibidos.</p>
+      <div className="dashboard-filter-divider" />
       <div className="dashboard-filter-grid">
         <RangeSlider label="Grau (conexões)" min={ranges.grau_min} max={ranges.grau_max} value={grauRange} onChange={setGrauRange} />
         <RangeSlider label="Distância da rota (pesos)" min={ranges.dist_min} max={ranges.dist_max} value={distRange} onChange={setDistRange} />
-        <div className="dashboard-filter-actions">
-          {hasFilter && <>
-            <button onClick={onClear} className="dashboard-secondary-btn" type="button">Limpar filtros</button>
-            <span className="dashboard-filter-active">● Filtro ativo</span>
-          </>}
-        </div>
       </div>
     </section>
   )
