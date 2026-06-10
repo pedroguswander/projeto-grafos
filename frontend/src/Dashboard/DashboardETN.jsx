@@ -5,10 +5,11 @@ import {
   PieChart, Pie, Treemap,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts"
+
 import logoCompleta from "../assets/logo-2/logo-branca-completa2.png"
 import "../css/DashboardETN.css"
 import InsightPanel from "../../components/InsightPanel"
-import { useAIInsightETN } from "../hooks/useAIInsightETN"
+import { useAIInsightETN, SUGGESTED_QUESTIONS_ETN } from "../hooks/useAIInsightETN"
 import HyperbolicTree3D from "./HyperbolicTree3D"
 
 const API = "http://localhost:5000"
@@ -182,13 +183,6 @@ const ErrorBanner = ({ msg }) => (
       <p className="dashboard-etn-error-text">{msg} — Flask rodando em {API}?</p>
     </div>
   </div>
-)
-
-const WinnerBadge = ({ winner }) => (
-  <span className={`dashboard-etn-winner-badge ${winner === "BFS" ? "bfs" : "dfs"}`}>
-    <Zap size={10} />
-    {winner}
-  </span>
 )
 
 const CloseBtn = ({ onClick }) => (
@@ -698,35 +692,6 @@ const BalancoTooltip = ({ active, payload, label }) => {
 }
 
 // ─── Complex Sub-components ────────────────────────────────────
-const ComparisonTable = ({ rows }) => (
-  <div className="dashboard-etn-table-wrap">
-    <table className="dashboard-etn-table">
-      <thead>
-        <tr>
-          {["Source", "BFS (ms)", "Camadas", "DFS (ms)", "Ciclos", "Árv.", "Back", "Δ (ms)", "Mais rápido"].map(h => (
-            <th key={h}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, i) => (
-          <tr key={i}>
-            <td className="dashboard-etn-table-strong">{row.source}</td>
-            <td className="dashboard-etn-table-bfs">{(row.bfs.tempo_segundos * 1000).toFixed(4)}</td>
-            <td>{row.bfs.num_camadas}</td>
-            <td className="dashboard-etn-table-dfs">{(row.dfs.tempo_segundos * 1000).toFixed(4)}</td>
-            <td>{row.dfs.ciclos?.toLocaleString("pt-BR")}</td>
-            <td>{row.dfs.arestas_tree}</td>
-            <td>{row.dfs.arestas_back}</td>
-            <td>{Math.abs(row.delta_tempo_ms).toFixed(4)}</td>
-            <td><WinnerBadge winner={row.mais_rapido} /></td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)
-
 const RangeSlider = ({ label, min, max, value, onChange }) => {
   const safeMax = max > min ? max : min + 1
   const pct = v => ((v - min) / (safeMax - min)) * 100
@@ -844,11 +809,8 @@ export const DashboardETN = ({ onBack }) => {
   const [stats, setStats] = useState(null)
   const [arestas, setArestas] = useState([])
   const [vertices, setVertices] = useState([])
-  const [bfsDfs, setBfsDfs] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [bfsErr, setBfsErr] = useState(null)
-  const [view, setView] = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
   const [selectedHub, setSelectedHub] = useState(null)
   const [selectedPais, setSelectedPais] = useState(null)
@@ -860,7 +822,9 @@ export const DashboardETN = ({ onBack }) => {
   const [grauRange, setGrauRange] = useState([0, 9999])
   const [pesoRange, setPesoRange] = useState([-9999999, 9999999])
 
-  const { insight, loadingInsight, generate } = useAIInsightETN()
+  const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
+  const { insight, loadingInsight, error: insightError, generate, ask } = useAIInsightETN(GROQ_KEY)
+  const [insightOpen, setInsightOpen] = useState(false)
 
   const hasFilter = !!(
     (ranges && grauRange[0] > ranges.grau_min) ||
@@ -884,7 +848,6 @@ export const DashboardETN = ({ onBack }) => {
 
   const fetchAll = useCallback(async () => {
     setError(null)
-    setBfsErr(null)
 
     const [statsRes, arestasRes, verticesRes] = await Promise.allSettled([
       fetch(buildStatsUrl()).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
@@ -961,19 +924,6 @@ export const DashboardETN = ({ onBack }) => {
   }, [])
 
   const d = stats || {}
-  const comparacoes = bfsDfs?.comparacoes || []
-  const chartData = comparacoes.map(r => ({
-    source: r.source,
-    BFS: r.bfs.tempo_segundos,
-    DFS: r.dfs.tempo_segundos,
-  }))
-
-  const bfsWins = comparacoes.filter(r => r.mais_rapido === "BFS").length
-  const dfsWins = comparacoes.filter(r => r.mais_rapido === "DFS").length
-
-  const avgDelta = comparacoes.length
-    ? (comparacoes.reduce((s, r) => s + Math.abs(r.delta_tempo_ms), 0) / comparacoes.length).toFixed(4)
-    : "—"
 
   const weightBinsData = useMemo(() => buildWeightBins(arestas, weightBins), [arestas, weightBins])
 
@@ -1144,7 +1094,40 @@ export const DashboardETN = ({ onBack }) => {
             }}
           />
 
-          <InsightPanel insight={insight} loading={loadingInsight} theme="green" />
+          {/* ── Botão flutuante IA ── */}
+          <button
+            className="insight-fab insight-fab--green"
+            onClick={() => setInsightOpen(true)}
+            title="Abrir IA Insight"
+            type="button"
+            aria-label="Abrir painel de IA"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>IA Insight</span>
+            {insight && <span className="insight-fab-dot" />}
+          </button>
+
+          {/* ── Modal IA ── */}
+          {insightOpen && (
+            <div className="insight-modal-overlay" onClick={() => setInsightOpen(false)}>
+              <div className="insight-modal insight-modal--green" onClick={e => e.stopPropagation()}>
+                <button
+                  className="insight-modal-close"
+                  onClick={() => setInsightOpen(false)}
+                  type="button"
+                  aria-label="Fechar"
+                >✕</button>
+                <InsightPanel
+                  insight={insight}
+                  loading={loadingInsight}
+                  error={insightError}
+                  theme="green"
+                  suggestedQuestions={SUGGESTED_QUESTIONS_ETN}
+                  onAsk={ask}
+                />
+              </div>
+            </div>
+          )}
 
           <section className="dashboard-etn-kpi-grid">
             <KPICard loading={loading} title="Vértices (Portos)" value={d.totalV?.toLocaleString("pt-BR") || "—"} />
@@ -1333,71 +1316,6 @@ export const DashboardETN = ({ onBack }) => {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            )}
-          </section>
-
-          <section className="glass-card dashboard-etn-chart-card">
-            <div className="dashboard-etn-chart-header dashboard-etn-chart-header-wrap">
-              <div>
-                <h3 className="dashboard-etn-chart-title">Comparação de Tempo — BFS vs DFS</h3>
-                {bfsDfs && <p className="dashboard-etn-chart-meta">{bfsDfs.total_comparacoes} nós comparados</p>}
-              </div>
-
-              <div className="dashboard-etn-view-toggle">
-                {[{ id: "chart", label: "Gráfico" }, { id: "table", label: "Tabela" }].map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => setView(id)}
-                    className={`dashboard-etn-view-btn ${view === id ? "active" : ""}`}
-                    type="button"
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {bfsErr && (
-              <div className="dashboard-etn-inline-error">
-                <AlertCircle size={15} /> Falha: {bfsErr}
-              </div>
-            )}
-
-            {bfsDfs && (
-              <div className="dashboard-etn-mini-stats">
-                {[
-                  { label: "BFS mais rápido", value: bfsWins, color: "bfs" },
-                  { label: "DFS mais rápido", value: dfsWins, color: "dfs" },
-                  { label: "Δ médio", value: `${avgDelta} ms`, color: "accent" },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="dashboard-etn-mini-stat-card">
-                    <div>
-                      <p className="dashboard-etn-mini-stat-label">{label}</p>
-                      <p className={`dashboard-etn-mini-stat-value ${color}`}>{value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!bfsDfs && !bfsErr ? (
-              <Skeleton height={300} />
-            ) : chartData.length > 0 && (
-              view === "chart" ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }} barCategoryGap="30%" barGap={4}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="source" tick={{ fontSize: 11, fill: "#9fc7b8", fontWeight: 600 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={v => `${(v * 1000).toFixed(2)}ms`} tick={{ fontSize: 10, fill: "#88af9f" }} axisLine={false} tickLine={false} width={68} />
-                    <Tooltip content={<ComparisonTooltip />} cursor={{ fill: "rgba(255,255,255,0.035)" }} />
-                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} formatter={v => <span style={{ color: v === "BFS" ? "#2fbf9b" : "#63d9b1", fontWeight: 700 }}>{v}</span>} />
-                    <Bar dataKey="BFS" fill="#2fbf9b" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                    <Bar dataKey="DFS" fill="#63d9b1" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <ComparisonTable rows={comparacoes} />
-              )
             )}
           </section>
 

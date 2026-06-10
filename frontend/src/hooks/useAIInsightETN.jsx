@@ -1,240 +1,109 @@
 import { useState, useRef, useCallback } from "react"
 
-// ─────────────────────────────────────────────────────────────
-// MEMÓRIA ESTÁTICA DO DATASET — Portos Marítimos Globais (ETN)
-// ─────────────────────────────────────────────────────────────
-const DATASET_MEMORY = {
-  top5_hubs: [
-    { codigo: "ITGIT", nome: "Gioia Tauro",      regiao: "West Med",              grau: 89 },
-    { codigo: "AEJEA", nome: "Jebel Ali",          regiao: "Dubai",                 grau: 89 },
-    { codigo: "MYTPP", nome: "Tanjung Pelepas",    regiao: "Singapore",             grau: 89 },
-    { codigo: "ESALG", nome: "Algeciras",           regiao: "West Med",              grau: 87 },
-    { codigo: "DEBRV", nome: "Bremerhaven",         regiao: "North Continent Europe",grau: 87 },
-  ],
-  portos: [
-    { codigo: "ESALG", nome: "Algeciras",        regiao: "West Med",               draft: 13.5, custo_fixed: 773,   custo_ffe: 11, cost_full: 229  },
-    { codigo: "TRAMB", nome: "Ambarli",          regiao: "West Med",               draft: 9.5,  custo_fixed: 9517,  custo_ffe: 19, cost_full: 146  },
-    { codigo: "BEANR", nome: "Antwerp",          regiao: "NCE",                    draft: 11.0, custo_fixed: 13087, custo_ffe: 16, cost_full: 355  },
-    { codigo: "NGAPP", nome: "Apapa (Lagos)",    regiao: "West Africa",            draft: 11.0, custo_fixed: 34988, custo_ffe: 11, cost_full: 196  },
-    { codigo: "NZAKL", nome: "Auckland",         regiao: "Australia",              draft: 12.5, custo_fixed: 2353,  custo_ffe: 13, cost_full: 111  },
-    { codigo: "PABLB", nome: "Balboa",           regiao: "US West Coast",          draft: 11.0, custo_fixed: 533,   custo_ffe: 9,  cost_full: 238  },
-    { codigo: "ESBCN", nome: "Barcelona",        regiao: "West Med",               draft: 13.5, custo_fixed: 5530,  custo_ffe: 16, cost_full: 597  },
-    { codigo: "DEBRV", nome: "Bremerhaven",      regiao: "NCE",                    draft: 13.5, custo_fixed: 11795, custo_ffe: 14, cost_full: 199  },
-    { codigo: "AUBNE", nome: "Brisbane",         regiao: "Australia",              draft: 12.5, custo_fixed: 4670,  custo_ffe: 12, cost_full: 541  },
-    { codigo: "KRPUS", nome: "Busan",            regiao: "Korea",                  draft: 13.5, custo_fixed: 2842,  custo_ffe: 5,  cost_full: 77   },
-    { codigo: "USCHS", nome: "Charleston",       regiao: "US East Coast",          draft: 12.5, custo_fixed: 9743,  custo_ffe: 5,  cost_full: 292  },
-    { codigo: "LKCMB", nome: "Colombo",          regiao: "Mumbai",                 draft: 13.5, custo_fixed: 2568,  custo_ffe: 4,  cost_full: 272  },
-    { codigo: "ZADUR", nome: "Durban",           regiao: "South Africa",           draft: 11.0, custo_fixed: 9819,  custo_ffe: 13, cost_full: 322  },
-    { codigo: "GBFXT", nome: "Felixstowe",       regiao: "UK",                     draft: 13.5, custo_fixed: 12936, custo_ffe: 9,  cost_full: 250  },
-    { codigo: "ITGIT", nome: "Gioia Tauro",      regiao: "West Med",               draft: 13.5, custo_fixed: 9242,  custo_ffe: 6,  cost_full: 202  },
-    { codigo: "ECGYE", nome: "Guayaquil",        regiao: "SA West Coast",          draft: 8.0,  custo_fixed: 2564,  custo_ffe: 22, cost_full: 165  },
-    { codigo: "DEHAM", nome: "Hamburg",          regiao: "NCE",                    draft: 12.5, custo_fixed: 18560, custo_ffe: 15, cost_full: 466  },
-    { codigo: "HKHKG", nome: "Hong Kong",        regiao: "Hong Kong",              draft: 13.5, custo_fixed: 6809,  custo_ffe: 2,  cost_full: 257  },
-    { codigo: "INNSA", nome: "Jawaharlal Nehru", regiao: "Mumbai",                 draft: 9.5,  custo_fixed: 6837,  custo_ffe: 17, cost_full: 200  },
-    { codigo: "AEJEA", nome: "Jebel Ali",        regiao: "Dubai",                  draft: 13.5, custo_fixed: 4164,  custo_ffe: 2,  cost_full: 133  },
-    { codigo: "SAJED", nome: "Jeddah",           regiao: "Saudi Arabia",           draft: 13.5, custo_fixed: 3304,  custo_ffe: 1,  cost_full: 102  },
-    { codigo: "TWKHH", nome: "Kaohsiung",        regiao: "Singapore",              draft: 12.5, custo_fixed: 2231,  custo_ffe: 3,  cost_full: 18   },
-    { codigo: "USLAX", nome: "Los Angeles",      regiao: "US West Coast",          draft: 13.5, custo_fixed: 6876,  custo_ffe: 2,  cost_full: 530  },
-    { codigo: "AOLAD", nome: "Luanda",           regiao: "West Africa",            draft: 8.0,  custo_fixed: 23272, custo_ffe: 61, cost_full: 209  },
-    { codigo: "PAMIT", nome: "Manzanillo",       regiao: "US West Coast",          draft: 11.0, custo_fixed: 4998,  custo_ffe: 3,  cost_full: 341  },
-    { codigo: "USMIA", nome: "Miami",            regiao: "US Gulf Coast",          draft: 11.0, custo_fixed: 6973,  custo_ffe: 3,  cost_full: 400  },
-    { codigo: "KEMBA", nome: "Mombasa",          regiao: "South Africa",           draft: 8.0,  custo_fixed: 7956,  custo_ffe: 18, cost_full: 223  },
-    { codigo: "UYMVD", nome: "Montevideo",       regiao: "Brazil",                 draft: 8.0,  custo_fixed: 2834,  custo_ffe: 18, cost_full: 239  },
-    { codigo: "CAMTR", nome: "Montreal",         regiao: "Canada East Coast",      draft: 12.5, custo_fixed: 15605, custo_ffe: 38, cost_full: 414  },
-    { codigo: "USEWR", nome: "Newark",           regiao: "US East Coast",          draft: 12.5, custo_fixed: 18260, custo_ffe: 3,  cost_full: 698  },
-    { codigo: "MYPKG", nome: "Port Klang",       regiao: "Singapore",              draft: 13.5, custo_fixed: 2549,  custo_ffe: 3,  cost_full: 50   },
-    { codigo: "PKBQM", nome: "Port Qasim",       regiao: "Mumbai",                 draft: 9.5,  custo_fixed: 7581,  custo_ffe: 23, cost_full: 102  },
-    { codigo: "EGPSD", nome: "Port Said",        regiao: "West Med",               draft: 13.5, custo_fixed: 4891,  custo_ffe: 7,  cost_full: 37   },
-    { codigo: "MAPTM", nome: "Tangier",          regiao: "West Med",               draft: 13.5, custo_fixed: 1675,  custo_ffe: 8,  cost_full: 138  },
-    { codigo: "CNTAO", nome: "Qingdao",          regiao: "North China",            draft: 12.5, custo_fixed: 6813,  custo_ffe: 5,  cost_full: 124  },
-    { codigo: "NLRTM", nome: "Rotterdam",        regiao: "NCE",                    draft: 13.5, custo_fixed: 19187, custo_ffe: 16, cost_full: 195  },
-    { codigo: "OMSLL", nome: "Salalah",          regiao: "Saudi Arabia",           draft: 13.5, custo_fixed: 3850,  custo_ffe: 2,  cost_full: 161  },
-    { codigo: "CLSAI", nome: "San Antonio",      regiao: "SA West Coast",          draft: 13.5, custo_fixed: 15564, custo_ffe: 26, cost_full: 202  },
-    { codigo: "BRSSZ", nome: "Santos",           regiao: "Brazil",                 draft: 11.0, custo_fixed: 7547,  custo_ffe: 7,  cost_full: 349  },
-    { codigo: "CNSHA", nome: "Shanghai",         regiao: "Central China",          draft: 13.5, custo_fixed: 6497,  custo_ffe: 6,  cost_full: 150  },
-    { codigo: "SGSIN", nome: "Singapore",        regiao: "Singapore",              draft: 13.5, custo_fixed: 3268,  custo_ffe: 1,  cost_full: 130  },
-    { codigo: "GHTKD", nome: "Takoradi",         regiao: "West Africa",            draft: 8.0,  custo_fixed: 1400,  custo_ffe: 5,  cost_full: 266  },
-    { codigo: "MYTPP", nome: "Tanjung Pelepas",  regiao: "Singapore",              draft: 13.5, custo_fixed: 1992,  custo_ffe: 3,  cost_full: 115  },
-    { codigo: "CAVAN", nome: "Vancouver",        regiao: "Canada West",            draft: 13.5, custo_fixed: 774,   custo_ffe: 12, cost_full: 421  },
-    { codigo: "CNYTN", nome: "Shenzhen",         regiao: "South China",            draft: 13.5, custo_fixed: 7220,  custo_ffe: 4,  cost_full: 177  },
-    { codigo: "JPYOK", nome: "Yokohama",         regiao: "Japan",                  draft: 13.5, custo_fixed: 16900, custo_ffe: 1,  cost_full: 105  },
-    { codigo: "BEZEE", nome: "Zeebrugge",        regiao: "NCE",                    draft: 13.5, custo_fixed: 12047, custo_ffe: 9,  cost_full: 235  },
-  ],
+// ─── Datasets compactos embutidos ───
+const DATASET_PORTOS_META = `ESALG(Algeciras,West Med,draft=13.5,fixedCost=773)|TRAMB(Ambarli,West Med,draft=9.5,fixedCost=9517)|BEANR(Antwerp,NCE,draft=11,fixedCost=13087)|NGAPP(Apapa,West Africa,draft=11,fixedCost=34988)|NZAKL(Auckland,Australia,draft=12.5,fixedCost=2353)|PABLB(Balboa,US West Coast,draft=11,fixedCost=533)|ESBCN(Barcelona,West Med,draft=13.5,fixedCost=5530)|DEBRV(Bremerhaven,NCE,draft=13.5,fixedCost=11795)|AUBNE(Brisbane,Australia,draft=12.5,fixedCost=4670)|KRPUS(Busan,Korea,draft=13.5,fixedCost=2842)|USCHS(Charleston,US East Coast,draft=12.5,fixedCost=9743)|LKCMB(Colombo,Mumbai,draft=13.5,fixedCost=2568)|ZADUR(Durban,South Africa,draft=11,fixedCost=9819)|GBFXT(Felixstowe,UK,draft=13.5,fixedCost=12936)|ITGIT(Gioia Tauro,West Med,draft=13.5,fixedCost=9242)|ECGYE(Guayaquil,SA West Coast,draft=8,fixedCost=2564)|DEHAM(Hamburg,NCE,draft=12.5,fixedCost=18560)|HKHKG(Hong Kong,Hong Kong,draft=13.5,fixedCost=6809)|INNSA(Jawaharlal Nehru,Mumbai,draft=9.5,fixedCost=6837)|AEJEA(Jebel Ali,Dubai,draft=13.5,fixedCost=4164)|SAJED(Jeddah,Saudi Arabia,draft=13.5,fixedCost=3304)|TWKHH(Kaohsiung,Singapore,draft=12.5,fixedCost=2231)|USLAX(Los Angeles,US West Coast,draft=13.5,fixedCost=6876)|AOLAD(Luanda,West Africa,draft=8,fixedCost=23272)|PAMIT(Manzanillo,US West Coast,draft=11,fixedCost=4998)|USMIA(Miami,US Gulf Coast,draft=11,fixedCost=6973)|KEMBA(Mombasa,South Africa,draft=8,fixedCost=7956)|UYMVD(Montevideo,Brazil,draft=8,fixedCost=2834)|CAMTR(Montreal,Canada East Coast,draft=12.5,fixedCost=15605)|USEWR(Newark,US East Coast,draft=12.5,fixedCost=18260)|MYPKG(Port Klang,Singapore,draft=13.5,fixedCost=2549)|PKBQM(Port Qasim,Mumbai,draft=9.5,fixedCost=7581)|EGPSD(Port Said,West Med,draft=13.5,fixedCost=4891)|MAPTM(Tangier,West Med,draft=13.5,fixedCost=1675)|CNTAO(Qingdao,North China,draft=12.5,fixedCost=6813)|NLRTM(Rotterdam,NCE,draft=13.5,fixedCost=19187)|OMSLL(Salalah,Saudi Arabia,draft=13.5,fixedCost=3850)|CLSAI(San Antonio,SA West Coast,draft=13.5,fixedCost=15564)|BRSSZ(Santos,Brazil,draft=11,fixedCost=7547)|CNSHA(Shanghai,Central China,draft=13.5,fixedCost=6497)|SGSIN(Singapore,Singapore,draft=13.5,fixedCost=3268)|GHTKD(Takoradi,West Africa,draft=8,fixedCost=1400)|MYTPP(Tanjung Pelepas,Singapore,draft=13.5,fixedCost=1992)|CAVAN(Vancouver,Canada West,draft=13.5,fixedCost=774)|CNYTN(Shenzhen,South China,draft=13.5,fixedCost=7220)|JPYOK(Yokohama,Japan,draft=13.5,fixedCost=16900)|BEZEE(Zeebrugge,NCE,draft=13.5,fixedCost=12047)`
+
+// Top 60 rotas por abs(peso) + top 20 positivas (sample representativo)
+const DATASET_ROTAS_SAMPLE = `CNSHA->DEBRV(-5055231)|KRPUS->DEBRV(-4829216)|CNYTN->NLRTM(-3294985)|CNSHA->NLRTM(-2621728)|MYTPP->DEBRV(-2342858)|JPYOK->NLRTM(-2337505)|CNSHA->NGAPP(-2230016)|CNYTN->DEBRV(-2095636)|CNTAO->DEBRV(-2036217)|CNYTN->USLAX(-1863590)|HKHKG->DEBRV(-1807410)|ECGYE->DEBRV(-1774480)|CNYTN->GBFXT(-1727541)|HKHKG->NLRTM(-1683387)|CNSHA->ITGIT(-1654440)|MYTPP->NLRTM(-1646653)|CNSHA->BRSSZ(-1438769)|BRSSZ->DEBRV(-1369952)|CNSHA->ESALG(-1152023)|CNSHA->USLAX(-1149972)|MYTPP->ITGIT(-1145559)|CNSHA->GBFXT(-1136519)|CNYTN->ITGIT(-1128868)|CNTAO->NGAPP(-1025016)|CNTAO->ITGIT(-979813)|HKHKG->NGAPP(-954701)|CNSHA->ZADUR(-950899)|HKHKG->ITGIT(-908389)|DEBRV->ZADUR(-866927)|CNYTN->ESALG(-851170)|MYTPP->GBFXT(-850145)|HKHKG->BRSSZ(-840119)|CNTAO->NLRTM(-825924)|HKHKG->USLAX(-810307)|KRPUS->EGPSD(-755087)|CNSHA->GHTKD(-686094)|MYTPP->NGAPP(-676314)|HKHKG->ZADUR(-661649)|MYTPP->USLAX(-658080)|MYTPP->JPYOK(-656162)|MYPKG->USEWR(338084)|SGSIN->USEWR(319727)|USEWR->SGSIN(316027)|AUBNE->DEHAM(312885)|BEZEE->AUBNE(301313)|USEWR->MYTPP(300440)|KEMBA->USLAX(299983)|BEANR->AUBNE(298449)|BRSSZ->CNTAO(290524)|CAVAN->ZADUR(289733)|AUBNE->BEZEE(289431)|GBFXT->JPYOK(286322)|USEWR->CNYTN(285255)|USLAX->KEMBA(285001)|DEHAM->CNTAO(283449)|OMSLL->USLAX(282366)|ZADUR->CAVAN(281606)|AEJEA->CLSAI(278491)
+Total: 1764 rotas (379 deficitárias, 1385 lucrativas)`
+
+export const SUGGESTED_QUESTIONS_ETN = [
+  "Quais portos concentram mais rotas deficitárias?",
+  "Qual região tem o melhor balanço entre custo fixo e conectividade?",
+  "Quais hubs são mais críticos para o comércio Ásia–Europa?",
+  "Santos (BRSSZ) está bem posicionado na rede global?",
+  "Quais rotas têm maior potencial de otimização por reposicionamento?",
+]
+
+const SYSTEM_PROMPT = `Você é um analista de logística marítima global. Responda SEMPRE em português, de forma direta e concisa (máx 3 frases). Use apenas os dados fornecidos.
+
+Portos (formato: CÓDIGO(nome,região,calado,custoFixo)):
+${DATASET_PORTOS_META}
+
+Amostra de rotas (formato: ORIGEM->DESTINO(peso), negativo=deficitário):
+${DATASET_ROTAS_SAMPLE}`
+
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+async function callGroq(apiKey, messages) {
+  const res = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "llama-3.1-8b-instant",
+      max_tokens: 200,
+      temperature: 0.4,
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+    }),
+  })
+  if (!res.ok) throw new Error(`Groq ${res.status}`)
+  const data = await res.json()
+  return data.choices?.[0]?.message?.content?.trim() ?? "Sem resposta."
 }
 
-// ─────────────────────────────────────────────────────────────
-// ENGINE DE INSIGHTS LOCAL — sem API
-// ─────────────────────────────────────────────────────────────
+function buildAutoPrompt(summary) {
+  const { filtro, grafo, topVertices, rotas } = summary
+  const hubs = (topVertices || []).slice(0, 5).map(h => `${h.codigo}(grau=${h.grau})`).join(", ")
+  const rotaNeg = rotas?.rotasNegativas ?? 0
+  const percNeg = rotas?.percNegativas ?? "—"
+  return `Estado atual do dashboard:
+- Filtro grau: ${filtro?.grauRange?.[0]}–${filtro?.grauRange?.[1]}, peso: ${filtro?.pesoRange?.[0]}–${filtro?.pesoRange?.[1]}
+- Portos: ${grafo?.vertices}, rotas: ${grafo?.arestas}, grau médio: ${Number(grafo?.grauMedio ?? 0).toFixed(1)}, peso médio: ${grafo?.pesoMedio ?? 0}
+- Rotas deficitárias: ${rotaNeg} (${percNeg})
+- Top hubs: ${hubs || "—"}
 
-function fmt(n) {
-  if (n == null || isNaN(n)) return "—"
-  return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 0 })
+Gere um insight analítico sobre este recorte da rede marítima global.`
 }
 
-function generateLocalInsight(summaryObject) {
-  const { filtro, grafo, rotas, bfsDfs } = summaryObject
+// ─── Cache ───
+const PREFIX = "etn_groq_v1_"
+const memCache = {}
+const getCache = k => { try { return sessionStorage.getItem(PREFIX + k) } catch { return null } }
+const setCache = (k, v) => { try { sessionStorage.setItem(PREFIX + k, v) } catch {} }
 
-  const grauMin   = filtro?.grauRange?.[0] ?? 0
-  const grauMax   = filtro?.grauRange?.[1] ?? 999
-  const pesoMin   = filtro?.pesoRange?.[0] ?? -Infinity
-  const pesoMax   = filtro?.pesoRange?.[1] ?? Infinity
-
-  const totalV    = grafo?.vertices  ?? 0
-  const totalE    = grafo?.arestas   ?? 0
-  const grauMedio = grafo?.grauMedio ?? 0
-  const pesoMedio = grafo?.pesoMedio ?? 0
-
-  const rotasNeg  = rotas?.rotasNegativas ?? 0
-  const percNeg   = rotas?.percNegativas  ?? "0%"
-  const rMin      = rotas?.pesoMin        ?? 0
-  const rMax      = rotas?.pesoMax        ?? 0
-
-  // Usa os hubs reais vindos do dashboard (API), com fallback para DATASET_MEMORY
-  const apiHubs = summaryObject.topVertices || []
-  const hubs = apiHubs.length > 0
-    ? apiHubs
-    : DATASET_MEMORY.top5_hubs.filter(h => h.grau >= grauMin && h.grau <= grauMax)
-  const hubNames = hubs.slice(0, 5).map(h => `${h.nome} (${h.codigo})`).join(", ")
-
-  const sentences = []
-
-  // ── 1. Visão geral da rede filtrada ──
-  if (totalV > 0) {
-    sentences.push(
-      `Com os filtros aplicados, a rede exibe ${fmt(totalV)} porto${totalV !== 1 ? "s" : ""} e ${fmt(totalE)} rota${totalE !== 1 ? "s" : ""}, com grau médio de ${Number(grauMedio).toFixed(1)} conexões por nó.`
-    )
-  } else {
-    sentences.push("Os filtros aplicados resultaram em uma rede sem vértices — tente ampliar os intervalos de grau ou peso.")
-  }
-
-  // ── 2. Hubs presentes no filtro ──
-  if (hubs.length > 0) {
-    sentences.push(
-      `Os principais hubs presentes nesta faixa de grau são: ${hubNames}, que concentram as maiores conectividades do grafo global.`
-    )
-  } else if (grauMin > 87) {
-    sentences.push(
-      "Nenhum hub principal se enquadra nesta faixa de grau — apenas nós de conectividade intermediária estão representados."
-    )
-  }
-
-  // ── 3. Análise de rotas deficitárias ──
-  if (rotasNeg > 0) {
-    sentences.push(
-      `Atenção: ${fmt(rotasNeg)} rota${rotasNeg !== 1 ? "s" : ""} (${percNeg} do total filtrado) apresentam pesos negativos, indicando rotas deficitárias — o pior caso chega a ${fmt(rMin)}, provável desequilíbrio de carga nessa direção.`
-    )
-  } else if (totalE > 0) {
-    sentences.push(
-      `Nenhuma rota deficitária foi identificada neste intervalo de peso (${fmt(pesoMin)} a ${fmt(pesoMax)}), sugerindo que o filtro isola rotas com receita positiva.`
-    )
-  }
-
-  // ── 4. Recomendação prática ──
-  const recomendacoes = []
-
-  if (rotasNeg / (totalE || 1) > 0.3) {
-    recomendacoes.push(
-      "Recomenda-se revisar as rotas com pesos mais negativos para identificar desequilíbrios de carga e potencial de otimização via reposicionamento de contêineres vazios."
-    )
-  } else if (grauMedio > 70) {
-    recomendacoes.push(
-      "A alta conectividade média indica resiliência na rede — priorize hubs de alto grau como pontos de transbordo para maximizar eficiência logística."
-    )
-  } else if (pesoMedio > 0) {
-    const top3 = hubs.slice(0, 3).map(h => h.nome).join(", ")
-    recomendacoes.push(
-      `O peso médio positivo de ${fmt(pesoMedio)} indica rotas lucrativas nesta faixa; concentrar escalas nos principais hubs filtrados (${top3}) pode ampliar a margem operacional.`
-    )
-  } else {
-    const top2 = hubs.slice(0, 2).map(h => `${h.nome} (${h.codigo})`).join(" e ")
-    recomendacoes.push(
-      top2
-        ? `Amplie o intervalo de grau para incluir mais hubs estratégicos além de ${top2}, que lideram a conectividade neste filtro.`
-        : "Amplie o intervalo de grau para incluir hubs estratégicos com maior conectividade global."
-    )
-  }
-
-  sentences.push(recomendacoes[0])
-
-  return sentences.join(" ")
-}
-
-// ─── Cache persistente em sessionStorage ───────────────────────
-const SESSION_PREFIX = "etn_insight_local_v1_"
-
-function readSessionCache(key) {
-  try { return sessionStorage.getItem(SESSION_PREFIX + key) ?? null } catch { return null }
-}
-function writeSessionCache(key, value) {
-  try { sessionStorage.setItem(SESSION_PREFIX + key, value) } catch {}
-}
-
-function trimSummary(obj) {
-  return {
-    filtro:       obj.filtro,
-    grafo:        obj.grafo,
-    topVertices:  obj.topVertices,
-    rotas:  obj.rotas
-      ? {
-          total:             obj.rotas.total,
-          rotasNegativas:    obj.rotas.rotasNegativas,
-          percNegativas:     obj.rotas.percNegativas,
-          pesoMin:           obj.rotas.pesoMin,
-          pesoMax:           obj.rotas.pesoMax,
-          pesoMedioPositivo: obj.rotas.pesoMedioPositivo,
-        }
-      : undefined,
-    bfsDfs: obj.bfsDfs,
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// HOOK — mesma interface pública do original
-// ─────────────────────────────────────────────────────────────
-export function useAIInsightETN() {
-  const [insight, setInsight]           = useState(null)
+export function useAIInsightETN(groqApiKey) {
+  const [insight, setInsight]               = useState(null)
   const [loadingInsight, setLoadingInsight] = useState(false)
-
-  const cacheRef    = useRef({})
+  const [error, setError]                   = useState(null)
   const debounceRef = useRef(null)
 
   const generate = useCallback((summaryObject) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!groqApiKey) return
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      const key = JSON.stringify({
+        gr: summaryObject.filtro?.grauRange,
+        pr: summaryObject.filtro?.pesoRange,
+        v:  summaryObject.grafo?.vertices,
+      })
+      if (memCache[key])       { setInsight(memCache[key]); return }
+      const cached = getCache(key)
+      if (cached)              { memCache[key] = cached; setInsight(cached); return }
 
-    debounceRef.current = setTimeout(() => {
-      const slim = trimSummary(summaryObject)
-      const key  = JSON.stringify(slim)
-
-      // 1. Cache em memória
-      if (cacheRef.current[key]) {
-        setInsight(cacheRef.current[key])
-        return
+      setLoadingInsight(true); setError(null)
+      try {
+        const text = await callGroq(groqApiKey, [{ role: "user", content: buildAutoPrompt(summaryObject) }])
+        memCache[key] = text; setCache(key, text); setInsight(text)
+      } catch (e) {
+        setError(e.message)
+      } finally {
+        setLoadingInsight(false)
       }
+    }, 900)
+  }, [groqApiKey])
 
-      // 2. Cache em sessionStorage
-      const cached = readSessionCache(key)
-      if (cached) {
-        cacheRef.current[key] = cached
-        setInsight(cached)
-        return
-      }
+  const ask = useCallback(async (question) => {
+    if (!groqApiKey || !question.trim()) return
+    setLoadingInsight(true); setError(null)
+    try {
+      const text = await callGroq(groqApiKey, [{ role: "user", content: question }])
+      setInsight(text)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoadingInsight(false)
+    }
+  }, [groqApiKey])
 
-      // 3. Gera localmente (simula loading breve para UX)
-      setLoadingInsight(true)
-      setTimeout(() => {
-        try {
-          const text = generateLocalInsight(slim)
-          cacheRef.current[key] = text
-          writeSessionCache(key, text)
-          setInsight(text)
-        } catch (e) {
-          console.error("[useAIInsightETN]", e.message)
-        } finally {
-          setLoadingInsight(false)
-        }
-      }, 400) // delay mínimo para o spinner aparecer
-    }, 800) // debounce ao mexer nos filtros
-  }, [])
-
-  return { insight, loadingInsight, generate }
+  return { insight, loadingInsight, error, generate, ask }
 }
