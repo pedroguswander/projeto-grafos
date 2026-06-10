@@ -1,150 +1,129 @@
-import { Zap, Loader2 } from "lucide-react"
+import { useState, useRef } from "react"
 
-const THEMES = {
-  blue: {
-    bg: "linear-gradient(135deg, rgba(14,165,233,0.10) 0%, rgba(30,64,175,0.13) 100%)",
-    border: "1px solid rgba(56,189,248,0.28)",
-    boxShadow: "0 2px 24px 0 rgba(14,165,233,0.10), inset 0 1px 0 rgba(186,230,255,0.08)",
-    iconColor: "#38bdf8",
-    iconGlow: "drop-shadow(0 0 6px rgba(56,189,248,0.7))",
-    textColor: "#bae6fd",
-    mutedColor: "rgba(186,230,255,0.38)",
-    dotColor: "#0ea5e9",
-    loaderColor: "#38bdf8",
-    tagBg: "rgba(14,165,233,0.15)",
-    tagBorder: "rgba(56,189,248,0.30)",
-    tagColor: "#7dd3fc",
-    labelText: "IA INSIGHT",
-    divider: "rgba(56,189,248,0.15)",
-  },
-  green: {
-    bg: "linear-gradient(135deg, rgba(16,185,129,0.10) 0%, rgba(5,150,105,0.13) 100%)",
-    border: "1px solid rgba(52,211,153,0.28)",
-    boxShadow: "0 2px 24px 0 rgba(16,185,129,0.10), inset 0 1px 0 rgba(167,243,208,0.08)",
-    iconColor: "#34d399",
-    iconGlow: "drop-shadow(0 0 6px rgba(52,211,153,0.7))",
-    textColor: "#a7f3d0",
-    mutedColor: "rgba(167,243,208,0.38)",
-    dotColor: "#10b981",
-    loaderColor: "#34d399",
-    tagBg: "rgba(16,185,129,0.15)",
-    tagBorder: "rgba(52,211,153,0.30)",
-    tagColor: "#6ee7b7",
-    labelText: "IA INSIGHT",
-    divider: "rgba(52,211,153,0.15)",
-  },
-}
+/**
+ * InsightPanel — card de IA com:
+ *  - Insight automático (via prop `insight`)
+ *  - Perguntas sugeridas clicáveis (prop `suggestedQuestions`)
+ *  - Input para pergunta customizada (prop `onAsk`)
+ *
+ * Props:
+ *   insight            string | null   — texto gerado automaticamente
+ *   loading            bool
+ *   error              string | null
+ *   theme              "blue" | "green"
+ *   suggestedQuestions string[]        — lista de perguntas sugeridas
+ *   onAsk              (q: string) => void — callback para pergunta do usuário
+ */
+export default function InsightPanel({
+  insight,
+  loading,
+  error,
+  theme = "blue",
+  suggestedQuestions = [],
+  onAsk,
+}) {
+  const [input, setInput] = useState("")
+  const [asked, setAsked] = useState(null)
+  const inputRef = useRef(null)
 
-const InsightPanel = ({ insight, loading, theme = "blue" }) => {
-  const t = THEMES[theme] ?? THEMES.blue
+  function handleAsk(q) {
+    if (!onAsk || !q.trim()) return
+    setAsked(q.trim())
+    setInput("")
+    onAsk(q.trim())
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    handleAsk(input)
+  }
 
   return (
-    <div style={{
-      padding: "16px 20px",
-      borderRadius: 14,
-      marginBottom: 20,
-      background: t.bg,
-      border: t.border,
-      boxShadow: t.boxShadow,
-      display: "flex",
-      gap: 14,
-      alignItems: "flex-start",
-      position: "relative",
-      overflow: "hidden",
-    }}>
-      {/* Subtle shimmer line at top */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0,
-        height: 1,
-        background: `linear-gradient(90deg, transparent 0%, ${t.iconColor}55 40%, ${t.iconColor}55 60%, transparent 100%)`,
-      }} />
+    <div className="insight-panel">
 
-      {/* Icon column */}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 6,
-        paddingTop: 2,
-        flexShrink: 0,
-      }}>
-        {loading ? (
-          <Loader2
-            size={16}
-            color={t.loaderColor}
-            style={{
-              animation: "spin 1s linear infinite",
-              filter: t.iconGlow,
-            }}
-          />
-        ) : (
-          <Zap
-            size={16}
-            color={t.iconColor}
-            style={{ filter: t.iconGlow, flexShrink: 0 }}
-          />
-        )}
-        {/* Vertical divider line below icon */}
-        <div style={{
-          width: 1,
-          flex: 1,
-          minHeight: 20,
-          background: `linear-gradient(to bottom, ${t.divider}, transparent)`,
-        }} />
-      </div>
-
-      {/* Text column */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Label badge */}
-        <div style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 5,
-          padding: "2px 8px",
-          borderRadius: 99,
-          background: t.tagBg,
-          border: `1px solid ${t.tagBorder}`,
-          marginBottom: 8,
-        }}>
-          <div style={{
-            width: 5, height: 5,
-            borderRadius: "50%",
-            background: t.dotColor,
-            boxShadow: `0 0 6px ${t.dotColor}`,
-            animation: loading ? "pulse 1.5s ease-in-out infinite" : "none",
-          }} />
-          <span style={{
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            color: t.tagColor,
-            textTransform: "uppercase",
-          }}>
-            {loading ? "Analisando…" : t.labelText}
+      {/* ── Cabeçalho ── */}
+      <div className="insight-panel-header">
+        <svg
+          className="insight-panel-icon"
+          width="18" height="18" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"
+        >
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+        <span className="insight-panel-title">IA Insight</span>
+        {loading && (
+          <span className="insight-panel-loading" style={{ marginLeft: "auto" }}>
+            <span className="insight-panel-loading-spinner" />
+            Analisando…
           </span>
-        </div>
-
-        {/* Insight text */}
-        <div style={{
-          fontSize: 13,
-          lineHeight: 1.75,
-          color: loading ? t.mutedColor : t.textColor,
-          transition: "color 0.3s ease",
-        }}>
-          {loading
-            ? <span>Processando os dados da rede com inteligência artificial…</span>
-            : insight
-              ?? <span style={{ opacity: 0.45 }}>Aplique um filtro para gerar insights.</span>
-          }
-        </div>
+        )}
       </div>
 
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-      `}</style>
+      {/* ── Corpo do insight ── */}
+      <div className="insight-panel-body">
+        {error ? (
+          <div className="insight-panel-error">⚠ {error}</div>
+        ) : asked ? (
+          <>
+            <p className="insight-panel-question">"{asked}"</p>
+            <p className="insight-panel-answer" style={{ opacity: loading ? 0.4 : 1 }}>
+              {insight || (loading ? "" : "—")}
+            </p>
+          </>
+        ) : insight ? (
+          <p className="insight-panel-answer">{insight}</p>
+        ) : !loading ? (
+          <p className="insight-panel-answer" style={{ opacity: 0.4 }}>
+            Ajuste os filtros para gerar um insight automático.
+          </p>
+        ) : null}
+      </div>
+
+      {/* ── Perguntas sugeridas ── */}
+      {suggestedQuestions.length > 0 && (
+        <div>
+          <p className="insight-panel-suggestions-label">Perguntas sugeridas</p>
+          <div className="insight-panel-suggestions">
+            {suggestedQuestions.map((q, i) => (
+              <button
+                key={i}
+                onClick={() => handleAsk(q)}
+                disabled={loading}
+                className="insight-panel-suggestion-btn"
+                type="button"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Input customizado ── */}
+      {onAsk && (
+        <form onSubmit={handleSubmit} className="insight-panel-input-row">
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Faça uma pergunta sobre o grafo…"
+            disabled={loading}
+            className="insight-panel-input"
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            className="insight-panel-send-btn"
+            aria-label="Enviar pergunta"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </form>
+      )}
     </div>
   )
 }
-
-export default InsightPanel

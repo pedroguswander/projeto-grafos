@@ -8,7 +8,7 @@ import {
 import logoCompleta from "../assets/logo/logo_branca_completa.png"
 import "../css/Dashboard.css"
 import InsightPanel from "../../components/InsightPanel"
-import { useAIInsight } from "../hooks/useAIInsight"
+import { useAIInsight, SUGGESTED_QUESTIONS } from "../hooks/useAIInsight"
 
 const API = "http://localhost:5000"
 const PALETTE = ["#1e40af", "#0891b2", "#0369a1"]
@@ -240,7 +240,9 @@ export const Dashboard = ({ onBack }) => {
   const [pais, setPais] = useState("")
   const [grauRange, setGrauRange] = useState([0, 9999])
   const [distRange, setDistRange] = useState([0, 9999999])
-  const { insight, loadingInsight, generate } = useAIInsight()
+  const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
+  const { insight, loadingInsight, error: insightError, generate, ask } = useAIInsight(GROQ_KEY)
+  const [insightOpen, setInsightOpen] = useState(false)
 
   const hasFilter = !!(pais ||
     (ranges && grauRange[0] > ranges.grau_min) || (ranges && grauRange[1] < ranges.grau_max) ||
@@ -419,7 +421,40 @@ export const Dashboard = ({ onBack }) => {
           onClear={() => { setPais(""); if (ranges) { setGrauRange([ranges.grau_min, ranges.grau_max]); setDistRange([ranges.dist_min, ranges.dist_max]) } }}
         />
 
-        <InsightPanel insight={insight} loading={loadingInsight} theme="blue" />
+        {/* ── Botão flutuante IA ── */}
+        <button
+          className="insight-fab insight-fab--blue"
+          onClick={() => setInsightOpen(true)}
+          title="Abrir IA Insight"
+          type="button"
+          aria-label="Abrir painel de IA"
+        >
+          <Zap size={18} />
+          <span>IA Insight</span>
+          {insight && <span className="insight-fab-dot" />}
+        </button>
+
+        {/* ── Modal IA ── */}
+        {insightOpen && (
+          <div className="insight-modal-overlay" onClick={() => setInsightOpen(false)}>
+            <div className="insight-modal insight-modal--blue" onClick={e => e.stopPropagation()}>
+              <button
+                className="insight-modal-close"
+                onClick={() => setInsightOpen(false)}
+                type="button"
+                aria-label="Fechar"
+              >✕</button>
+              <InsightPanel
+                insight={insight}
+                loading={loadingInsight}
+                error={insightError}
+                theme="blue"
+                suggestedQuestions={SUGGESTED_QUESTIONS}
+                onAsk={ask}
+              />
+            </div>
+          </div>
+        )}
 
         <section className="dashboard-kpi-grid">
           <KPICard loading={loading} title="Vértices (Aeroportos)" value={d.totalV?.toLocaleString("pt-BR") || "—"} />

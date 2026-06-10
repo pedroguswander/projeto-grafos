@@ -1,228 +1,107 @@
 import { useState, useRef, useCallback } from "react"
 
-// ─────────────────────────────────────────────────────────────
-// MEMÓRIA ESTÁTICA DO DATASET — Rotas Aéreas Brasileiras
-// ─────────────────────────────────────────────────────────────
-const DATASET_MEMORY = {
-  top5_hubs: [
-    { iata: "BSB", cidade: "Brasília",       regiao: "Centro-Oeste", grau: 12, densidade_ego: 0.32, papel: "Hub político nacional — conecta TODAS as regiões, especialmente capitais remotas do Norte e Nordeste ao centro federal." },
-    { iata: "GRU", cidade: "São Paulo",      regiao: "Sudeste",      grau: 10, densidade_ego: 0.40, papel: "Principal hub econômico — ponto de entrada/saída para Norte (MAO, BEL), Sul (POA) e Nordeste (FOR). Maior peso médio de rota do grafo." },
-    { iata: "REC", cidade: "Recife",         regiao: "Nordeste",     grau: 8,  densidade_ego: 0.50, papel: "Hub regional do Nordeste — articula capitais vizinhas (JPA, NAT, SSA, FOR) e serve de ponte para o Sudeste e Brasília." },
-    { iata: "GIG", cidade: "Rio de Janeiro", regiao: "Sudeste",      grau: 7,  densidade_ego: 0.50, papel: "Hub turístico-econômico — forte conexão com o Nordeste turístico (NAT, SSA) e eixo Sudeste (GRU, CNF, VIX)." },
-    { iata: "CNF", cidade: "Belo Horizonte", regiao: "Sudeste",      grau: 7,  densidade_ego: 0.54, papel: "Hub corporativo do Sudeste — conecta São Paulo (GRU, CGH) ao Sul, Norte e Nordeste com viés econômico/institucional." },
-  ],
-  aeroportos: [
-    { iata: "BSB", cidade: "Brasília",        regiao: "Centro-Oeste", grau: 12, densidade_ego: 0.32 },
-    { iata: "GRU", cidade: "São Paulo",       regiao: "Sudeste",      grau: 10, densidade_ego: 0.40 },
-    { iata: "REC", cidade: "Recife",          regiao: "Nordeste",     grau: 8,  densidade_ego: 0.50 },
-    { iata: "GIG", cidade: "Rio de Janeiro",  regiao: "Sudeste",      grau: 7,  densidade_ego: 0.50 },
-    { iata: "CNF", cidade: "Belo Horizonte",  regiao: "Sudeste",      grau: 7,  densidade_ego: 0.54 },
-    { iata: "FOR", cidade: "Fortaleza",       regiao: "Nordeste",     grau: 6,  densidade_ego: 0.62 },
-    { iata: "SSA", cidade: "Salvador",        regiao: "Nordeste",     grau: 5,  densidade_ego: 0.73 },
-    { iata: "BEL", cidade: "Belém",           regiao: "Norte",        grau: 5,  densidade_ego: 0.80 },
-    { iata: "VIX", cidade: "Vitória",         regiao: "Sudeste",      grau: 5,  densidade_ego: 0.67 },
-    { iata: "MAO", cidade: "Manaus",          regiao: "Norte",        grau: 4,  densidade_ego: 0.90 },
-    { iata: "PVH", cidade: "Porto Velho",     regiao: "Norte",        grau: 4,  densidade_ego: 0.80 },
-    { iata: "NAT", cidade: "Natal",           regiao: "Nordeste",     grau: 4,  densidade_ego: 0.70 },
-    { iata: "CWB", cidade: "Curitiba",        regiao: "Sul",          grau: 4,  densidade_ego: 0.60 },
-    { iata: "FLN", cidade: "Florianópolis",   regiao: "Sul",          grau: 4,  densidade_ego: 0.60 },
-    { iata: "POA", cidade: "Porto Alegre",    regiao: "Sul",          grau: 4,  densidade_ego: 0.70 },
-    { iata: "JPA", cidade: "João Pessoa",     regiao: "Nordeste",     grau: 3,  densidade_ego: 0.83 },
-    { iata: "CGH", cidade: "São Paulo",       regiao: "Sudeste",      grau: 2,  densidade_ego: 1.00 },
-    { iata: "GYN", cidade: "Goiânia",         regiao: "Centro-Oeste", grau: 2,  densidade_ego: 0.67 },
-    { iata: "RBR", cidade: "Rio Branco",      regiao: "Norte",        grau: 2,  densidade_ego: 1.00 },
-    { iata: "THE", cidade: "Teresina",        regiao: "Nordeste",     grau: 2,  densidade_ego: 1.00 },
-  ],
-  regioes: {
-    "Nordeste":     { aeroportos: ["REC","SSA","FOR","NAT","JPA","THE"], conexoes_internas: 8,  observacao: "região mais conectada internamente; REC é o hub articulador" },
-    "Sudeste":      { aeroportos: ["GRU","CGH","GIG","CNF","VIX"],      conexoes_internas: 7,  observacao: "eixo econômico; GRU e GIG dominam o tráfego" },
-    "Norte":        { aeroportos: ["MAO","BEL","PVH","RBR"],            conexoes_internas: 4,  observacao: "depende de BSB e GRU para sair da região; alta densidade local" },
-    "Sul":          { aeroportos: ["CWB","FLN","POA"],                  conexoes_internas: 3,  observacao: "região compacta; todas as capitais se conectam entre si" },
-    "Centro-Oeste": { aeroportos: ["BSB","GYN"],                        conexoes_internas: 1,  observacao: "BSB domina; GYN é quase um satélite" },
-  },
+// ─── Dataset compacto embutido (economiza tokens na API) ───
+const DATASET_AEROPORTOS = `REC->JPA(13,regional_curta)|REC->NAT(15,regional)|REC->SSA(18,regional_forte)|REC->FOR(19,regional_forte)|REC->THE(17,regional_interior_litoral)|NAT->JPA(12,regional_curta)|FOR->NAT(15,regional_turistica)|SSA->FOR(19,regional_forte)|GRU->CGH(18,metropolitana)|GRU->GIG(21,eixo_sudeste)|GRU->CNF(20,eixo_sudeste)|GRU->VIX(19,eixo_sudeste)|CGH->CNF(20,ponte_corporativa)|GIG->CNF(18,eixo_sudeste)|GIG->VIX(17,litoral_sudeste)|BSB->GYN(14,regional_forte)|CWB->FLN(15,regional_sul)|CWB->POA(18,regional_sul)|FLN->POA(16,regional_sul_turistica)|MAO->BEL(20,regional_estrategica)|MAO->PVH(18,regional_norte)|PVH->RBR(17,regional_remota)|REC->BSB(21,ponte_nacional)|SSA->BSB(20,ponte_nacional)|FOR->GRU(23,hub_nacional)|NAT->GIG(20,turistica_nacional)|THE->BSB(19,articulacao_nacional)|BSB->GRU(24,eixo_nacional)|BSB->CNF(20,eixo_centro_sudeste)|BSB->BEL(22,integracao_nacional)|BSB->MAO(24,integracao_nacional)|GYN->CWB(18,conexao_interregional)|CWB->GRU(21,eixo_sul_sudeste)|FLN->GIG(20,turistica_interregional)|POA->GRU(23,eixo_sul_sudeste_longo)|BEL->GRU(24,hub_nacional)|MAO->GRU(25,hub_nacional_longo)|PVH->BSB(23,integracao_remota)|RBR->BSB(24,integracao_remota)|VIX->REC(20,litoral_nacional)|GIG->SSA(20,turistica_nacional)|CNF->FOR(21,conexao_interregional)|SSA->VIX(19,litoral_interregional)|FOR->BSB(21,articulacao_nacional)|REC->GIG(21,eixo_turistico_economico)|JPA->BSB(18,conexao_nacional)|POA->CNF(22,conexao_interregional_longa)|BEL->CNF(22,eixo_norte_sudeste)|BEL->PVH(19,integracao_norte)|FLN->VIX(19,litoral_interregional)`
+
+// Formato: IATA(grau,regiao)
+const AEROPORTOS_META = `BSB(12,Centro-Oeste)|GRU(10,Sudeste)|REC(8,Nordeste)|GIG(7,Sudeste)|CNF(7,Sudeste)|FOR(6,Nordeste)|SSA(5,Nordeste)|BEL(5,Norte)|VIX(5,Sudeste)|MAO(4,Norte)|PVH(4,Norte)|NAT(4,Nordeste)|CWB(4,Sul)|FLN(4,Sul)|POA(4,Sul)|JPA(3,Nordeste)|CGH(2,Sudeste)|GYN(2,Centro-Oeste)|RBR(2,Norte)|THE(2,Nordeste)`
+
+export const SUGGESTED_QUESTIONS = [
+  "Qual aeroporto é mais crítico para a malha nacional?",
+  "Quais regiões seriam mais afetadas se BSB fosse removido?",
+  "Existe algum gargalo de conectividade no Norte/Nordeste?",
+  "Quais rotas têm maior peso estratégico no grafo?",
+  "Como a região Sul se conecta ao restante do país?",
+]
+
+const SYSTEM_PROMPT = `Você é um analista de redes de transporte aéreo brasileiro. Responda SEMPRE em português, de forma direta e concisa (máx 3 frases). Use apenas os dados fornecidos.
+
+Dataset de rotas (formato: ORIGEM->DESTINO(peso,tipo)):
+${DATASET_AEROPORTOS}
+
+Aeroportos (formato: IATA(grau,região)):
+${AEROPORTOS_META}`
+
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+async function callGroq(apiKey, messages) {
+  const res = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "llama-3.1-8b-instant",
+      max_tokens: 200,
+      temperature: 0.4,
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+    }),
+  })
+  if (!res.ok) throw new Error(`Groq ${res.status}`)
+  const data = await res.json()
+  return data.choices?.[0]?.message?.content?.trim() ?? "Sem resposta."
 }
 
-// ─────────────────────────────────────────────────────────────
-// ENGINE DE INSIGHTS LOCAL — sem API
-// ─────────────────────────────────────────────────────────────
+function buildAutoPrompt(summary) {
+  const { filtro, grafo, topVertices } = summary
+  const hubs = (topVertices || []).slice(0, 5).map(h => `${h.iata}(grau=${h.grau})`).join(", ")
+  return `Estado atual do dashboard:
+- Filtro grau: ${filtro?.grauRange?.[0]}–${filtro?.grauRange?.[1]}, peso: ${filtro?.pesoRange?.[0]}–${filtro?.pesoRange?.[1]}
+- Vértices visíveis: ${grafo?.vertices}, arestas: ${grafo?.arestas}, grau médio: ${Number(grafo?.grauMedio ?? 0).toFixed(1)}
+- Top hubs: ${hubs || "—"}
 
-function fmt(n) {
-  if (n == null || isNaN(n)) return "—"
-  return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 0 })
+Gere um insight analítico sobre este recorte do grafo aéreo brasileiro.`
 }
 
-function generateLocalInsight(summaryObject) {
-  const { filtro, grafo, bfsDfs } = summaryObject
+// ─── Cache ───
+const PREFIX = "air_groq_v1_"
+const memCache = {}
+const getCache = k => { try { return sessionStorage.getItem(PREFIX + k) } catch { return null } }
+const setCache = (k, v) => { try { sessionStorage.setItem(PREFIX + k, v) } catch {} }
 
-  const grauMin    = filtro?.grauRange?.[0] ?? 0
-  const grauMax    = filtro?.grauRange?.[1] ?? 999
-  const pesoMin    = filtro?.pesoRange?.[0] ?? -Infinity
-  const pesoMax    = filtro?.pesoRange?.[1] ?? Infinity
-  const regiaoFiltro = filtro?.regiao ?? null
-
-  const totalV     = grafo?.vertices  ?? 0
-  const totalE     = grafo?.arestas   ?? 0
-  const grauMedio  = grafo?.grauMedio ?? 0
-  const densMedia  = grafo?.densidadeMedia ?? null
-
-  // Usa os hubs reais vindos do dashboard, com fallback para DATASET_MEMORY
-  const apiHubs = summaryObject.topVertices || []
-  const hubs = apiHubs.length > 0
-    ? apiHubs
-    : DATASET_MEMORY.aeroportos.filter(a => a.grau >= grauMin && a.grau <= grauMax)
-
-  const hubNames = hubs.slice(0, 5)
-    .map(h => `${h.cidade ?? h.iata} (${h.iata ?? h.codigo})`)
-    .join(", ")
-
-  const sentences = []
-
-  // ── 1. Visão geral da rede filtrada ──
-  if (totalV > 0) {
-    sentences.push(
-      `Com os filtros aplicados, a rede exibe ${fmt(totalV)} aeroporto${totalV !== 1 ? "s" : ""} e ${fmt(totalE)} rota${totalE !== 1 ? "s" : ""}, com grau médio de ${Number(grauMedio).toFixed(1)} conexões por nó.`
-    )
-  } else {
-    sentences.push(
-      "Os filtros aplicados resultaram em uma rede sem vértices — tente ampliar os intervalos de grau ou peso."
-    )
-  }
-
-  // ── 2. Hubs presentes no filtro ──
-  if (hubs.length > 0) {
-    sentences.push(
-      `Os principais aeroportos presentes nesta faixa de grau são: ${hubNames}, que concentram as maiores conectividades do grafo.`
-    )
-  } else if (grauMin > 10) {
-    sentences.push(
-      "Nenhum hub principal se enquadra nesta faixa de grau — apenas aeroportos de conectividade intermediária estão representados."
-    )
-  }
-
-  // ── 3. Análise de região isolada ou densidade de ego ──
-  if (regiaoFiltro && DATASET_MEMORY.regioes[regiaoFiltro]) {
-    const reg = DATASET_MEMORY.regioes[regiaoFiltro]
-    sentences.push(
-      `O filtro isola a região ${regiaoFiltro}: ${reg.observacao} (${reg.conexoes_internas} conexão${reg.conexoes_internas !== 1 ? "ões" : ""} interna${reg.conexoes_internas !== 1 ? "s" : ""}).`
-    )
-  } else if (densMedia != null) {
-    const densLabel = densMedia > 0.7 ? "alta" : densMedia > 0.4 ? "moderada" : "baixa"
-    sentences.push(
-      `A densidade média de ego neste recorte é ${densLabel} (${Number(densMedia).toFixed(2)}), indicando que os vizinhos dos nós filtrados ${densMedia > 0.7 ? "tendem a se interligar entre si" : "raramente se conectam diretamente"}.`
-    )
-  }
-
-  // ── 4. BFS/DFS — componentes e alcance ──
-  if (bfsDfs?.componentes != null && bfsDfs.componentes > 1) {
-    sentences.push(
-      `Atenção: o grafo filtrado está fragmentado em ${fmt(bfsDfs.componentes)} componentes desconectados — alguns aeroportos não têm caminho entre si neste recorte.`
-    )
-  } else if (bfsDfs?.profundidade != null) {
-    sentences.push(
-      `A busca em profundidade atingiu ${fmt(bfsDfs.profundidade)} nível${bfsDfs.profundidade !== 1 ? "is" : ""}, indicando uma rede ${bfsDfs.profundidade >= 4 ? "relativamente densa e bem conectada" : "compacta neste filtro"}.`
-    )
-  }
-
-  // ── 5. Recomendação prática ──
-  const recomendacoes = []
-
-  if (grauMedio < 2 && totalV > 0) {
-    recomendacoes.push(
-      "A conectividade média muito baixa sugere que este recorte isola aeroportos periféricos — considere incluir hubs regionais (REC, CNF, GIG) para obter uma visão mais representativa da rede."
-    )
-  } else if (grauMin >= 8) {
-    recomendacoes.push(
-      `Este recorte concentra os grandes hubs nacionais (${hubs.slice(0, 3).map(h => h.cidade ?? h.iata).join(", ")}), que formam o esqueleto da malha aérea brasileira e sustentam a conectividade de toda a rede.`
-    )
-  } else if (regiaoFiltro === "Norte") {
-    recomendacoes.push(
-      "A região Norte depende fortemente de Brasília (BSB) e São Paulo (GRU) para conexões de longa distância — qualquer restrição nesses hubs impacta diretamente o acesso aéreo desta região."
-    )
-  } else if (grauMedio > 5) {
-    const top2 = hubs.slice(0, 2).map(h => `${h.cidade ?? h.iata} (${h.iata ?? h.codigo})`).join(" e ")
-    recomendacoes.push(
-      `A alta conectividade média sugere resiliência neste recorte; priorize ${top2 || "os hubs de maior grau"} como pontos de escala para maximizar o alcance da malha filtrada.`
-    )
-  } else {
-    const top2 = hubs.slice(0, 2).map(h => `${h.cidade ?? h.iata} (${h.iata ?? h.codigo})`).join(" e ")
-    recomendacoes.push(
-      top2
-        ? `Amplie o intervalo de grau para incluir mais hubs estratégicos além de ${top2}, que lideram a conectividade neste filtro.`
-        : "Amplie o intervalo de grau para incluir hubs estratégicos com maior conectividade."
-    )
-  }
-
-  sentences.push(recomendacoes[0])
-
-  return sentences.join(" ")
-}
-
-// ─── Cache persistente em sessionStorage ───────────────────────
-const SESSION_PREFIX = "air_insight_local_v1_"
-
-function readSessionCache(key) {
-  try { return sessionStorage.getItem(SESSION_PREFIX + key) ?? null } catch { return null }
-}
-function writeSessionCache(key, value) {
-  try { sessionStorage.setItem(SESSION_PREFIX + key, value) } catch {}
-}
-
-function trimSummary(obj) {
-  return {
-    filtro:      obj.filtro,
-    grafo:       obj.grafo,
-    topVertices: obj.topVertices,
-    bfsDfs:      obj.bfsDfs,
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// HOOK — mesma interface pública do original
-// ─────────────────────────────────────────────────────────────
-export function useAIInsight() {
-  const [insight, setInsight]               = useState(null)
+export function useAIInsight(groqApiKey) {
+  const [insight, setInsight]             = useState(null)
   const [loadingInsight, setLoadingInsight] = useState(false)
-
-  const cacheRef    = useRef({})
+  const [error, setError]                 = useState(null)
   const debounceRef = useRef(null)
 
+  // Insight automático — dispara com mudança de filtro
   const generate = useCallback((summaryObject) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!groqApiKey) return
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      const key = JSON.stringify({
+        gr: summaryObject.filtro?.grauRange,
+        pr: summaryObject.filtro?.pesoRange,
+        v:  summaryObject.grafo?.vertices,
+      })
+      if (memCache[key])       { setInsight(memCache[key]); return }
+      const cached = getCache(key)
+      if (cached)              { memCache[key] = cached; setInsight(cached); return }
 
-    debounceRef.current = setTimeout(() => {
-      const slim = trimSummary(summaryObject)
-      const key  = JSON.stringify(slim)
-
-      // 1. Cache em memória
-      if (cacheRef.current[key]) {
-        setInsight(cacheRef.current[key])
-        return
+      setLoadingInsight(true); setError(null)
+      try {
+        const text = await callGroq(groqApiKey, [{ role: "user", content: buildAutoPrompt(summaryObject) }])
+        memCache[key] = text; setCache(key, text); setInsight(text)
+      } catch (e) {
+        setError(e.message)
+      } finally {
+        setLoadingInsight(false)
       }
+    }, 900)
+  }, [groqApiKey])
 
-      // 2. Cache em sessionStorage
-      const cached = readSessionCache(key)
-      if (cached) {
-        cacheRef.current[key] = cached
-        setInsight(cached)
-        return
-      }
+  // Pergunta customizada do usuário
+  const ask = useCallback(async (question) => {
+    if (!groqApiKey || !question.trim()) return
+    setLoadingInsight(true); setError(null)
+    try {
+      const text = await callGroq(groqApiKey, [{ role: "user", content: question }])
+      setInsight(text)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoadingInsight(false)
+    }
+  }, [groqApiKey])
 
-      // 3. Gera localmente (delay mínimo para spinner aparecer)
-      setLoadingInsight(true)
-      setTimeout(() => {
-        try {
-          const text = generateLocalInsight(slim)
-          cacheRef.current[key] = text
-          writeSessionCache(key, text)
-          setInsight(text)
-        } catch (e) {
-          console.error("[useAIInsight]", e.message)
-        } finally {
-          setLoadingInsight(false)
-        }
-      }, 400)
-    }, 800) // debounce ao mexer nos filtros
-  }, [])
-
-  return { insight, loadingInsight, generate }
+  return { insight, loadingInsight, error, generate, ask }
 }
