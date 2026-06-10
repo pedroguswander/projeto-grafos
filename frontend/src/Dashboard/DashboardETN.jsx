@@ -200,7 +200,7 @@ const RangeSlider = ({ label, min, max, value, onChange }) => {
       <div className="dashboard-etn-range-header">
         <span className="dashboard-etn-range-label">{label}</span>
         <span className="dashboard-etn-range-value">
-          {value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}{suffix}
+          {value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}
         </span>
       </div>
 
@@ -356,15 +356,11 @@ export const DashboardETN = ({ onBack }) => {
     ])
 
     const statsData = statsRes.status === "fulfilled" ? statsRes.value : null
-    const bfsDfsData = bfsRes.status === "fulfilled" ? bfsRes.value : null
     const arestasData = arestasRes.status === "fulfilled" ? arestasRes.value : []
     const verticesData = verticesRes.status === "fulfilled" ? verticesRes.value : []
 
     if (statsData) setStats(statsData)
     else setError(statsRes.reason?.message)
-
-    if (bfsDfsData) setBfsDfs(bfsDfsData)
-    else setBfsErr(bfsRes.reason?.message)
 
     setArestas(arestasData)
     setVertices(verticesData)
