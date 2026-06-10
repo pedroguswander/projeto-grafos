@@ -106,6 +106,73 @@ body,
   flex-wrap: wrap;
 }
 
+.dashboard-etn-range-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 240px;
+  flex: 1;
+}
+
+.dashboard-etn-range-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(232, 245, 232, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dashboard-etn-range-label span {
+  color: #e8f5e8;
+  opacity: 1;
+}
+
+.dashboard-etn-range-track-wrap {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-etn-range-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dashboard-etn-range-track-active {
+  position: absolute;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #26c281, #4ade80);
+  pointer-events: none;
+}
+
+.dashboard-etn-range-input {
+  position: absolute;
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  pointer-events: auto;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.dashboard-etn-range-input-left {
+  z-index: 3;
+  accent-color: #26c281;
+}
+
+.dashboard-etn-range-input-right {
+  z-index: 4;
+  accent-color: #4ade80;
+}
+
 .dashboard-etn-select-stack {
   display: flex;
   flex-direction: column;
@@ -598,7 +665,8 @@ body,
     align-items: stretch;
   }
 
-  .dashboard-etn-select-stack {
+  .dashboard-etn-select-stack,
+  .dashboard-etn-range-slider {
     min-width: 100%;
   }
 

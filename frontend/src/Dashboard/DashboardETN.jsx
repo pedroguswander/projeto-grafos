@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { AlertCircle, Loader2, Zap } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 import {
   AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -74,9 +74,6 @@ const ErrorBanner = ({ msg }) => (
   </div>
 )
 
-const WinnerBadge = ({ winner }) => (
-  <span className={`dashboard-etn-winner-badge ${winner === "BFS" ? "bfs" : "dfs"}`}><Zap size={10} />{winner}</span>
-)
 
 const CloseBtn = ({ onClick }) => (
   <button onClick={onClick} type="button" style={{ fontSize: 11, color: "#34d399", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
@@ -93,69 +90,26 @@ const TTL = ({ c }) => <p className="dashboard-etn-tooltip-label">{c}</p>
 const TTList = ({ items }) => <div className="dashboard-etn-tooltip-list">{items.map((r, i) => <div key={i}>• {r}</div>)}</div>
 
 
-
-const ComparisonTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null
-  return (
-    <TT cls="dashboard-etn-comparison-tooltip">
-      <p className="dashboard-etn-comparison-tooltip-title">Source: {label}</p>
-      {payload.map((p, i) => (
-        <div key={i} className="dashboard-etn-comparison-row">
-          <span style={{ color: p.color }}>{p.name}</span>
-          <span>{(p.value * 1000).toFixed(4)} ms</span>
-        </div>
-      ))}
-      {payload.length === 2 && (
-        <p className="dashboard-etn-comparison-delta">Δ {Math.abs((payload[0].value - payload[1].value) * 1000).toFixed(4)} ms</p>
-      )}
-    </TT>
-  )
-}
-
 // ─── Complex Sub-components ────────────────────────────────────
 
-const ComparisonTable = ({ rows }) => (
-  <div className="dashboard-etn-table-wrap">
-    <table className="dashboard-etn-table">
-      <thead>
-        <tr>{["Source", "BFS (ms)", "Camadas", "DFS (ms)", "Ciclos", "Árv.", "Back", "Δ (ms)", "Mais rápido"].map(h => <th key={h}>{h}</th>)}</tr>
-      </thead>
-      <tbody>
-        {rows.map((row, i) => (
-          <tr key={i}>
-            <td className="dashboard-etn-table-strong">{row.source}</td>
-            <td className="dashboard-etn-table-bfs">{(row.bfs.tempo_segundos * 1000).toFixed(4)}</td>
-            <td>{row.bfs.num_camadas}</td>
-            <td className="dashboard-etn-table-dfs">{(row.dfs.tempo_segundos * 1000).toFixed(4)}</td>
-            <td>{row.dfs.ciclos?.toLocaleString("pt-BR")}</td>
-            <td>{row.dfs.arestas_tree}</td>
-            <td>{row.dfs.arestas_back}</td>
-            <td>{Math.abs(row.delta_tempo_ms).toFixed(4)}</td>
-            <td><WinnerBadge winner={row.mais_rapido} /></td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)
 
-const RangeSlider = ({ label, min, max, value, onChange, suffix = "" }) => {
+const RangeSlider = ({ label, min, max, value, onChange }) => {
   const safeMax = max > min ? max : min + 1
   const pct = v => ((v - min) / (safeMax - min)) * 100
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 200 }}>
-      <label style={{ fontSize: 10, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-        {label} <span style={{ color: "#e2e8f0", opacity: 1 }}>{value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}{suffix}</span>
+    <div className="dashboard-etn-range-slider">
+      <label className="dashboard-etn-range-label">
+        {label} <span>{value[0].toLocaleString("pt-BR")} – {value[1].toLocaleString("pt-BR")}</span>
       </label>
-      <div style={{ position: "relative", height: 20, display: "flex", alignItems: "center" }}>
-        <div style={{ position: "absolute", left: 0, right: 0, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.12)" }} />
-        <div style={{ position: "absolute", left: `${pct(value[0])}%`, width: `${pct(value[1]) - pct(value[0])}%`, height: 4, borderRadius: 4, background: "linear-gradient(90deg, #0891b2, #34d399)", pointerEvents: "none" }} />
+      <div className="dashboard-etn-range-track-wrap">
+        <div className="dashboard-etn-range-track" />
+        <div className="dashboard-etn-range-track-active" style={{ left: `${pct(value[0])}%`, width: `${pct(value[1]) - pct(value[0])}%` }} />
         <input type="range" min={min} max={safeMax} value={value[0]}
-          onChange={e => onChange([Math.min(+e.target.value, value[1] - 1), value[1]])}
-          style={{ position: "absolute", width: "100%", appearance: "none", background: "transparent", zIndex: value[0] > safeMax - (safeMax - min) * 0.1 ? 5 : 3, height: 20, margin: 0, padding: 0, cursor: "pointer", accentColor: "#0891b2" }} />
+          className="dashboard-etn-range-input dashboard-etn-range-input-left"
+          onChange={e => onChange([Math.min(+e.target.value, value[1] - 1), value[1]])} />
         <input type="range" min={min} max={safeMax} value={value[1]}
-          onChange={e => onChange([value[0], Math.max(+e.target.value, value[0] + 1)])}
-          style={{ position: "absolute", width: "100%", appearance: "none", background: "transparent", zIndex: 4, height: 20, margin: 0, padding: 0, cursor: "pointer", accentColor: "#34d399" }} />
+          className="dashboard-etn-range-input dashboard-etn-range-input-right"
+          onChange={e => onChange([value[0], Math.max(+e.target.value, value[0] + 1)])} />
       </div>
     </div>
   )
@@ -172,15 +126,15 @@ const FilterBar = ({ ranges, grauRange, setGrauRange, pesoRange, setPesoRange, o
         <div className="dashboard-etn-section-title">Filtros do painel</div>
         <div className="dashboard-etn-section-subtitle">Ajuste os intervalos para refinar os dados exibidos nos indicadores e gráficos.</div>
       </div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 24, flexWrap: "wrap", paddingTop: 8 }}>
+      <div className="dashboard-etn-filter-grid">
         {hasGrau && <RangeSlider label="Grau (conexões)" min={ranges.grau_min} max={ranges.grau_max} value={grauRange} onChange={setGrauRange} />}
         {hasPeso && <RangeSlider label="Peso da rota" min={ranges.peso_min} max={ranges.peso_max} value={pesoRange} onChange={setPesoRange} />}
-        {hasFilter && (
-          <>
-            <button onClick={onClear} className="dashboard-etn-secondary-btn" type="button" style={{ alignSelf: "flex-end" }}>Limpar filtros</button>
-            <span style={{ alignSelf: "flex-end", fontSize: 11, color: "#34d399", fontWeight: 600, padding: "7px 0" }}>● Filtro ativo</span>
-          </>
-        )}
+        <div className="dashboard-etn-filter-actions">
+          {hasFilter && <>
+            <button onClick={onClear} className="dashboard-etn-secondary-btn" type="button">Limpar filtros</button>
+            <span className="dashboard-etn-filter-active">● Filtro ativo</span>
+          </>}
+        </div>
       </div>
     </section>
   )
@@ -192,11 +146,8 @@ export const DashboardETN = ({ onBack }) => {
   const [stats, setStats]           = useState(null)
   const [arestas, setArestas]       = useState([])
   const [vertices, setVertices]     = useState([])
-  const [bfsDfs, setBfsDfs]         = useState(null)
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(null)
-  const [bfsErr, setBfsErr]         = useState(null)
-  const [view, setView]             = useState("chart")
   const [weightBins, setWeightBins] = useState(30)
   const [selectedHub, setSelectedHub]                   = useState(null)
   const [selectedPais, setSelectedPais]                 = useState(null)
@@ -227,22 +178,19 @@ export const DashboardETN = ({ onBack }) => {
   useEffect(() => { generateRef.current = generate }, [generate])
 
   const fetchAll = useCallback(async () => {
-    setError(null); setBfsErr(null)
+    setError(null)
 
-    const [statsRes, bfsRes, arestasRes, verticesRes] = await Promise.allSettled([
+    const [statsRes, arestasRes, verticesRes] = await Promise.allSettled([
       fetch(buildStatsUrl()).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
-      fetch(`${API}/api/report/comparacao/bfs-dfs`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
       fetch(`${API}/api/etn/arestas`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
       fetch(`${API}/api/etn/vertices`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
     ])
 
     const statsData   = statsRes.status   === "fulfilled" ? statsRes.value   : null
-    const bfsDfsData  = bfsRes.status     === "fulfilled" ? bfsRes.value     : null
     const arestasData = arestasRes.status === "fulfilled" ? arestasRes.value : []
     const verticesData= verticesRes.status=== "fulfilled" ? verticesRes.value: []
 
-    if (statsData)  setStats(statsData);   else setError(statsRes.reason?.message)
-    if (bfsDfsData) setBfsDfs(bfsDfsData); else setBfsErr(bfsRes.reason?.message)
+    if (statsData)  setStats(statsData); else setError(statsRes.reason?.message)
     setArestas(arestasData)
     setVertices(verticesData)
     setLoading(false)
@@ -257,11 +205,6 @@ export const DashboardETN = ({ onBack }) => {
           percNegativas: statsData.percDeficitarias != null ? statsData.percDeficitarias + "%" : "0%",
           pesoMin: statsData.pesoMin ?? 0, pesoMax: statsData.pesoMax ?? 0, pesoMedioPositivo: statsData.pesoMedioPositivo ?? 0,
         },
-        bfsDfs: bfsDfsData ? {
-          totalComparacoes: bfsDfsData.total_comparacoes,
-          bfsVence: bfsDfsData.comparacoes?.filter(r => r.mais_rapido === "BFS").length,
-          dfsVence: bfsDfsData.comparacoes?.filter(r => r.mais_rapido === "DFS").length,
-        } : null,
       })
     }
   }, [buildStatsUrl, grauRange, pesoRange])
@@ -283,14 +226,6 @@ export const DashboardETN = ({ onBack }) => {
   }, [fetchAll])
 
   const d = stats || {}
-  const comparacoes = bfsDfs?.comparacoes || []
-  const chartData = comparacoes.map(r => ({ source: r.source, BFS: r.bfs.tempo_segundos, DFS: r.dfs.tempo_segundos }))
-  const bfsWins = comparacoes.filter(r => r.mais_rapido === "BFS").length
-  const dfsWins = comparacoes.filter(r => r.mais_rapido === "DFS").length
-  const avgDelta = comparacoes.length
-    ? (comparacoes.reduce((s, r) => s + Math.abs(r.delta_tempo_ms), 0) / comparacoes.length).toFixed(4)
-    : "—"
-
   const weightBinsData = useMemo(() => buildWeightBins(arestas, weightBins), [arestas, weightBins])
 
   const weightStats = useMemo(() => {
@@ -315,7 +250,7 @@ export const DashboardETN = ({ onBack }) => {
   const topRotasPeso = useMemo(() => [...arestas]
     .map(a => ({ label: `${vertexMap.get(a.origem) || a.origem} → ${vertexMap.get(a.destino) || a.destino}`, peso: parseFloat(a.peso ?? 0) }))
     .filter(a => !isNaN(a.peso))
-    .sort((a, b) => b.peso - a.peso)
+    .sort((a, b) => a.peso - b.peso)
     .slice(0, 10)
   , [arestas, vertexMap])
 
@@ -340,7 +275,7 @@ export const DashboardETN = ({ onBack }) => {
       if (!m.has(regiao)) m.set(regiao, { lucrativas: 0, deficitarias: 0, rotasLucr: [], rotasDef: [] })
       const e = m.get(regiao)
       const label = `${vertexMap.get(a.origem) || a.origem} → ${vertexMap.get(a.destino) || a.destino}`
-      if (peso >= 0) { e.lucrativas++; e.rotasLucr.push(label) }
+      if (peso < 0)  { e.lucrativas++; e.rotasLucr.push(label) }
       else           { e.deficitarias++; e.rotasDef.push(label) }
     })
     return Array.from(m.entries())
@@ -368,7 +303,7 @@ export const DashboardETN = ({ onBack }) => {
           <div className="clean-header-content">
             <h1 className="clean-header-title">Dashboard Analítico ETN</h1>
             <p className="dashboard-etn-header-subtitle">
-              Indicadores da rede ETN, distribuição de graus, distribuição por região, pesos das arestas e comparação entre BFS e DFS.
+              Indicadores da rede ETN, distribuição de graus, distribuição por região e pesos das arestas.
             </p>
           </div>
         </div>
@@ -391,10 +326,10 @@ export const DashboardETN = ({ onBack }) => {
           <KPICard loading={loading} title="Arestas (Rotas)" value={d.totalE?.toLocaleString("pt-BR") || "—"} />
           <KPICard loading={loading} title="Grau Médio" value={d.grauMedio != null ? Number(d.grauMedio).toFixed(2) : "—"} sub="conexões por porto" />
           <KPICard loading={loading} title="Peso Médio (geral)" value={d.pesoMedio?.toLocaleString("pt-BR") || "—"} sub="incluindo rotas deficitárias" />
-          <KPICard loading={loading} title="Peso Médio (positivo)" value={d.pesoMedioPositivo?.toLocaleString("pt-BR") || "—"} sub="apenas rotas lucrativas" accent="#34d399" />
+          <KPICard loading={loading} title="Peso Médio (negativo)" value={d.pesoMedioPositivo?.toLocaleString("pt-BR") || "—"} sub="apenas rotas lucrativas" accent="#34d399" />
           <KPICard loading={loading} title="Rotas Deficitárias"
             value={d.rotasDeficitarias != null ? `${d.rotasDeficitarias.toLocaleString("pt-BR")} (${d.percDeficitarias}%)` : "—"}
-            sub="peso negativo" accent="#f87171" />
+            sub="peso positivo" accent="#f87171" />
         </section>
 
         {/* Distribuição de Graus + Top 10 Hubs */}
@@ -569,55 +504,12 @@ export const DashboardETN = ({ onBack }) => {
           )}
         </section>
 
-        {/* BFS vs DFS */}
-        <section className="glass-card dashboard-etn-chart-card">
-          <div className="dashboard-etn-chart-header dashboard-etn-chart-header-wrap">
-            <div>
-              <h3 className="dashboard-etn-chart-title">Comparação de Tempo — BFS vs DFS</h3>
-              {bfsDfs && <p className="dashboard-etn-chart-meta">{bfsDfs.total_comparacoes} nós comparados</p>}
-            </div>
-            <div className="dashboard-etn-view-toggle">
-              {[{ id: "chart", label: "Gráfico" }, { id: "table", label: "Tabela" }].map(({ id, label }) => (
-                <button key={id} onClick={() => setView(id)} className={`dashboard-etn-view-btn ${view === id ? "active" : ""}`} type="button">{label}</button>
-              ))}
-            </div>
-          </div>
-          {bfsErr && <div className="dashboard-etn-inline-error"><AlertCircle size={15} /> Falha: {bfsErr}</div>}
-          {bfsDfs && (
-            <div className="dashboard-etn-mini-stats">
-              {[{ label: "BFS mais rápido", value: bfsWins, color: "bfs" },
-                { label: "DFS mais rápido", value: dfsWins, color: "dfs" },
-                { label: "Δ médio", value: `${avgDelta} ms`, color: "accent" }].map(({ label, value, color }) => (
-                <div key={label} className="dashboard-etn-mini-stat-card">
-                  <p className="dashboard-etn-mini-stat-label">{label}</p>
-                  <p className={`dashboard-etn-mini-stat-value ${color}`}>{value}</p>
-                </div>
-              ))}
-            </div>
-          )}
-          {!bfsDfs && !bfsErr ? <Skeleton height={300} /> : chartData.length > 0 && (
-            view === "chart" ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }} barCategoryGap="30%" barGap={4}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-                  <XAxis dataKey="source" tick={{ fontSize: 11, fill: "#9cc8b6", fontWeight: 600 }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={v => `${(v * 1000).toFixed(2)}ms`} tick={{ fontSize: 10, fill: "#7fa795" }} axisLine={false} tickLine={false} width={68} />
-                  <Tooltip content={<ComparisonTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} formatter={v => <span style={{ color: v === "BFS" ? "#2dd4bf" : "#34d399", fontWeight: 700 }}>{v}</span>} />
-                  <Bar dataKey="BFS" fill="#2dd4bf" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  <Bar dataKey="DFS" fill="#34d399" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <ComparisonTable rows={comparacoes} />
-          )}
-        </section>
-
         {/* Top Rotas por Peso + Portos por País */}
         <section className="dashboard-etn-chart-row">
           <div className="glass-card dashboard-etn-chart-card">
             <div className="dashboard-etn-chart-header">
               <h3 className="dashboard-etn-chart-title">Top 10 Rotas por Peso</h3>
-              <p className="dashboard-etn-chart-meta">Rotas com maior peso (lucratividade) na rede.</p>
+              <p className="dashboard-etn-chart-meta">Rotas com maior peso (lucratividade negativa) na rede.</p>
             </div>
             {loading ? <Skeleton /> : topRotasPeso.length === 0 ? (
               <div className="dashboard-etn-empty-state">Sem dados de arestas.</div>
@@ -632,7 +524,7 @@ export const DashboardETN = ({ onBack }) => {
                     return <TT><TTH c={payload[0].payload.label} /><TTV c={`Peso: ${Number(payload[0].value).toLocaleString("pt-BR")}`} /></TT>
                   }} />
                   <Bar dataKey="peso" radius={[0, 6, 6, 0]}>
-                    {topRotasPeso.map((item, i) => <Cell key={i} fill={item.peso >= 0 ? `rgba(52,211,153,${1 - i * 0.07})` : "#f87171"} />)}
+                    {topRotasPeso.map((item, i) => <Cell key={i} fill={item.peso < 0 ? `rgba(52,211,153,${1 - i * 0.07})` : "#f87171"} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -689,7 +581,7 @@ export const DashboardETN = ({ onBack }) => {
           <div className="dashboard-etn-chart-header">
             <div>
               <h3 className="dashboard-etn-chart-title">Balanço por Região — Lucrativas vs Deficitárias</h3>
-              <p className="dashboard-etn-chart-meta">Rotas positivas e negativas por região. Clique para ver as rotas.</p>
+              <p className="dashboard-etn-chart-meta">Rotas negativas (lucrativas) e positivas (deficitárias) por região. Clique para ver as rotas.</p>
             </div>
             {selectedRegiao && <CloseBtn onClick={() => setSelectedRegiao(null)} />}
           </div>
@@ -698,13 +590,13 @@ export const DashboardETN = ({ onBack }) => {
               <p style={{ fontWeight: 700, color: "#34d399", marginBottom: 8, fontSize: 13 }}>{selectedRegiao.nome}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#34d399", marginBottom: 4 }}>✔ Lucrativas ({selectedRegiao.lucrativas})</p>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#34d399", marginBottom: 4 }}>✔ Lucrativas — peso negativo ({selectedRegiao.lucrativas})</p>
                   <div style={{ maxHeight: 220, overflowY: "auto", fontSize: 11, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 2 }}>
                     {selectedRegiao.rotasLucr.map((r, i) => <div key={i} style={{ padding: "2px 5px", background: "rgba(52,211,153,0.07)", borderRadius: 3 }}>{r}</div>)}
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#f87171", marginBottom: 4 }}>✖ Deficitárias ({selectedRegiao.deficitarias})</p>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#f87171", marginBottom: 4 }}>✖ Deficitárias — peso positivo ({selectedRegiao.deficitarias})</p>
                   <div style={{ maxHeight: 220, overflowY: "auto", fontSize: 11, color: "#9cc8b6", display: "flex", flexDirection: "column", gap: 2 }}>
                     {selectedRegiao.rotasDef.map((r, i) => <div key={i} style={{ padding: "2px 5px", background: "rgba(248,113,113,0.07)", borderRadius: 3 }}>{r}</div>)}
                   </div>
