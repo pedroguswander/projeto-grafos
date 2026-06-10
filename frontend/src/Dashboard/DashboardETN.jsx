@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { AlertCircle, Loader2, Zap } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 import {
   AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -191,7 +191,7 @@ const ComparisonTable = ({ rows }) => (
   </div>
 )
 
-const RangeSlider = ({ label, min, max, value, onChange, suffix = "" }) => {
+const RangeSlider = ({ label, min, max, value, onChange }) => {
   const safeMax = max > min ? max : min + 1
   const pct = v => ((v - min) / (safeMax - min)) * 100
 
@@ -349,9 +349,8 @@ export const DashboardETN = ({ onBack }) => {
     setError(null)
     setBfsErr(null)
 
-    const [statsRes, bfsRes, arestasRes, verticesRes] = await Promise.allSettled([
+    const [statsRes, arestasRes, verticesRes] = await Promise.allSettled([
       fetch(buildStatsUrl()).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
-      fetch(`${API}/api/report/comparacao/bfs-dfs`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
       fetch(`${API}/api/etn/arestas`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
       fetch(`${API}/api/etn/vertices`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
     ])
@@ -393,11 +392,6 @@ export const DashboardETN = ({ onBack }) => {
           pesoMax: statsData.pesoMax ?? 0,
           pesoMedioPositivo: statsData.pesoMedioPositivo ?? 0,
         },
-        bfsDfs: bfsDfsData ? {
-          totalComparacoes: bfsDfsData.total_comparacoes,
-          bfsVence: bfsDfsData.comparacoes?.filter(r => r.mais_rapido === "BFS").length,
-          dfsVence: bfsDfsData.comparacoes?.filter(r => r.mais_rapido === "DFS").length,
-        } : null,
       })
     }
   }, [buildStatsUrl, grauRange, pesoRange])
@@ -543,7 +537,7 @@ export const DashboardETN = ({ onBack }) => {
           <div className="dashboard-etn-header-content">
             <h1 className="dashboard-etn-header-title">Dashboard Analítico ETN</h1>
             <p className="dashboard-etn-header-subtitle">
-              Indicadores da rede ETN, distribuição de graus, distribuição por região, pesos das arestas e comparação entre BFS e DFS.
+              Indicadores da rede ETN, distribuição de graus, distribuição por região e pesos das arestas.
             </p>
           </div>
         </div>
