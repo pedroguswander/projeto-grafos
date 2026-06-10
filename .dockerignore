@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Node — só ignora node_modules, nunca o src do frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Build artifacts
+out/
+*.log
+build.cmd
+build.ps1
+run.ps1
+
+# Dev / IDE
+.vscode/
+.git/
+
+# Testes
+tests/
