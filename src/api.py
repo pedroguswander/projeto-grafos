@@ -485,38 +485,6 @@ def get_etn_graph_data():
                   for src, nb in g.adjacency_list.items() for dst, w in nb],
     })
 
-@app.route('/api/etn/dfs-path', methods=['POST'])
-def calculate_etn_dfs_path():
-    body = request.get_json() or {}
-    start, end = body.get('start'), body.get('end')
-    if not start or not end:
-        return jsonify({'error': 'start e end são obrigatórios'}), 400
-    g = load_etn_graph()
-    if start not in g.adjacency_list or end not in g.adjacency_list:
-        return jsonify({'success': False, 'message': f'Porto inválido: {start} ou {end}'}), 400
-
-    max_depth = int(body.get('max_depth', 8))
-    best_cost, best_path, calls = [float('inf')], [None], [0]
-
-    def _dfs(node, path, visited, cost):
-        calls[0] += 1
-        if calls[0] > 50_000 or len(path) > max_depth: return
-        if node == end:
-            if cost < best_cost[0]: best_cost[0] = cost; best_path[0] = path.copy()
-            return
-        for nb, w in g.get_neighbors(node):
-            if nb not in visited:
-                visited.add(nb); path.append(nb)
-                _dfs(nb, path, visited, cost + w)
-                path.pop(); visited.remove(nb)
-
-    _dfs(start, [start], {start}, 0.0)
-    if best_path[0] is None:
-        return jsonify({'success': False,
-                        'message': f'Nenhum caminho encontrado de {start} a {end} com até {max_depth} saltos.'})
-    return jsonify({'success': True, 'cost': best_cost[0], 'path': best_path[0],
-                    'path_info': enrich_ports(g, best_path[0]),
-                    'connections': max(len(best_path[0])-2, 0), 'max_depth': max_depth})
 
 @app.route('/api/etn/bellman-ford', methods=['POST'])
 def calculate_etn_bellman_ford():

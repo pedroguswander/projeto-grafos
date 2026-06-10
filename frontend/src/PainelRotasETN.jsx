@@ -1119,9 +1119,6 @@ function PainelRotasETN({ onBack }) {
   const [hoveredPortModal, setHoveredPortModal] = useState(null)
   const [visibleConns, setVisibleConns] = useState(9)
 
-  // Algoritmo selecionado
-  const [algorithm, setAlgorithm] = useState('bellman-ford') // 'bellman-ford' | 'dfs'
-
   // Controle do box de ciclo negativo
   const [cycleDismissed, setCycleDismissed] = useState(false)
 
@@ -1164,18 +1161,18 @@ function PainelRotasETN({ onBack }) {
 
   useEffect(() => () => clearSimulationTimeouts(), [])
 
-  // Recalcula automaticamente ao mudar origem/destino ou algoritmo
+  // Recalcula automaticamente ao mudar origem/destino
   useEffect(() => {
     // Limpa resultado antigo e fecha o box de ciclo imediatamente
     setPathResult(null)
     setCycleDismissed(false)
     resetSimulation()
     if (startPort && endPort && startPort !== endPort) {
-      calculatePath(startPort, endPort, algorithm)
-      playSteps(startPort, endPort, algorithm)
+      calculatePath(startPort, endPort)
+      playBellmanFordSteps(startPort)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startPort, endPort, algorithm])
+  }, [startPort, endPort])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -1377,107 +1374,6 @@ function PainelRotasETN({ onBack }) {
     })
   }
 
-  // ─── Simulação DFS ───────────────────────────────────────────
-  const DFS_MAX_STEPS = 15
-  const DFS_MAX_DEPTH = 8
-
-  const generateDFSSteps = (start, end) => {
-    const adjacency = buildAdjacency()
-    const steps = []
-    let bestPath = null
-    let bestCost = Infinity
-
-    // Monta snapshot: célula = custo acumulado se no path ativo,
-    // "★" se no melhor path encontrado, "-" caso contrário
-    const makeRows = (activePath, costMap) => {
-      const rows = {}
-      bellmanTableNodes.forEach((n) => {
-        const idx = activePath.indexOf(n)
-        if (idx >= 0) {
-          rows[n] = `[${idx}] ${formatWeight(costMap[n])}`
-        } else if (bestPath && bestPath.includes(n)) {
-          rows[n] = '★'
-        } else {
-          rows[n] = '-'
-        }
-      })
-      return rows
-    }
-
-    const dfs = (node, path, visited, costMap) => {
-      if (steps.length >= DFS_MAX_STEPS) return
-
-      steps.push({
-        step: steps.length + 1,
-        rows: makeRows(path, costMap),
-        activePath: [...path],
-        bestPath: bestPath ? [...bestPath] : null,
-        bestCost: bestCost === Infinity ? null : bestCost,
-        event: node === end ? 'found' : 'visit',
-      })
-
-      if (node === end) {
-        const cost = costMap[node]
-        if (cost < bestCost) {
-          bestCost = cost
-          bestPath = [...path]
-          // Atualiza o snapshot recém-adicionado com o novo melhor
-          const last = steps[steps.length - 1]
-          last.bestPath = [...bestPath]
-          last.bestCost = bestCost
-          last.event = 'found_better'
-          // Recomputa as linhas com o novo bestPath
-          last.rows = makeRows(path, costMap)
-        }
-        return
-      }
-
-      if (path.length > DFS_MAX_DEPTH) return
-
-      const neighbors = adjacency.get(node) || []
-      for (const { to, weight } of neighbors) {
-        if (!visited.has(to) && steps.length < DFS_MAX_STEPS) {
-          const newCostMap = { ...costMap, [to]: (costMap[node] ?? 0) + weight }
-          visited.add(to)
-          path.push(to)
-          dfs(to, path, visited, newCostMap)
-          path.pop()
-          visited.delete(to)
-        }
-      }
-    }
-
-    dfs(start, [start], new Set([start]), { [start]: 0 })
-    return { steps, bestPath, bestCost: bestCost === Infinity ? null : bestCost }
-  }
-
-  const playDFSSteps = (start, end) => {
-    resetSimulation()
-    if (!start || !end) return
-    const { steps } = generateDFSSteps(start, end)
-    if (!steps.length) return
-    setIsSimulating(true)
-    steps.forEach((step, index) => {
-      const id = setTimeout(() => {
-        setBellmanSteps((prev) => [...prev, step])
-        if (index === steps.length - 1) {
-          setIsSimulating(false)
-          setBellmanVerdict('done')
-        }
-      }, index * 1100)
-      simulationTimeoutsRef.current.push(id)
-    })
-  }
-
-  // Dispatcher que escolhe a simulação certa
-  const playSteps = (start, end, algo) => {
-    if (algo === 'dfs') {
-      playDFSSteps(start, end)
-    } else {
-      playBellmanFordSteps(start)
-    }
-  }
-
   // ─── Seleção origem/destino ──────────────────────────────────
   const handlePortClick = (nodeId) => {
     const cStart = startPortRef.current
@@ -1491,14 +1387,11 @@ function PainelRotasETN({ onBack }) {
     setStartPort(nodeId)
   }
 
-  const calculatePath = async (cStart, cEnd, algo = algorithm) => {
+  const calculatePath = async (cStart, cEnd) => {
     if (!cStart || !cEnd || cStart === cEnd) return
     setLoading(true)
     try {
-      const endpoint = algo === 'dfs'
-        ? `${API}/api/etn/dfs-path`
-        : `${API}/api/etn/bellman-ford`
-      const { data } = await axios.post(endpoint, { start: cStart, end: cEnd })
+      const { data } = await axios.post(`${API}/api/etn/bellman-ford`, { start: cStart, end: cEnd })
       setPathResult(data)
     } catch (error) {
       console.error('Erro ao calcular caminho:', error)
@@ -1576,34 +1469,13 @@ function PainelRotasETN({ onBack }) {
           <div className="clean-header-content">
             <h1 className="clean-header-title">Painel de Rotas &amp; Portos</h1>
             <p className="dashboard-header-subtitle">
-              Navegue pela malha marítima global, explore os portos e calcule o menor caminho com Bellman-Ford ou DFS.
+              Navegue pela malha marítima global, explore os portos e calcule o menor caminho com Bellman-Ford.
             </p>
           </div>
         </div>
       </header>
 
       <main className="app-modern-main">
-        {/* Toggle de algoritmo */}
-        <div className="etn-algo-toggle">
-          <span className="etn-algo-toggle-label">Algoritmo:</span>
-          <div className="etn-algo-toggle-group">
-            <button
-              type="button"
-              className={`etn-algo-btn${algorithm === 'bellman-ford' ? ' active' : ''}`}
-              onClick={() => setAlgorithm('bellman-ford')}
-            >
-              Bellman-Ford
-            </button>
-            <button
-              type="button"
-              className={`etn-algo-btn${algorithm === 'dfs' ? ' active' : ''}`}
-              onClick={() => setAlgorithm('dfs')}
-            >
-              DFS
-            </button>
-          </div>
-        </div>
-
         {/* ── Trigger card — nota analítica ── */}
         <button type="button" className="etn-note-trigger" onClick={() => setShowNoteModal(true)}>
           <span className="etn-note-trigger-icon">⚠</span>
@@ -1810,13 +1682,10 @@ function PainelRotasETN({ onBack }) {
 
             <div className="summary-route">
               <div className="summary-route-title">
-                {algorithm === 'dfs' ? 'Rota encontrada (DFS)' : 'Rota encontrada'}
+                Rota encontrada
               </div>
               <div className="summary-route-subtitle">
-                {algorithm === 'dfs'
-                  ? 'Sequência de portos do trajeto calculado pelo DFS'
-                  : 'Sequência de portos do trajeto (menor caminho)'
-                }
+                Sequência de portos do trajeto (menor caminho)
               </div>
 
               <div className="summary-route-flow">
@@ -2005,14 +1874,10 @@ function PainelRotasETN({ onBack }) {
         <div className="algorithm-steps-panel">
           <div className="algorithm-steps-header">
             <div className="algorithm-steps-title">
-              {algorithm === 'dfs'
-                ? 'Passo a passo do DFS'
-                : 'Passo a passo do Bellman-Ford'}
+              Passo a passo do Bellman-Ford
             </div>
             <div className="algorithm-steps-subtitle">
-              {algorithm === 'dfs'
-                ? `Cada passo = DFS entra num novo porto. [profundidade] custo acumulado no caminho ativo; ★ = melhor caminho encontrado até agora.`
-                : 'Cada passo é uma iteração de relaxamento de todas as arestas. Com ciclo negativo, as distâncias continuam caindo e o problema torna-se indefinido.'}
+              Cada passo é uma iteração de relaxamento de todas as arestas. Com ciclo negativo, as distâncias continuam caindo e o problema torna-se indefinido.
             </div>
           </div>
 
@@ -2026,9 +1891,7 @@ function PainelRotasETN({ onBack }) {
                         <th>Porto</th>
                         {bellmanSteps.map((step, i) => (
                           <th key={`col-${i}`}>
-                            {algorithm === 'dfs'
-                              ? `Passo ${step.step}`
-                              : `Iteração ${step.iteration}`}
+                            {`Iteração ${step.iteration}`}
                           </th>
                         ))}
                       </tr>
@@ -2042,14 +1905,8 @@ function PainelRotasETN({ onBack }) {
                               bellmanVerdict === 'done' && pathResult?.success &&
                               pathResult.path?.includes(nodeId)
 
-                            // Para BF: destaque na coluna da célula destino
-                            const isBFTarget = algorithm === 'bellman-ford' && nodeId === endPort
-
-                            // Para DFS: destaque se no caminho ativo do passo
-                            const isDFSActive = algorithm === 'dfs' &&
-                              step.activePath?.includes(nodeId)
-
-                            const highlighted = isBFTarget || isDFSActive
+                            // Destaque na coluna da célula destino
+                            const highlighted = nodeId === endPort
 
                             return (
                               <td
@@ -2074,13 +1931,13 @@ function PainelRotasETN({ onBack }) {
                 <div className="algorithm-steps-status">
                   {isSimulating ? (
                     <span className="algorithm-status-badge running">
-                      {algorithm === 'dfs' ? 'Explorando caminhos...' : 'Executando relaxamento...'}
+                      Executando relaxamento...
                     </span>
                   ) : bellmanVerdict === 'cycle' ? (
                     <span className="algorithm-status-badge cycle">⚠ Ciclo negativo detectado → problema indefinido</span>
                   ) : (
                     <span className="algorithm-status-badge done">
-                      {algorithm === 'dfs' ? 'Rota encontrada pelo DFS' : 'Menor caminho encontrado'}
+                      Menor caminho encontrado
                     </span>
                   )}
                 </div>
