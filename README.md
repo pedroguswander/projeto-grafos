@@ -27,16 +27,16 @@
 
 ## Sumário
 
-- [Visão Geral](#-visão-geral)
-- [Arquitetura](#-arquitetura)
-- [Parte 1 — ETA Airlines](#-parte-1--eta-airlines-malha-aérea-brasileira)
-- [Parte 2 — ETN / Rede Marítima Global](#-parte-2--etn--rede-marítima-global)
-- [Algoritmos Implementados](#-algoritmos-implementados)
-- [Interface e Visualizações](#-interface-e-visualizações)
-- [Como Executar](#-como-executar)
-- [Docker](#-docker)
-- [Testes](#-testes)
-- [Tecnologias](#-tecnologias)
+- [Visão Geral](#visão-geral)
+- [Arquitetura](#arquitetura)
+- [Parte 1 — ETA Airlines](#parte-1--eta-airlines-malha-aérea-brasileira)
+- [Parte 2 — ETN / Rede Marítima Global](#parte-2--etn--rede-marítima-global)
+- [Algoritmos Implementados](#algoritmos-implementados)
+- [Interface e Visualizações](#interface-e-visualizações)
+- [Como Executar](#como-executar)
+- [Testes](#testes)
+- [Tecnologias](#tecnologias)
+- [Licença](#licença)
 
 ---
 
@@ -476,7 +476,7 @@ Este projeto está licenciado sob a **MIT License**.
 ```
 MIT License
 
-Copyright (c) 2025 Carlos Eduardo · Matheus Ribeiro · Pedro Gusmão · Caio Ferreira
+Copyright (c) 2025 Carlos Eduardo · Mateus · Ribeiro · Pedro Gusmão · Caio Ferreira
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
