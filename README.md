@@ -476,7 +476,7 @@ Este projeto está licenciado sob a **MIT License**.
 ```
 MIT License
 
-Copyright (c) 2025 Carlos Eduardo · Mateus · Ribeiro · Pedro Gusmão · Caio Ferreira
+Copyright (c) 2025 Carlos Eduardo · Matheus Ribeiro · Pedro Gusmão · Caio Ferreira
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
