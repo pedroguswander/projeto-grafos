@@ -10,7 +10,7 @@ import "../css/Dashboard.css"
 import InsightPanel from "../../components/InsightPanel"
 import { useAIInsight, SUGGESTED_QUESTIONS } from "../hooks/useAIInsight"
 
-const API = "http://localhost:5000"
+const API = import.meta.env.VITE_API_URL ?? ""
 const PALETTE = ["#1e40af", "#0891b2", "#0369a1"]
 const TICK = { fontSize: 11, fill: "#9ca3af" }
 const GRID = "rgba(255,255,255,0.06)"

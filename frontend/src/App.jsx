@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
+
+const API = import.meta.env.VITE_API_URL ?? ""
 import { Network } from 'vis-network/standalone'
 import GlobeGL from 'react-globe.gl'
 import * as THREE from 'three'
@@ -1566,7 +1568,7 @@ function App({ onNavigate }) {
 
   const loadGraphData = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/graph-data')
+      const response = await axios.get(`${API}/api/graph-data`)
       setGraphData(normalizeGraphData(response.data))
     } catch (error) {
       console.error('Erro ao carregar dados do grafo:', error)
@@ -1588,8 +1590,8 @@ function App({ onNavigate }) {
     async function fetchCSVs() {
       try {
         const [aeroData, egoData] = await Promise.all([
-          axios.get('http://localhost:5000/api/aeroportos-data'),
-          axios.get('http://localhost:5000/api/ego-aeroportos')
+          axios.get(`${API}/api/aeroportos-data`),
+          axios.get(`${API}/api/ego-aeroportos`)
         ])
 
         const aeroObj = {}
@@ -1935,7 +1937,7 @@ function App({ onNavigate }) {
     setLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:5000/api/dijkstra', {
+      const response = await axios.post(`${API}/api/dijkstra`, {
         start: customStart,
         end: customEnd
       })
