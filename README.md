@@ -1,40 +1,63 @@
-# Projeto Grafos — Malha Aérea BR & Rede Marítima Global
+<div align="center">
 
-> **Disciplina:** Teoria dos Grafos  
-> **Equipe:** Carlos Eduardo · Mateus Ribeiro · Pedro Gusmão · Caio Ferreira
+<!-- BANNER ANIMADO -->
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0f1e,50:0d2137,100:1a4a7a&height=200&section=header&text=Projeto%20Grafos&fontSize=52&fontColor=ffffff&fontAlignY=38&desc=Malha%20Area%20BR%20%E2%9C%88%EF%B8%8F%20%7C%20Rede%20Martima%20Global%20%F0%9F%9A%A2&descAlignY=60&descSize=18&animation=fadeIn" />
 
-Uma aplicação completa para visualização, análise e comparação de algoritmos de caminhos em dois domínios distintos: a malha aérea doméstica brasileira (**Parte 1 — ETA Airlines**) e a rede de rotas marítimas globais (**Parte 2 — ETN / LINERLIB**).
+<!-- BADGES -->
+<p>
+<img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
+<img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black"/>
+<img src="https://img.shields.io/badge/Flask-3.0-000000?style=for-the-badge&logo=flask&logoColor=white"/>
+<img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white"/>
+<img src="https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
+</p>
+
+<p>
+<img src="https://img.shields.io/badge/Dijkstra-%E2%9C%94-success?style=flat-square"/>
+<img src="https://img.shields.io/badge/Bellman--Ford-%E2%9C%94-success?style=flat-square"/>
+<img src="https://img.shields.io/badge/BFS-%E2%9C%94-success?style=flat-square"/>
+<img src="https://img.shields.io/badge/DFS-%E2%9C%94-success?style=flat-square"/>
+</p>
+
+> **Disciplina:** Teoria dos Grafos &nbsp;|&nbsp; **Equipe:** Carlos Eduardo Mateus Ribeiro Pedro Gusmo Caio Ferreira |&nbsp; **Orientadora:** Laura
+
+</div>
 
 ---
 
-## Sumário
+## Sumrio
 
-- [Visão Geral](#visão-geral)
-- [Arquitetura](#arquitetura)
-- [Parte 1 — ETA Airlines (Malha Aérea Brasileira)](#parte-1--eta-airlines-malha-aérea-brasileira)
-- [Parte 2 — ETN / Rede Marítima Global](#parte-2--etn--rede-marítima-global)
-- [Algoritmos Implementados](#algoritmos-implementados)
-- [Interface e Visualizações](#interface-e-visualizações)
-- [Como Executar](#como-executar)
-- [Testes](#testes)
-- [Tecnologias](#tecnologias)
+- [ Viso Geral](#-viso-geral)
+- [ Arquitetura](#-arquitetura)
+- [ Parte 1 ETA Airlines](#-parte-1--eta-airlines-malha-area-brasileira)
+- [ Parte 2 ETN / Rede Martima Global](#-parte-2--etn--rede-martima-global)
+- [ Algoritmos Implementados](#-algoritmos-implementados)
+- [ Interface e Visualizaes](#-interface-e-visualizaes)
+- [ Como Executar](#-como-executar)
+- [ Docker](#-docker)
+- [ Testes](#-testes)
+- [ Tecnologias](#-tecnologias)
 
 ---
 
-## Visão Geral
+## Viso Geral
 
-O projeto é dividido em duas partes independentes, cada uma com seu próprio dataset, modelagem de grafo e conjunto de análises:
+Uma aplicao completa para **visualizao, anlise e comparao de algoritmos de caminhos** em dois domnios distintos:
 
-| | Parte 1 — ETA Airlines | Parte 2 — ETN / LINERLIB |
-|---|---|---|
-| **Domínio** | Malha aérea doméstica brasileira | Rotas marítimas globais |
-| **Tipo de grafo** | Não-direcionado, ponderado | Dígrafo simples ponderado |
-| **Nós (V)** | 20 aeroportos brasileiros | 47 portos marítimos |
-| **Arestas (E)** | 50 conexões | 1.764 rotas dirigidas |
+<div align="center">
+
+| | Parte 1 ETA Airlines | Parte 2 ETN / LINERLIB |
+|:---:|:---:|:---:|
+| **Domnio** | Malha area domstica brasileira | Rotas martimas globais |
+| **Tipo de grafo** | No-direcionado, ponderado | Dgrafo simples ponderado |
+| **Ns (V)** | 20 aeroportos brasileiros | 47 portos martimos |
+| **Arestas (E)** | 50 conexes | 1.764 rotas dirigidas |
 | **Densidade** | 0,263 (26,3%) | 0,816 (81,6%) |
-| **Pesos negativos** | Não | Sim |
-| **Ciclos negativos** | Não | Sim (262 ciclos) |
+| **Pesos negativos** | No | Sim |
+| **Ciclos negativos** | No | Sim (262 ciclos) |
 | **Algoritmos** | Dijkstra | BFS, DFS, Dijkstra, Bellman-Ford |
+
+</div>
 
 ---
 
@@ -42,398 +65,397 @@ O projeto é dividido em duas partes independentes, cada uma com seu próprio da
 
 ```
 projeto-grafos/
-├── data/
-│   ├── ETN/                         # Dados da Parte 2 (LINERLIB)
-│   │   ├── arestas.csv              # 1.764 rotas marítimas com pesos econômicos
-│   │   ├── vertices.csv             # 47 portos (UNLocode)
-│   │   ├── dist_dense.csv           # Distâncias em milhas náuticas
-│   │   ├── fleet_data.csv           # Dados de frota (derivação do coeficiente 25,46 USD/nm)
-│   │   ├── Demand_WorldSmall.csv    # Demanda semanal e receita por contêiner
-│   │   └── ports..csv               # Custos portuários
-│   ├── adjacencias_aeroportos.csv   # Arestas da Parte 1 (origem, destino, peso)
-│   ├── aeroportos_data.csv          # Dados dos 20 aeroportos com código IATA
-│   ├── ego_aeroportos.csv           # Métricas de ego-rede por aeroporto
-│   ├── rotas_possiveis.csv          # Pares de origem-destino para cálculo de rotas
-│   └── rotas.csv                    # Resultado das rotas calculadas
-├── frontend/                        # Frontend React (Vite)
-│   ├── components/
-│   │   └── InsightPanel.jsx
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── css/
-│   │   ├── Dashboard/
-│   │   ├── hooks/
-│   │   ├── AirportGame.jsx          # Jogo interativo de aeroportos
-│   │   ├── AirportGameEngine.jsx
-│   │   ├── AirportTooltip.jsx
-│   │   ├── App.jsx                  # Componente raiz — Malha Aérea BR
-│   │   ├── ContainerGame.jsx        # Jogo de contêineres (ETN)
-│   │   ├── ContainerGameEngine.jsx
-│   │   ├── DataBase.jsx             # Visualização da base de dados ETA
-│   │   ├── DataBaseETN.jsx          # Visualização da base de dados ETN
-│   │   ├── DeclaracaoIA.jsx
-│   │   ├── GlobalMetrics.jsx        # Métricas globais do grafo ETA
-│   │   ├── Home.jsx                 # Página inicial ETA
-│   │   ├── HomeETN.jsx              # Página inicial ETN
-│   │   ├── PainelRotasETN.jsx       # Painel de rotas ETN
-│   │   ├── Regras.jsx               # Regras e pesos ETA
-│   │   ├── RegrasETN.jsx            # Regras e pesos ETN
-│   │   ├── RelatorioETN.jsx         # Relatório comparativo ETN
-│   │   ├── Requisitos.jsx           # Requisitos do projeto
-│   │   └── Splash.jsx               # Tela de splash
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
-├── src/                             # Backend Python
-│   └── graphs/
-│       ├── api.py                   # API REST Flask
-│       ├── cli.py                   # Interface de linha de comando
-│       ├── solve.py                 # Implementações dos algoritmos
-│       └── viz.py                   # Geração de visualizações
-├── out/                             # Saídas geradas
-│   ├── global.json
-│   ├── regioes.json
-│   ├── ego_aeroportos.csv
-│   ├── graus.csv
-│   ├── distancias_rotas.csv
-│   ├── arvore_percurso.html
-│   ├── grafo_interativo.html
-│   └── parte2_report.json
-├── parte2/                          # Módulo da Parte 2 (ETN)
-├── tests/                           # Testes automatizados (pytest)
-│   ├── test_dijkstra.py
-│   ├── test_bellman_ford.py
-│   ├── test_bfs.py
-│   ├── test_dfs.py
-│   └── test_part2_report.py
-├── requirements.txt
-├── build.cmd
-└── build.ps1
+data/
+ETN/ # Dados da Parte 2 (LINERLIB)
+arestas.csv # 1.764 rotas martimas com pesos econmicos
+vertices.csv # 47 portos (UNLocode)
+dist_dense.csv # Distncias em milhas nuticas
+fleet_data.csv # Dados de frota (coeficiente 25,46 USD/nm)
+Demand_WorldSmall.csv # Demanda semanal e receita por continer
+ports.csv # Custos porturios
+adjacencias_aeroportos.csv # Arestas da Parte 1
+aeroportos_data.csv # Dados dos 20 aeroportos (cdigo IATA)
+ego_aeroportos.csv # Mtricas de ego-rede
+rotas_possiveis.csv # Pares origem-destino
+rotas.csv # Resultado das rotas calculadas
+frontend/ # Frontend React (Vite)
+src/
+App.jsx # Componente raiz Malha Area BR
+PainelRotasETN.jsx # Painel de rotas ETN
+Dashboard/ # Dashboards analticos
+...
+src/ # Backend Python
+api.py # API REST Flask
+cli.py # Interface de linha de comando
+solve.py # Implementaes dos algoritmos
+viz.py # Gerao de visualizaes
+parte2/ # Mdulo da Parte 2 (ETN)
+tests/ # Testes automatizados (pytest)
+out/ # Sadas geradas
+Dockerfile.backend
+Dockerfile.frontend
+docker-compose.yml
+requirements.txt
 ```
 
 ---
 
-## Parte 1 — ETA Airlines (Malha Aérea Brasileira)
+## Parte 1 ETA Airlines (Malha Area Brasileira)
 
-### Descrição do Grafo
+### Descrio do Grafo
 
-O grafo representa a malha aérea doméstica brasileira como uma **rede não-direcionada e ponderada**, em que cada nó é um aeroporto (identificado pelo código IATA) e cada aresta representa uma conexão direta entre dois aeroportos. O grafo cobre as cinco regiões do país, incluindo dois aeroportos de São Paulo (GRU e CGH).
+Grafo **no-direcionado e ponderado** representando a malha area domstica brasileira. Cada n um aeroporto (cdigo IATA) e cada aresta uma conexo direta entre dois aeroportos, cobrindo as cinco regies do pas.
 
-| Métrica | Valor |
-|---|---|
+<div align="center">
+
+| Mtrica | Valor |
+|:---|:---:|
 | Ordem (V) | 20 aeroportos |
-| Tamanho (E) | 50 conexões |
+| Tamanho (E) | 50 conexes |
 | Densidade global | 0,263 (26,3%) |
-| Grau médio | 5,0 conexões/aeroporto |
-| Peso médio das arestas | 19,4 (faixa: 12–25) |
-| Aeroporto mais conectado | BSB — Brasília (grau 12) |
+| Grau mdio | 5,0 conexes/aeroporto |
+| Peso mdio das arestas | 19,4 (faixa: 1225) |
+| Aeroporto mais conectado | **BSB Braslia** (grau 12) |
 
-### Aeroportos Incluídos
+</div>
 
-| Região | Aeroportos |
-|---|---|
-| **Norte** | MAO (Manaus), BEL (Belém), PVH (Porto Velho), RBR (Rio Branco) |
-| **Nordeste** | REC (Recife), FOR (Fortaleza), SSA (Salvador), NAT (Natal), JPA (João Pessoa), THE (Teresina) |
-| **Sudeste** | GRU (São Paulo/Guarulhos), CGH (São Paulo/Congonhas), GIG (Rio de Janeiro), CNF (Belo Horizonte), VIX (Vitória) |
-| **Sul** | POA (Porto Alegre), FLN (Florianópolis), CWB (Curitiba) |
-| **Centro-Oeste** | BSB (Brasília), GYN (Goiânia) |
+### Aeroportos Includos
 
-### Regra de Pesos
+| Regio | Aeroportos |
+|:---|:---|
+| **Norte** | MAO (Manaus), BEL (Belm), PVH (Porto Velho), RBR (Rio Branco) |
+| **Nordeste** | REC (Recife), FOR (Fortaleza), SSA (Salvador), NAT (Natal), JPA (Joo Pessoa), THE (Teresina) |
+| **Sudeste** | GRU (So Paulo/Guarulhos), CGH (Congonhas), GIG (Rio de Janeiro), CNF (Belo Horizonte), VIX (Vitria) |
+| **Sul** | POA (Porto Alegre), FLN (Florianpolis), CWB (Curitiba) |
+| **Centro-Oeste** | BSB (Braslia), GYN (Goinia) |
 
-Os pesos das arestas foram definidos por um **modelo híbrido** que combina seis critérios, calibrados para diferenciar conexões regionais simples de eixos estruturais nacionais:
+### Regra de Pesos Modelo Hbrido
 
-| Critério | Peso | Justificativa |
-|---|---|---|
-| Relevância econômica/política | 6 | Fator mais estrutural: concentração de negócios, gestão pública e articulação institucional |
-| Capacidade da ligação | 5 | Representa robustez operacional e potencial de articulação da rede |
-| Tempo médio de voo | 5 | Diferencia rotas curtas regionais de eixos transcontinentais |
-| Proximidade regional | 3 | Valoriza coesão interna sem sobrepor os eixos nacionais |
-| Densidade populacional | 2 | Critério complementar; cidades densas geram demanda, mas não determinam sozinhas a importância da rota |
-| Relevância turística | 2 | Módulo de ajuste para capitais como REC, NAT, SSA e FLN |
+Os pesos foram definidos por um modelo que combina **6 critrios**, calibrados para diferenciar conexes regionais simples de eixos estruturais nacionais:
 
-**Resultado:** as arestas inter-regionais são em média **23% mais pesadas** que as intra-regionais (21,3 vs 17,3). Das 11 arestas com peso ≥ 22, nove (82%) tocam BSB ou GRU. A correlação de Pearson entre o peso da aresta e a soma dos graus dos seus extremos é **r = 0,56**, indicando que o modelo de pesos é coerente com a topologia, mas não redutível a ela — os outros ~70% da variação vêm dos demais critérios.
+| Critrio | Peso | Justificativa |
+|:---|:---:|:---|
+| Relevncia econmica/poltica | **6** | Concentrao de negcios, gesto pblica e articulao institucional |
+| Capacidade da ligao | **5** | Robustez operacional e potencial de articulao da rede |
+| Tempo mdio de voo | **5** | Diferencia rotas curtas regionais de eixos transcontinentais |
+| Proximidade regional | **3** | Valoriza coeso interna sem sobrepor os eixos nacionais |
+| Densidade populacional | **2** | Cidades densas geram demanda, mas no determinam sozinhas a importncia |
+| Relevncia turstica | **2** | Ajuste para capitais como REC, NAT, SSA e FLN |
 
-**Cinco arestas mais pesadas:**
+> As arestas inter-regionais so em mdia **23% mais pesadas** que as intra-regionais (21,3 vs 17,3). Das 11 arestas com peso 22, **9 (82%) tocam BSB ou GRU**.
 
-| Aresta | Regiões | Peso |
-|---|---|---|
-| MAO – GRU | Norte ↔ Sudeste | 25 |
-| BSB – GRU | Centro-Oeste ↔ Sudeste | 24 |
-| BSB – MAO | Centro-Oeste ↔ Norte | 24 |
-| BEL – GRU | Norte ↔ Sudeste | 24 |
-| RBR – BSB | Norte ↔ Centro-Oeste | 24 |
+<details>
+<summary> Ver top 5 arestas mais pesadas e mais leves</summary>
 
-**Cinco arestas mais leves:**
+** Cinco arestas mais pesadas:**
 
-| Aresta | Regiões | Peso |
-|---|---|---|
-| NAT – JPA | intra-Nordeste | 12 |
-| REC – JPA | intra-Nordeste | 13 |
-| BSB – GYN | intra-Centro-Oeste | 14 |
-| REC – NAT | intra-Nordeste | 15 |
-| FOR – NAT | intra-Nordeste | 15 |
+| Aresta | Regies | Peso |
+|:---|:---|:---:|
+| MAO GRU | Norte Sudeste | **25** |
+| BSB GRU | Centro-Oeste Sudeste | **24** |
+| BSB MAO | Centro-Oeste Norte | **24** |
+| BEL GRU | Norte Sudeste | **24** |
+| RBR BSB | Norte Centro-Oeste | **24** |
 
-### Métricas de Centralidade
+** Cinco arestas mais leves:**
 
-Quatro métricas de centralidade convergem nos mesmos protagonistas, indicando que BSB, GRU e REC não são apenas bem conectados, mas também estão estrategicamente posicionados como pontes e vizinhos de outros aeroportos importantes:
+| Aresta | Regies | Peso |
+|:---|:---|:---:|
+| NAT JPA | intra-Nordeste | **12** |
+| REC JPA | intra-Nordeste | **13** |
+| BSB GYN | intra-Centro-Oeste | **14** |
+| REC NAT | intra-Nordeste | **15** |
+| FOR NAT | intra-Nordeste | **15** |
 
-| Posição | Grau | Intermediação | Proximidade | Autovetor |
-|---|---|---|---|---|
-| 1º | BSB (12) | BSB (0,372) | BSB (0,704) | BSB (0,407) |
-| 2º | GRU (10) | GRU (0,228) | GRU (0,679) | GRU (0,371) |
-| 3º | REC (8) | CNF (0,085) | CNF (0,613) | REC (0,302) |
-| 4º | GIG (7) | REC (0,082) | REC (0,576) | CNF (0,298) |
-| 5º | CNF (7) | GIG (0,081) | FOR (0,576) | FOR (0,290) |
+</details>
 
-### Padrões Identificados
+### Mtricas de Centralidade
 
-**Estrutura hub-and-spoke parcial:** a rede combina concentração em torno de três grandes hubs (BSB, GRU, REC), um anel de aeroportos médios (CNF, GIG, FOR, SSA, BEL, VIX) e folhas de baixo grau (CGH, GYN, RBR, THE). Sul e Centro-Oeste, porém, mantêm malha interna densa sem depender dos hubs nacionais para viagens regionais.
+<div align="center">
 
-**Dependência de Brasília:** a centralidade de intermediação de BSB é 0,37 — 63% superior à de GRU (0,23). BSB é passagem obrigatória nas rotas REC → POA, JPA → POA, RBR → VIX e THE → FLN. A remoção hipotética de BSB desconectaria diversas rotas mínimas do grafo.
+| Posio | Grau | Intermediao | Proximidade | Autovetor |
+|:---:|:---|:---|:---|:---|
+| | BSB (12) | BSB (0,372) | BSB (0,704) | BSB (0,407) |
+| | GRU (10) | GRU (0,228) | GRU (0,679) | GRU (0,371) |
+| | REC (8) | CNF (0,085) | CNF (0,613) | REC (0,302) |
+| 4 | GIG (7) | REC (0,082) | REC (0,576) | CNF (0,298) |
+| 5 | CNF (7) | GIG (0,081) | FOR (0,576) | FOR (0,290) |
 
-**Integração regional assimétrica:** Sul (3 capitais) e Centro-Oeste (2 capitais) atingem 100% de conectividade interna. O Nordeste, apesar de ter o maior número de aeroportos da amostra, tem a menor densidade interna (53%). Não existem conexões diretas Norte–Nordeste, Norte–Sul nem Sul–Nordeste: o caminho entre essas regiões passa obrigatoriamente por BSB ou GRU.
+</div>
+
+### Padres Identificados
+
+> **Hub-and-spoke parcial:** rede concentrada em BSB, GRU e REC, com um anel mdio (CNF, GIG, FOR, SSA, BEL, VIX) e folhas de baixo grau.
+
+> **Dependncia de Braslia:** a centralidade de intermediao de BSB (0,37) **63% superior** de GRU (0,23). A remoo hipottica de BSB desconectaria diversas rotas mnimas.
+
+> **Integrao assimtrica:** Sul e Centro-Oeste tm 100% de conectividade interna. Nordeste, apesar de ter mais aeroportos, tem a menor densidade interna (53%). **No existem conexes diretas NorteNordeste, NorteSul nem SulNordeste**.
 
 ### Exemplos de Caminhos (Dijkstra)
 
 | Rota | Percurso | Custo |
-|---|---|---|
-| REC → POA | Recife → Vitória → Florianópolis → Porto Alegre | 55 |
-| MAO → GRU | Manaus → São Paulo | 25 |
-| JPA → POA | João Pessoa → Brasília → Belo Horizonte → Porto Alegre | 60 |
+|:---|:---|:---:|
+| REC POA | Recife Vitria Florianpolis Porto Alegre | 55 |
+| MAO GRU | Manaus So Paulo | 25 |
+| JPA POA | Joo Pessoa Braslia Belo Horizonte Porto Alegre | 60 |
 
 ---
 
-## Parte 2 — ETN / Rede Marítima Global
+## Parte 2 ETN / Rede Martima Global
 
-### Dataset — LINERLIB
+### Dataset LINERLIB
 
-O dataset é um benchmark acadêmico desenvolvido pela **Technical University of Denmark (DTU)**, construído a partir de dados reais da **Maersk Line** (maior operadora de contêineres do mundo). Foi criado especificamente para resolver o **Liner Shipping Network Design Problem (LSNDP)**: dado um conjunto de portos, frota de navios e demanda de carga, qual é a melhor malha de rotas?
-
-> Referência: [paper original do LSNDP](https://backend.orbit.dtu.dk/ws/portalfiles/portal/5578448/rapport_19_2010.pdf) | [repositório](https://github.com/blof/LINERLIB)
+> Benchmark acadmico desenvolvido pela **Technical University of Denmark (DTU)**, construdo a partir de dados reais da **Maersk Line** (maior operadora de contineres do mundo), criado para resolver o **Liner Shipping Network Design Problem (LSNDP)**.
+>
+> [Paper original do LSNDP](https://backend.orbit.dtu.dk/ws/portalfiles/portal/5578448/rapport_19_2010.pdf) [Repositrio LINERLIB](https://github.com/blof/LINERLIB)
 
 ### Modelagem do Grafo
 
-| Elemento | Representação |
-|---|---|
-| Nó v ∈ V | Porto marítimo (código UNLocode como identificador único) |
-| Aresta (u, v) | Rota de navegação direta saindo de u com destino a v |
-| Peso w(u, v) | Resultado econômico líquido da operação da rota (USD) |
+<div align="center">
 
-| Métrica | Valor |
-|---|---|
+| Mtrica | Valor |
+|:---|:---:|
 | Ordem (V) | 47 portos |
 | Tamanho (E) | 1.764 rotas dirigidas |
 | Densidade | 0,816 (81,6%) |
-| Tipo | Dígrafo simples ponderado |
+| Tipo | Dgrafo simples ponderado |
 | Conexo | Sim |
 | Pesos negativos | Sim (379 rotas lucrativas) |
-| Ciclos negativos | Sim (262 ciclos de 2 nós) |
-| Grau médio | 37,5 arestas/porto |
+| Ciclos negativos | Sim (262 ciclos de 2 ns) |
+| Grau mdio | 37,5 arestas/porto |
 
-**Portos de destaque:**
+</div>
 
-| Critério | Porto | Grau | Grau-entrada | Grau-saída |
-|---|---|---|---|---|
-| Maior grau | AEJEA — Jebel Ali (Dubai) | 89 | 45 | 44 |
-| Mediana | CNYTN — Shenzhen (China) | 79 | 37 | 42 |
-| Menor grau | CAMTR — Montreal (Canadá) | 31 | 12 | 19 |
+** Portos de destaque:**
 
-### Arquivos do Dataset
+| Critrio | Porto | Grau | Entrada | Sada |
+|:---|:---|:---:|:---:|:---:|
+| Maior grau | AEJEA Jebel Ali (Dubai) | 89 | 45 | 44 |
+| Mediana | CNYTN Shenzhen (China) | 79 | 37 | 42 |
+| Menor grau | CAMTR Montreal (Canad) | 31 | 12 | 19 |
 
-| Arquivo original | Arquivo no projeto | Conteúdo |
-|---|---|---|
-| `ports.csv` | `vertices.csv` | 47 portos com colunas metrificáveis (UNLocode, custos portuários) |
-| `Demand_WorldSmall.csv` | `arestas.csv` | 1.764 rotas com peso econômico calculado |
-| `dist_dense.csv` | (referência) | Distâncias em milhas náuticas entre pares de portos |
-| `fleet_data.csv` | (referência) | Dados de frota para derivação do coeficiente 25,46 USD/nm |
+### Regra de Pesos Econmicos
 
-### Regra de Pesos Econômicos
-
-O peso de cada aresta representa o **resultado econômico líquido** da operação de uma rota:
+O peso de cada aresta representa o **resultado econmico lquido** da operao de uma rota:
 
 ```
-w(u, v) = distância × 25,46
-        + PortCallCostFixed[destino]
-        + CostPerFULL[destino] × FFEPerWeek
-        − Revenue_1 × FFEPerWeek
+w(u, v) = distncia 25,46
++ PortCallCostFixed[destino]
++ CostPerFULL[destino] FFEPerWeek
+Revenue_1 FFEPerWeek
 ```
 
-**Derivação do coeficiente 25,46 USD/nm:**
+<details>
+<summary> Ver derivao do coeficiente 25,46 USD/nm</summary>
+
 ```
-TC por nm = TC rate diário ÷ (designSpeed × 24)
-Panamax_1200: 11.000 ÷ (18 × 24) = 11.000 ÷ 432 = 25,46 USD/nm
+TC por nm = TC rate dirio (designSpeed 24)
+Panamax_1200: 11.000 (18 24) = 11.000 432 = 25,46 USD/nm
 ```
 
-A classe **Panamax_1200** foi escolhida por ser a mais equilibrada entre as 6 classes do dataset, minimizando subestimações ou superestimações de rota. `PortCallCostFixed` pode ser negativo porque alguns portos pagam o navio para atracar (valor econômico indireto da movimentação de carga).
+A classe **Panamax_1200** foi escolhida por ser a mais equilibrada entre as 6 classes do dataset, minimizando subestimaes ou superestimaes de rota.
 
-**Interpretação dos pesos:**
-- **Peso negativo** → rota lucrativa (receita > custo): 379 rotas (21,4%)
-- **Peso positivo** → rota deficitária (custo > receita): 1.385 rotas (78,5%)
+</details>
 
-Na prática, um armador não opera cada rota isoladamente: monta circuitos completos em que rotas lucrativas subsidiam as deficitárias, maximizando o resultado do conjunto.
+| Peso | Interpretao | Quantidade |
+|:---|:---|:---:|
+| **Negativo** | Rota lucrativa (receita > custo) | 379 (21,4%) |
+| **Positivo** | Rota deficitria (custo > receita) | 1.385 (78,5%) |
 
 **Exemplo de ciclo negativo:**
 ```
-HKHKG → ZADUR: -661.649 USD
-ZADUR → HKHKG: -60.682 USD
+HKHKG ZADUR: -661.649 USD
+ZADUR HKHKG: -60.682 USD
+
 Total do ciclo: -722.331 USD
 ```
 
-### Insights da Análise Comparativa de Algoritmos
+### Insights da Anlise Comparativa de Algoritmos
+
+<details>
+<summary> Ver todos os insights (14 no total)</summary>
 
 | # | Insight |
-|---|---|
-| 1 | **DFS surpreendentemente mais lento que Bellman-Ford** — O DFS tem complexidade O(V+E), mas é mais lento porque precisa registrar em strings todas as arestas classificadas (tree, back, forward, cross). |
-| 2 | **Dijkstra mais rápido que o usual** — Aplicado ao problema *Single Pair Shortest Path*, o Dijkstra faz "break" ao encontrar o destino, operando com menos overhead que sua aplicação padrão SSSP. |
-| 3 | **BFS mais rápido que Dijkstra** — BFS ignora pesos e opera com O(V+E), enquanto Dijkstra gasta tempo em comparações de peso O((V+E) log V). |
-| 4 | **Indiferença entre casos de teste (BFS/DFS)** — O grafo é fortemente conexo com grau médio de 37,5; trocar a fonte não gera diferença significativa de tempo. |
-| 5 | **Gap DFS × BFS** — DFS armazena todos os vizinhos no stack (inclusive já visitados), enquanto BFS enfileira cada nó exatamente uma vez. |
-| 6 | **Largura × Profundidade importa mais que densidade** — BFS encontra nós próximos na 1ª camada; DFS gera gargalo ao mergulhar em profundidade para um destino vizinho. |
-| 9 | **Desistência rápida = caso mais rápido no Dijkstra** — O par (LKCMB, MYTPP) envolve o grafo com pesos negativos, levando o Dijkstra a retornar null imediatamente. |
-| 12 | **Bellman-Ford com ciclos negativos** — Foi necessário adotar heurística de remoção das arestas mais negativas de todos os ciclos antes de rodar o algoritmo, construindo um subgrafo seguro. |
-| 13 | **Bellman-Ford só com pesos positivos** — Caso mais rápido: o algoritmo considera apenas arestas com w > 0, reduzindo drasticamente o número de relaxamentos. |
-| 14 | **Bellman-Ford com ciclo negativo** — Caso mais lento: executa as 46 iterações completas (V−1), processa 1.764 relaxamentos e só detecta o ciclo na passada final de verificação. |
+|:---:|:---|
+| 1 | **DFS surpreendentemente mais lento que Bellman-Ford** O DFS tem complexidade O(V+E), mas registrar em strings todas as arestas classificadas gera overhead. |
+| 2 | **Dijkstra mais rpido que o usual** Aplicado ao *Single Pair Shortest Path*, o Dijkstra faz `break` ao encontrar o destino. |
+| 3 | **BFS mais rpido que Dijkstra** BFS ignora pesos com O(V+E); Dijkstra gasta tempo em comparaes de peso O((V+E) log V). |
+| 4 | **Indiferena entre casos de teste (BFS/DFS)** O grafo fortemente conexo com grau mdio 37,5; trocar a fonte no gera diferena significativa. |
+| 5 | **Gap DFS BFS** DFS armazena todos os vizinhos no stack (inclusive j visitados); BFS enfileira cada n exatamente uma vez. |
+| 6 | **Largura Profundidade importa mais que densidade** BFS encontra ns prximos na 1 camada; DFS gera gargalo ao mergulhar em profundidade. |
+| 9 | **Desistncia rpida = caso mais rpido no Dijkstra** O par (LKCMB, MYTPP) envolve pesos negativos; Dijkstra retorna null imediatamente. |
+| 12 | **Bellman-Ford com ciclos negativos** Heurstica de remoo das arestas mais negativas de todos os ciclos antes de rodar o algoritmo. |
+| 13 | **Bellman-Ford s com pesos positivos** Caso mais rpido: considera apenas arestas com w > 0, reduzindo drasticamente os relaxamentos. |
+| 14 | **Bellman-Ford com ciclo negativo** Caso mais lento: executa as 46 iteraes completas (V1), processa 1.764 relaxamentos e s detecta o ciclo na passada final. |
+
+</details>
 
 ---
 
 ## Algoritmos Implementados
 
-Todos os algoritmos foram implementados **do zero, sem bibliotecas externas de grafos**.
+> **Todos os algoritmos foram implementados do zero, sem bibliotecas externas de grafos.**
 
-| Algoritmo | Arquivo | Aplicação |
-|---|---|---|
-| **Dijkstra** | `src/graphs/solve.py` | Caminhos mínimos com pesos ≥ 0 (Parte 1 e Parte 2) |
-| **Bellman-Ford** | `src/graphs/solve.py` | Caminhos com pesos negativos; detecção de ciclos negativos (Parte 2) |
-| **BFS** | `src/graphs/solve.py` | Travessia por níveis; caminhos sem peso (Parte 2) |
-| **DFS** | `src/graphs/solve.py` | Travessia profunda; classificação de arestas (Parte 2) |
+| Algoritmo | Arquivo | Complexidade | Aplicao |
+|:---|:---|:---:|:---|
+| **Dijkstra** | `src/graphs/solve.py` | O((V+E) log V) | Caminhos mnimos com pesos 0 |
+| **Bellman-Ford** | `src/graphs/solve.py` | O(VE) | Caminhos com pesos negativos; deteco de ciclos |
+| **BFS** | `src/graphs/solve.py` | O(V+E) | Travessia por nveis; caminhos sem peso |
+| **DFS** | `src/graphs/solve.py` | O(V+E) | Travessia profunda; classificao de arestas |
 
-### Saídas Obrigatórias
+### Sadas Geradas
 
 ```
-out/global.json           → ordem, tamanho e densidade do grafo
-out/regioes.json          → métricas por região (Parte 1)
-out/ego_aeroportos.csv    → grau, ordem, tamanho e densidade do ego-grafo por aeroporto
-out/graus.csv             → ranking de graus
-out/distancias_rotas.csv  → origem, destino, custo e caminho (Dijkstra)
-out/arvore_percurso.html  → subgrafo do caminho mínimo (interativo)
-out/grafo_interativo.html → grafo completo com tooltip e busca
-out/parte2_report.json    → métricas de desempenho por algoritmo/tarefa (Parte 2)
+out/
+global.json ordem, tamanho e densidade do grafo
+regioes.json mtricas por regio (Parte 1)
+ego_aeroportos.csv grau, ordem, tamanho e densidade do ego-grafo
+graus.csv ranking de graus
+distancias_rotas.csv origem, destino, custo e caminho (Dijkstra)
+arvore_percurso.html subgrafo do caminho mnimo (interativo)
+grafo_interativo.html grafo completo com tooltip e busca
+parte2_report.json mtricas de desempenho por algoritmo (Parte 2)
 ```
 
 ---
 
-## Interface e Visualizações
+## Interface e Visualizaes
 
-### Backend — API Flask
+### Backend API Flask
 
-| Método | Endpoint | Payload | Retorno |
-|---|---|---|---|
-| GET | `/api/graph-data` | — | `{ nodes, edges }` |
-| POST | `/api/dijkstra` | `{ start, end }` | `{ success, path, cost, connections, path_info }` |
+| Mtodo | Endpoint | Payload | Retorno |
+|:---:|:---|:---|:---|
+| `GET` | `/api/graph-data` | | `{ nodes, edges }` |
+| `POST` | `/api/dijkstra` | `{ start, end }` | `{ success, path, cost, connections, path_info }` |
 
 ### Frontend React
 
-A interface foi construída em React 19 + Vite com identidade visual **ETA Airlines** e inclui:
+A interface foi construda em **React 19 + Vite** com identidade visual ETA Airlines e inclui:
 
-- **Home ETA / Home ETN** — páginas iniciais de cada parte
-- **Malha Aérea Interativa** — grafo renderizado com Vis.js Network; clique em aeroportos para selecionar origem/destino
-- **Dijkstra Pathfinder** — executa o algoritmo e destaca a rota em amarelo/dourado no canvas
-- **Boarding Pass** — resultado exibido em formato de cartão de embarque com waypoints coloridos
-- **Database ETA / ETN** — tabelas interativas dos dados de cada grafo
-- **Métricas Globais** — dashboard com as métricas calculadas
-- **Regras ETA / ETN** — documentação dos critérios de peso de cada parte
-- **Relatório ETN** — comparativo de algoritmos com gráficos de desempenho
-- **Painel de Rotas ETN** — visualização das rotas marítimas
-- **Jogos interativos** — Airport Game e Container Game
+| Componente | Descrio |
+|:---|:---|
+| Home ETA / ETN | Pginas iniciais de cada parte |
+| Malha Area Interativa | Grafo renderizado com Vis.js Network |
+| Dijkstra Pathfinder | Executa o algoritmo e destaca a rota em dourado no canvas |
+| Boarding Pass | Resultado em formato de carto de embarque com waypoints |
+| Database ETA / ETN | Tabelas interativas dos dados de cada grafo |
+| Mtricas Globais | Dashboard com mtricas calculadas |
+| Regras ETA / ETN | Documentao dos critrios de peso |
+| Relatrio ETN | Comparativo de algoritmos com grficos de desempenho |
+| Painel de Rotas ETN | Visualizao das rotas martimas globais |
+| Jogos Interativos | Airport Game e Container Game |
 
-**Destaque visual do caminho:**
+** Sistema de cores do grafo:**
 
-| Tipo de nó | Cor de fundo | Borda | Tamanho |
-|---|---|---|---|
-| Origem | `#002244` (navy escuro) | cyan | 22 |
-| Destino | `#281500` (laranja escuro) | dourado `#F5A623` | 22 |
-| Escala | `#0A2010` (verde escuro) | verde `#00E5A0` | 18 |
-| Aresta na rota | dourado `#F5A623` | — | largura 3 |
-| Aresta fora da rota | cyan 15% opacidade | — | largura 1 |
+| Tipo de n | Cor | Borda | Tamanho |
+|:---|:---:|:---:|:---:|
+| Origem | `#002244` navy | cyan | 22 |
+| Destino | `#281500` laranja | `#F5A623` dourado | 22 |
+| Escala | `#0A2010` verde | `#00E5A0` | 18 |
+| Aresta na rota | | `#F5A623` | largura 3 |
+| Aresta fora | | cyan 15% | largura 1 |
 
 ---
 
 ## Como Executar
 
-### 1. Configurar o ambiente
+### 1 Configurar o ambiente
 
 ```bash
 python -m venv venv
-.\venv\Scripts\Activate        # Windows
-source venv/bin/activate       # Linux/macOS
+.\venv\Scripts\Activate # Windows
+source venv/bin/activate # Linux/macOS
 pip install -r requirements.txt
 ```
 
-### 2. Executar o Backend
+### 2 Executar o Backend
 
 ```bash
 cd src
 python api.py
-# API disponível em: http://localhost:5000
+# API disponvel em: http://localhost:5000
 ```
 
-### 3. Executar o Frontend
+### 3 Executar o Frontend
 
 ```bash
 cd frontend
-npm i vite
+npm install
 npm run dev
-# Interface disponível em: http://localhost:5173
+# Interface disponvel em: http://localhost:5173
 ```
 
-### 4. Executar via CLI
+### 4 Executar via CLI
 
 ```bash
-# Parte 1 — ETA Airlines
+# Parte 1 ETA Airlines
 python -m src.cli --dataset ./data/aeroportos_data.csv --alg BFS --source REC --out ./out/
 python -m src.cli --dataset ./data/aeroportos_data.csv --alg DIJKSTRA --source REC --target POA --out ./out/
 
-# Parte 2 — ETN / LINERLIB
+# Parte 2 ETN / LINERLIB
 python -m src.cli --dataset ./data/ETN/ --alg DIJKSTRA --source AEJEA --target CAMTR --out ./out/
 python -m src.cli --dataset ./data/ETN/ --alg BELLMAN_FORD --source AEJEA --target CAMTR --out ./out/
 ```
 
 ---
 
-## Testes
+## Docker
 
-Os testes ficam na pasta `tests/` e usam **pytest**:
+A forma mais simples de subir o projeto inteiro sem configurar ambiente:
+
+```bash
+docker-compose up --build
+```
+
+| Servio | URL |
+|:---|:---|
+| Frontend | http://localhost |
+| Backend API | http://localhost:5000 |
+
+> O Nginx faz proxy automtico das chamadas `/api/*` para o backend, sem necessidade de configurao adicional.
+
+---
+
+## Testes
 
 ```bash
 # Rodar todos os testes
 .\venv\Scripts\python.exe -m pytest tests/ -v
 
-# Rodar um arquivo específico
+# Rodar um arquivo especfico
 .\venv\Scripts\python.exe -m pytest tests/test_dijkstra.py -v
 ```
 
 | Arquivo | Algoritmo | O que testa |
-|---|---|---|
-| `test_dijkstra.py` | Dijkstra | Caminhos corretos com pesos ≥ 0; rejeição de pesos negativos |
-| `test_bellman_ford.py` | Bellman-Ford | Pesos negativos sem ciclo (distâncias corretas); ciclo negativo (flag) |
-| `test_bfs.py` | BFS | Níveis corretos em grafo pequeno |
-| `test_dfs.py` | DFS | Detecção de ciclo; classificação de arestas (tree, back, forward, cross) |
-| `test_part2_report.py` | Relatório Parte 2 | Validação das métricas de desempenho |
+|:---|:---|:---|
+| `test_dijkstra.py` | Dijkstra | Caminhos corretos com pesos 0; rejeio de pesos negativos |
+| `test_bellman_ford.py` | Bellman-Ford | Pesos negativos sem ciclo; deteco de ciclo negativo |
+| `test_bfs.py` | BFS | Nveis corretos em grafo pequeno |
+| `test_dfs.py` | DFS | Deteco de ciclo; classificao de arestas (tree, back, forward, cross) |
+| `test_part2_report.py` | Relatrio Parte 2 | Validao das mtricas de desempenho |
 
 ---
 
 ## Tecnologias
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
+![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+
+</div>
+
 | Camada | Tecnologia |
-|---|---|
-| **Backend** | Python 3.12 · Flask · Flask-CORS |
-| **Frontend** | React 19 · Vite · Vis.js Network · Axios |
-| **Visualização** | Vis Network (grafos interativos) · Matplotlib / Plotly (análises) |
+|:---|:---|
+| **Backend** | Python 3.12 Flask 3.0 Flask-CORS |
+| **Frontend** | React 19 Vite 6 Vis.js Network Axios Recharts |
+| **Visualizao** | Vis Network react-force-graph-3d react-globe.gl Matplotlib |
 | **Testes** | pytest |
-| **Dados (Parte 1)** | CSV customizado com critérios definidos pelo grupo |
-| **Dados (Parte 2)** | LINERLIB — benchmark acadêmico baseado em dados reais da Maersk Line |
-| **Estilo** | CSS moderno com gradientes, animações e identidade ETA Airlines |
-
----
-
-> **Nota acadêmica:** todos os algoritmos (Dijkstra, Bellman-Ford, BFS, DFS) foram implementados manualmente, sem uso de bibliotecas externas de grafos, como exigido pela disciplina.
+| **Infra** | Docker Docker Compose Nginx |
+| **Dados Parte 1** | CSV customizado com critrios definidos pelo grupo |
+| **Dados Parte 2** | LINERLIB benchmark acadmico baseado em dados reais da Maersk Line |
