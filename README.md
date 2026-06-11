@@ -19,7 +19,7 @@
 <img src="https://img.shields.io/badge/DFS-%E2%9C%94-success?style=flat-square"/>
 </p>
 
->**Disciplina:**Teoria dos Grafos &nbsp;|&nbsp;**Equipe:**Carlos Eduardo · Mateus · Ribeiro · Pedro Gusmão · Caio Ferreira &nbsp;|&nbsp;**Orientadora:**Laura
+> **Disciplina:** Teoria dos Grafos &nbsp;|&nbsp; **Equipe:** Carlos Eduardo · Mateus · Ribeiro · Pedro Gusmão · Caio Ferreira &nbsp;|&nbsp; **Orientadora:** Laura
 
 </div>
 
@@ -65,38 +65,38 @@ Uma aplicação completa para**visualização, análise e comparação de algori
 
 ```
 projeto-grafos/
- data/
- ETN/ # Dados da Parte 2 (LINERLIB)
- arestas.csv # 1.764 rotas marítimas com pesos econômicos
- vertices.csv # 47 portos (UNLocode)
- dist_dense.csv # Distâncias em milhas náuticas
- fleet_data.csv # Dados de frota (coeficiente 25,46 USD/nm)
- Demand_WorldSmall.csv # Demanda semanal e receita por contêiner
- ports.csv # Custos portuários
- adjacencias_aeroportos.csv # Arestas da Parte 1
- aeroportos_data.csv # Dados dos 20 aeroportos (código IATA)
- ego_aeroportos.csv # Métricas de ego-rede
- rotas_possiveis.csv # Pares origem-destino
- rotas.csv # Resultado das rotas calculadas
- frontend/ # Frontend React (Vite)
- src/
- App.jsx # Componente raiz — Malha Aérea BR
- PainelRotasETN.jsx # Painel de rotas ETN
- utils/
- apiFetch.js # Fetch com fallback automático (Docker ↔ localhost)
- Dashboard/ # Dashboards analíticos
- src/ # Backend Python
- api.py # API REST Flask
- cli.py # Interface de linha de comando
- solve.py # Implementações dos algoritmos
- viz.py # Geração de visualizações
- parte2/ # Módulo da Parte 2 (ETN)
- tests/ # Testes automatizados (pytest)
- out/ # Saídas geradas
- Dockerfile.backend
- Dockerfile.frontend
- docker-compose.yml
- requirements.txt
++-- data/
+|   +-- ETN/                        # Dados da Parte 2 (LINERLIB)
+|   |   +-- arestas.csv             # 1.764 rotas maritimas com pesos economicos
+|   |   +-- vertices.csv            # 47 portos (UNLocode)
+|   |   +-- dist_dense.csv          # Distancias em milhas nauticas
+|   |   +-- fleet_data.csv          # Dados de frota (coeficiente 25,46 USD/nm)
+|   |   +-- Demand_WorldSmall.csv   # Demanda semanal e receita por conteiner
+|   |   \-- ports.csv               # Custos portuarios
+|   +-- adjacencias_aeroportos.csv  # Arestas da Parte 1
+|   +-- aeroportos_data.csv         # Dados dos 20 aeroportos (codigo IATA)
+|   +-- ego_aeroportos.csv          # Metricas de ego-rede
+|   +-- rotas_possiveis.csv         # Pares origem-destino
+|   \-- rotas.csv                   # Resultado das rotas calculadas
++-- frontend/                       # Frontend React (Vite)
+|   \-- src/
+|       +-- App.jsx                 # Componente raiz - Malha Aerea BR
+|       +-- PainelRotasETN.jsx      # Painel de rotas ETN
+|       +-- utils/
+|       |   \-- apiFetch.js         # Fetch com fallback automatico (Docker / localhost)
+|       \-- Dashboard/              # Dashboards analiticos
++-- src/                            # Backend Python
+|   +-- api.py                      # API REST Flask
+|   +-- cli.py                      # Interface de linha de comando
+|   +-- solve.py                    # Implementacoes dos algoritmos
+|   +-- viz.py                      # Geracao de visualizacoes
+|   \-- parte2/                     # Modulo da Parte 2 (ETN)
++-- tests/                          # Testes automatizados (pytest)
++-- out/                            # Saidas geradas
++-- Dockerfile.backend
++-- Dockerfile.frontend
++-- docker-compose.yml
+\-- requirements.txt
 ```
 
 ---
