@@ -376,7 +376,7 @@ function BrazilMap({
                 opacity: 0.8
               }}
             >
-              ✦ Rota ativa
+              Rota ativa
             </div>
           )}
         </div>
@@ -799,7 +799,6 @@ function AirportStopPanel({ airportCode, aeroportosData, isOrigin, isDestination
           <div className="airport-stop-curiosities-title">Curiosidades</div>
           {(info.curiosities || ['Aeroporto regional brasileiro.']).map((c, i) => (
             <div key={i} className="airport-stop-curiosity">
-              <span className="airport-stop-curiosity-bullet">✦</span>
               {c}
             </div>
           ))}
@@ -1269,8 +1268,8 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
               `<div style="font-weight:800;color:#f1f5f9;font-size:15px">${d.id}</div>` +
               `<div style="color:#94a3b8;font-size:12px;margin-top:3px">${d.city}</div>` +
               `<div style="color:#475569;font-size:10px;margin-top:2px">${d.region}</div>` +
-              (d.isStart ? `<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">✦ Origem</div>` : '') +
-              (d.isEnd ? `<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">✦ Destino</div>` : '') +
+              (d.isStart ? `<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">Origem</div>` : '') +
+              (d.isEnd ? `<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">Destino</div>` : '') +
               (d.inPath && !d.isStart && !d.isEnd
                 ? `<div style="color:#FFD700;font-size:11px;font-weight:700;margin-top:5px">★ Na rota</div>`
                 : '') +
@@ -1475,7 +1474,6 @@ function AirportCuriosityModal({ airportCode, aeroportosData, onClose }) {
           <div className="acm-curiosities">
             {(info.curiosities || ['Aeroporto regional brasileiro.']).map((c, i) => (
               <div key={i} className="acm-curiosity">
-                <span className="acm-bullet">✦</span>
                 <span>{c}</span>
               </div>
             ))}

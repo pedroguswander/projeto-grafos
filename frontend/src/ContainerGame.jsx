@@ -111,7 +111,6 @@ export default function ContainerGame({ onBack }) {
             </div>
 
             <button className="cg-info-trigger" onClick={() => setShowInfo(true)} type="button">
-              <span className="cg-info-trigger-icon">⬡</span>
               <span className="cg-info-trigger-text">Como funciona o Grafo Bellman-Ford?</span>
               <span className="cg-info-trigger-chevron">→</span>
             </button>
@@ -136,7 +135,6 @@ export default function ContainerGame({ onBack }) {
 
             <div className="cg-info-header">
               <div className="cg-info-header-left">
-                <span className="cg-info-header-icon">⬡</span>
                 <div>
                   <h2 className="cg-info-title">Grafo Bellman-Ford</h2>
                   <p className="cg-info-tagline">Como a partida é modelada como grafo dirigido ponderado</p>
@@ -201,7 +199,7 @@ export default function ContainerGame({ onBack }) {
                 </svg>
 
                 <p className="cg-info-note">
-                  Custo final negativo = partida eficiente ✦ &nbsp;|&nbsp; +2 em S3 = jogada custosa que elevou o total
+                  Custo final negativo = partida eficiente &nbsp;|&nbsp; +2 em S3 = jogada custosa que elevou o total
                 </p>
               </section>
 
@@ -219,22 +217,22 @@ export default function ContainerGame({ onBack }) {
 
                 <div className="cg-info-weight-grid">
                   <div className="cg-info-weight-card cg-info-wc--elite">
-                    <span className="cg-info-wc-badge">⚡ ELITE</span>
+                    <span className="cg-info-wc-badge">ELITE</span>
                     <span className="cg-info-wc-val">−5</span>
                     <span className="cg-info-wc-desc">Perfeito + janela ideal<br/>(reação 1.5 – 2.5 s)</span>
                   </div>
                   <div className="cg-info-weight-card cg-info-wc--efic">
-                    <span className="cg-info-wc-badge">✦ EFICIENTE</span>
+                    <span className="cg-info-wc-badge">EFICIENTE</span>
                     <span className="cg-info-wc-val">−4 a −1</span>
                     <span className="cg-info-wc-desc">Perfeito ou boa timing<br/>(reação até 3.5 s)</span>
                   </div>
                   <div className="cg-info-weight-card cg-info-wc--neu">
-                    <span className="cg-info-wc-badge">◆ NEUTRO</span>
+                    <span className="cg-info-wc-badge">NEUTRO</span>
                     <span className="cg-info-wc-val">0 a +1</span>
                     <span className="cg-info-wc-desc">Normal + timing razoável<br/>(reação até 3.5 s)</span>
                   </div>
                   <div className="cg-info-weight-card cg-info-wc--cost">
-                    <span className="cg-info-wc-badge">⚠ CUSTOSO</span>
+                    <span className="cg-info-wc-badge">CUSTOSO</span>
                     <span className="cg-info-wc-val">+2 a +4</span>
                     <span className="cg-info-wc-desc">Normal + lento ou<br/>reação &gt; 3.5 s</span>
                   </div>
@@ -242,9 +240,9 @@ export default function ContainerGame({ onBack }) {
 
                 <div className="cg-info-formula">
                   <span className="cg-info-formula-line"><span className="cg-ifl--label">base</span><span className="cg-ifl--op"> = </span><span className="cg-ifl--val">Perfeito ? <span className="cg-ifl--neg">−3</span> : <span className="cg-ifl--pos">+2</span></span></span>
-                  <span className="cg-info-formula-line"><span className="cg-ifl--label">bônus</span><span className="cg-ifl--op"> += </span><span className="cg-ifl--neg">−2</span><span className="cg-ifl--dim">  se reação ∈ [1.5, 2.5] s  ⚡ janela ideal</span></span>
-                  <span className="cg-info-formula-line"><span className="cg-ifl--label">      </span><span className="cg-ifl--op"> += </span><span className="cg-ifl--neg">−1</span><span className="cg-ifl--dim">  se reação ∈ [1.0, 3.5] s  ✦ boa timing</span></span>
-                  <span className="cg-info-formula-line"><span className="cg-ifl--label">      </span><span className="cg-ifl--op"> += </span><span className="cg-ifl--pos">+1</span><span className="cg-ifl--dim">  se reação ∈ (3.5, 5.0] s  ⚠ lento</span></span>
+                  <span className="cg-info-formula-line"><span className="cg-ifl--label">bônus</span><span className="cg-ifl--op"> += </span><span className="cg-ifl--neg">−2</span><span className="cg-ifl--dim">  se reação ∈ [1.5, 2.5] s  janela ideal</span></span>
+                  <span className="cg-info-formula-line"><span className="cg-ifl--label">      </span><span className="cg-ifl--op"> += </span><span className="cg-ifl--neg">−1</span><span className="cg-ifl--dim">  se reação ∈ [1.0, 3.5] s  boa timing</span></span>
+                  <span className="cg-info-formula-line"><span className="cg-ifl--label">      </span><span className="cg-ifl--op"> += </span><span className="cg-ifl--pos">+1</span><span className="cg-ifl--dim">  se reação ∈ (3.5, 5.0] s  lento</span></span>
                   <span className="cg-info-formula-line"><span className="cg-ifl--label">      </span><span className="cg-ifl--op"> += </span><span className="cg-ifl--pos">+2</span><span className="cg-ifl--dim">  se reação &gt; 5.0 s          ✕ muito lento</span></span>
                 </div>
               </section>
@@ -269,14 +267,12 @@ export default function ContainerGame({ onBack }) {
 
                 <div className="cg-info-bf-row">
                   <div className="cg-info-bf-card cg-info-bf--adv">
-                    <span className="cg-info-bf-card-icon">✦</span>
                     <div>
                       <strong>Pesos negativos</strong>
                       <p>Bellman-Ford suporta arestas negativas — ao contrário do Dijkstra, essencial para representar jogadas de alta eficiência.</p>
                     </div>
                   </div>
                   <div className="cg-info-bf-card cg-info-bf--goal">
-                    <span className="cg-info-bf-card-icon">⬡</span>
                     <div>
                       <strong>Objetivo</strong>
                       <p>Minimizar o custo acumulado de S₀ até Sₙ. Custo total negativo = sessão eficiente.</p>

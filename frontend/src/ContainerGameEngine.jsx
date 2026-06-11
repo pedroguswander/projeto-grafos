@@ -407,7 +407,7 @@ function update(s) {
         const gain = getReputationGain(s.level, s.stacked)
         s.reputation = Math.min(REP_MAX, s.reputation + gain)
         s.floatTexts.push({
-          text: `✦ PERFECT! +150  REP +${gain.toFixed(1)}`,
+          text: `PERFECT! +150  REP +${gain.toFixed(1)}`,
           x: dropX + width / 2,
           worldY: landWY - 10,
           alpha: 1,
@@ -435,7 +435,7 @@ function update(s) {
         const toIdx   = s.stacked
         const w = getMoveWeight({ perfect, reactionTime: s.lastReactionTime, level: s.level })
         s.lastMoveWeight = w
-        s.lastMoveLabel  = w <= -4 ? '⚡ ELITE' : w < 0 ? '✦ EFICIENTE' : w < 2 ? '◆ NEUTRO' : '⚠ CUSTOSO'
+        s.lastMoveLabel  = w <= -4 ? 'ELITE' : w < 0 ? 'EFICIENTE' : w < 2 ? '◆ NEUTRO' : 'CUSTOSO'
         s.graphNodes++
         s.graphEdges.push({ from: fromIdx, to: toIdx, weight: w })
         const { dist } = runBellmanFord(s.graphNodes, s.graphEdges)
