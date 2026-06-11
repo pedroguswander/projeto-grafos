@@ -1,16 +1,18 @@
 import csv
 from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
 
 
-@dataclass
 class Airport:
-    code: str
-    name: str
-    city: str
-    country: str
-    latitude: float
-    longitude: float
+    def __init__(self, code, name, city, country, latitude, longitude):
+        self.code = code
+        self.name = name
+        self.city = city
+        self.country = country
+        self.latitude = latitude
+        self.longitude = longitude
+
+    def __repr__(self):
+        return f"Airport({self.code!r}, {self.city!r})"
 
 
 class Graph:

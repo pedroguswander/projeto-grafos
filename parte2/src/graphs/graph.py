@@ -1,16 +1,18 @@
 import csv
 from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
 
 
-@dataclass
 class Port:
-    code: str
-    name: str
-    country: str
-    region: str
-    longitude: float
-    latitude: float
+    def __init__(self, code, name, country, region, longitude, latitude):
+        self.code = code
+        self.name = name
+        self.country = country
+        self.region = region
+        self.longitude = longitude
+        self.latitude = latitude
+
+    def __repr__(self):
+        return f"Port({self.code!r}, {self.name!r})"
 
 
 class Graph:
