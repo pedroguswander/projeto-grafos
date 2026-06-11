@@ -9,7 +9,7 @@ import json
 
 from parte2.src.graphs.graph import Graph
 from parte2.src.graphs.io import load_graph_from_csvs
-from parte2.src.graphs.algorithms import bfs, dfs, dijkstra, bellman_ford, bfs_find, dfs_find
+from parte2.src.graphs.algorithms import bfs, dfs, dijkstra, bellman_ford, bfs_find, dfs_find, remover_ciclos_negativos
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ETN")
 OUT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out", "part2_report.json")
@@ -126,26 +126,6 @@ def _build_non_negative_subgraph(graph) -> Graph:
     return subgraph
 
 
-def _build_subgraph_no_cycle(graph) -> Graph:
-    nodes = list(graph.adjacency_list.keys())
-    dist = {n: 0 for n in nodes}
-    for _ in range(len(nodes) - 1):
-        for u in nodes:
-            for v, w in graph.adjacency_list.get(u, []):
-                if dist[u] + w < dist[v]:
-                    dist[v] = dist[u] + w
-    in_neg_cycle = set()
-    for u in nodes:
-        for v, w in graph.adjacency_list.get(u, []):
-            if dist[u] + w < dist[v]:
-                in_neg_cycle.add(u)
-    subgraph = Graph()
-    subgraph.ports = dict(graph.ports)
-    for u in nodes:
-        subgraph.adjacency_list[u] = [] if u in in_neg_cycle else list(graph.adjacency_list.get(u, []))
-    return subgraph
-
-
 def _run_dijkstra(graph, src: str, dst: str, eh_subgrafo: bool) -> dict:
     print(f"\n[DIJKSTRA] {src} -> {dst} | subgrafo={eh_subgrafo}")
 
@@ -259,7 +239,7 @@ def test_generate_part2_report():
 
     print("\n--- BELLMAN-FORD ---")
     subgrafo_pos = _build_non_negative_subgraph(graph)
-    subgrafo_neg = _build_subgraph_no_cycle(graph)
+    subgrafo_neg = remover_ciclos_negativos(graph)
     bf_pair_pos = _direct_pairs(subgrafo_pos, _top_nodes_by_degree(subgrafo_pos, 10), 1)[0]
     bf_pair_neg = _direct_pairs(subgrafo_neg, _top_nodes_by_degree(subgrafo_neg, 10), 1)[0]
     pairs_2 = _direct_pairs(graph, _top_nodes_by_degree(graph, 10), 2)
