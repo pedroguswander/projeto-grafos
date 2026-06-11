@@ -89,9 +89,9 @@ export default function GlobalMetrics({ onBack }) {
     async function fetchData() {
       try {
         const [aeroRes, regiaoRes, egoAeroRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/aeroportos-data'),
-          axios.get('http://localhost:5000/api/ego-regiao'),
-          axios.get('http://localhost:5000/api/ego-aeroportos'),
+          axios.get('/api/aeroportos-data'),
+          axios.get('/api/ego-regiao'),
+          axios.get('/api/ego-aeroportos'),
         ]);
 
         setAeroportosData(aeroRes.data || []);

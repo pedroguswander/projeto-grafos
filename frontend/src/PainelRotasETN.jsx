@@ -1135,7 +1135,7 @@ function PainelRotasETN({ onBack }) {
   const endPortRef = useRef('')
   const simulationTimeoutsRef = useRef([])
 
-  const API = 'http://localhost:5000'
+  const API = ""
 
   // ─── Carregamento de dados ───────────────────────────────────
   const loadGraphData = async () => {
