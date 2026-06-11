@@ -946,7 +946,7 @@ function Globe3DModal({ onClose, graphData, pathResult, startPort, endPort, port
               return activePath.length > 0 ? 0.22 : 0.3
             }}
             pointAltitude={(d) => (d.isStart || d.isEnd) ? 0.08 : d.inPath ? 0.05 : 0.01}
-            pointLabel={(d) => `<div style="background:rgba(6,26,20,0.97);border:1.5px solid ${getRegionColor(d.region)};border-radius:10px;padding:10px 14px;font-family:Inter,sans-serif;min-width:150px;box-shadow:0 6px 28px rgba(0,0,0,0.6)"><div style="font-weight:800;color:#ecfff7;font-size:15px;letter-spacing:0.03em">${d.id}</div><div style="color:#bfe0d2;font-size:12px;margin-top:3px">${d.name}</div><div style="color:#6f9a89;font-size:10px;margin-top:3px">${d.country} &middot; ${d.region}</div>${d.isStart ? '<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">✦ Porto de origem</div>' : ''}${d.isEnd ? '<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">✦ Porto de destino</div>' : ''}${d.inPath && !d.isStart && !d.isEnd ? '<div style="color:#FFD700;font-size:11px;font-weight:700;margin-top:5px">★ Melhor rota</div>' : ''}</div>`}
+            pointLabel={(d) => `<div style="background:rgba(6,26,20,0.97);border:1.5px solid ${getRegionColor(d.region)};border-radius:10px;padding:10px 14px;font-family:Inter,sans-serif;min-width:150px;box-shadow:0 6px 28px rgba(0,0,0,0.6)"><div style="font-weight:800;color:#ecfff7;font-size:15px;letter-spacing:0.03em">${d.id}</div><div style="color:#bfe0d2;font-size:12px;margin-top:3px">${d.name}</div><div style="color:#6f9a89;font-size:10px;margin-top:3px">${d.country} &middot; ${d.region}</div>${d.isStart ? '<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">Porto de origem</div>' : ''}${d.isEnd ? '<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">Porto de destino</div>' : ''}${d.inPath && !d.isStart && !d.isEnd ? '<div style="color:#FFD700;font-size:11px;font-weight:700;margin-top:5px">Melhor rota</div>' : ''}</div>`}
             customLayerData={shipData}
             customThreeObject={() => {
               if (!shipModelRef.current) return new THREE.Object3D()
@@ -1090,7 +1090,6 @@ function PortCuriosityModal({ portCode, onClose }) {
           <div className="pcm-curiosities">
             {(info.curiosities || ['Porto sem curiosidades cadastradas.']).map((c, i) => (
               <div key={i} className="pcm-curiosity">
-                <span className="pcm-bullet">✦</span>
                 <span>{c}</span>
               </div>
             ))}
@@ -1135,7 +1134,7 @@ function PainelRotasETN({ onBack }) {
   const endPortRef = useRef('')
   const simulationTimeoutsRef = useRef([])
 
-  const API = 'http://localhost:5000'
+  const API = import.meta.env.VITE_API_URL ?? ""
 
   // ─── Carregamento de dados ───────────────────────────────────
   const loadGraphData = async () => {

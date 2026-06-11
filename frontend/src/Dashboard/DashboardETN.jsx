@@ -12,7 +12,7 @@ import InsightPanel from "../../components/InsightPanel"
 import { useAIInsightETN, SUGGESTED_QUESTIONS_ETN } from "../hooks/useAIInsightETN"
 import HyperbolicTree3D from "./HyperbolicTree3D"
 
-const API = "http://localhost:5000"
+const API = import.meta.env.VITE_API_URL ?? ""
 
 const PALETTE = [
   "#26c281",
@@ -235,7 +235,7 @@ const ComparisonTooltip = ({ active, payload, label }) => {
       <div className="dashboard-etn-donut-header">
         <span className="dashboard-etn-donut-source">{label}</span>
         <span className={`dashboard-etn-donut-badge ${winner.toLowerCase()}`}>
-          ⚡ {winner}
+          {winner}
         </span>
       </div>
 
