@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import './css/AirportGameEngine.css'
 import logoETA from './assets/logo/logo_branca_completa.png'
+import { createPlanes3D, createTerrain3D, makeThumbnails } from './planes3d.js'
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -100,6 +101,7 @@ function checkLanding(p) {
 
 function updatePlane(p, dt) {
   if (p.crashed) return
+  p.turnSign = 0 // set below while turning — drives the 3D bank (roll)
   let { vx, vy } = p
   const hb = getHitbox(p)
 
@@ -133,6 +135,7 @@ function updatePlane(p, dt) {
           const a = Math.atan2(vy, vx) + rot
           vx = Math.cos(a) * vl
           vy = Math.sin(a) * vl
+          p.turnSign = rot > 0 ? 1 : -1
         }
       }
     }
@@ -191,13 +194,17 @@ function _project(lon, lat) {
   ]
 }
 
-function buildStaticLayer(geoJSON) {
+// opaque=false → transparent HUD-only layer (grid/rings over the 3D terrain);
+// geoJSON is only drawn in the 2D fallback (no WebGL terrain available)
+function buildStaticLayer(geoJSON, opaque = true) {
   const off = document.createElement('canvas')
   off.width = CW; off.height = CH
   const ctx = off.getContext('2d')
 
-  ctx.fillStyle = 'rgb(3,13,26)'
-  ctx.fillRect(0, 0, CW, CH)
+  if (opaque) {
+    ctx.fillStyle = 'rgb(3,13,26)'
+    ctx.fillRect(0, 0, CW, CH)
+  }
 
   ctx.strokeStyle = 'rgba(20,70,150,0.149)'
   ctx.lineWidth = 1
@@ -585,6 +592,10 @@ function drawRankingTable(ctx, entries, scroll, curName, curScore) {
 // ════════════════════════════════════════════════════════════════════════════
 export default function AirportGameEngine({ onBack, startDirect = false }) {
   const canvasRef      = useRef(null)
+  const glCanvasRef    = useRef(null)
+  const terrainCanvasRef = useRef(null)
+  const planes3dRef    = useRef(null)
+  const terrain3dRef   = useRef(null)
   const imgsRef        = useRef({})
   const staticRef      = useRef(null)
   const gsRef          = useRef(null)
@@ -593,6 +604,9 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
   const rankingRef     = useRef([])
   const scrollRef      = useRef(0)
   const startDirectRef = useRef(startDirect)
+
+  // 3D thumbnails for the sidebar (null until rendered → PNG fallback)
+  const [thumbs, setThumbs] = useState(null)
 
   // HUD state — updated from game loop ~10fps
   const [hudState,    setHudState]    = useState({ score: 0, landed: 0, rankPos: 1, planes: { small: 0, medium: 0, heavy: 0 } })
@@ -672,6 +686,31 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
     let lastTime  = performance.now()
     let hudTick   = 0
 
+    // 3D plane layer (transparent WebGL canvas over the radar) +
+    // 3D terrain layer (relief map + airport, beneath the radar HUD)
+    planes3dRef.current  = createPlanes3D(glCanvasRef.current, LANDING_AREA)
+    terrain3dRef.current = createTerrain3D(terrainCanvasRef.current, LANDING_AREA)
+    setThumbs(makeThumbnails())
+
+    // Computes per-plane visual fx and pushes state to the 3D layer.
+    // Returns false when WebGL is unavailable → caller draws 2D sprites.
+    function pushTo3D(gs, dt, now) {
+      const p3d = planes3dRef.current
+      if (!p3d) return false
+      for (const p of gs.airplanes) {
+        const fuelFrac = Math.max(0, p.fuel / FUEL_MAX[p.type])
+        const period  = BLINK_PERIOD_EMPTY + (BLINK_PERIOD_FULL - BLINK_PERIOD_EMPTY) * fuelFrac
+        const blinkOn = p.blinkTimer < (period - BLINK_DARK_DUR)
+        p.fx = {
+          opacity:  p.crashed || blinkOn ? 1 : 0.15,
+          critical: !p.crashed && blinkOn && fuelFrac < FUEL_CRITICAL,
+          crashed:  p.crashed,
+        }
+      }
+      p3d.sync(gs.airplanes, dt, now / 1000)
+      return true
+    }
+
     try { const m = new Audio('/atc-game/game.ogg'); m.loop = true; m.volume = 0.8; musicRef.current = m } catch (_) {}
 
     let imgsReady = false, geoReady = false
@@ -690,8 +729,20 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
     loadImages(imgs => { imgsRef.current = imgs; imgsReady = true; tryStart() })
     fetch('/atc-game/brazil_states.json')
       .then(r => r.json())
-      .then(geo => { staticRef.current = buildStaticLayer(geo); geoReady = true; tryStart() })
-      .catch(() => { staticRef.current = buildStaticLayer(null); geoReady = true; tryStart() })
+      .then(geo => {
+        const t3d = terrain3dRef.current
+        if (t3d) {
+          t3d.setGeo(geo, _project)                          // relief map on the 3D layer
+          staticRef.current = buildStaticLayer(null, false)  // transparent HUD on top
+        } else {
+          staticRef.current = buildStaticLayer(geo, true)    // 2D fallback (flat map)
+        }
+        geoReady = true; tryStart()
+      })
+      .catch(() => {
+        staticRef.current = buildStaticLayer(null, !terrain3dRef.current)
+        geoReady = true; tryStart()
+      })
 
     const loop = (now) => {
       const dt    = Math.min((now - lastTime) / 1000, MAX_DT)
@@ -710,21 +761,24 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
 
       // Menu
       if (phase === 'menu') {
+        planes3dRef.current?.clearFrame()
+        ctx.fillStyle = 'rgb(3,13,26)'; ctx.fillRect(0, 0, CW, CH)
         if (imgs.menu) ctx.drawImage(imgs.menu, 0, 0, CW, CH)
-        else { ctx.fillStyle = 'rgb(3,13,26)'; ctx.fillRect(0, 0, CW, CH) }
         animId = requestAnimationFrame(loop); return
       }
 
       // Ranking canvas view
       if (phase === 'ranking') {
+        planes3dRef.current?.clearFrame()
+        ctx.fillStyle = 'rgb(3,13,26)'; ctx.fillRect(0, 0, CW, CH)
         if (imgs.ranking) ctx.drawImage(imgs.ranking, 0, 0, CW, CH)
-        else { ctx.fillStyle = 'rgb(3,13,26)'; ctx.fillRect(0, 0, CW, CH) }
         drawRankingTable(ctx, rankingRef.current, scrollRef.current, '', 0)
         animId = requestAnimationFrame(loop); return
       }
 
       const gs = gsRef.current
       if (!gs) { animId = requestAnimationFrame(loop); return }
+      if (import.meta.env.DEV) { window.__ATC_GS = gs; window.__ATC_PHASE = phase } // debug/test hook (dev only)
 
       // ── Gameover flash ─────────────────────────────────────────
       if (phase === 'gameover_flash') {
@@ -740,12 +794,14 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
           const a = Math.max(0, 120 * (1 - gs.flashTimer / GAMEOVER_FLASH)) / 255
           ctx.fillStyle = `rgba(180,30,30,${a})`; ctx.fillRect(0, 0, CW, CH)
         }
+        pushTo3D(gs, 0, now) // keep crashed planes frozen on the 3D layer
         animId = requestAnimationFrame(loop); return
       }
 
       // ── Gameover wait (frozen frame while React overlay is shown) ──
       if (phase === 'gameover_wait') {
         if (gs.snapshot) ctx.putImageData(gs.snapshot, 0, 0)
+        pushTo3D(gs, 0, now)
         animId = requestAnimationFrame(loop); return
       }
 
@@ -841,12 +897,15 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       }
 
       // ── Draw frame ─────────────────────────────────────────────
+      // 3D terrain below is static (renders itself on geo load);
+      // here we only repaint the transparent HUD layer above it
+      ctx.clearRect(0, 0, CW, CH)
       if (staticRef.current) ctx.drawImage(staticRef.current, 0, 0)
-      else { ctx.fillStyle = 'rgb(3,13,26)'; ctx.fillRect(0, 0, CW, CH) }
+      else if (!terrain3dRef.current) { ctx.fillStyle = 'rgb(3,13,26)'; ctx.fillRect(0, 0, CW, CH) }
       drawSweep(ctx, gs.sweepAngle)
 
-      // Airport sprite (top-left at AIRPORT_POS)
-      if (imgs.airport) {
+      // Airport sprite — 2D fallback only (3D terrain has its own airport)
+      if (!terrain3dRef.current && imgs.airport) {
         ctx.drawImage(imgs.airport,
           AIRPORT_POS.x, AIRPORT_POS.y,
           Math.round(imgs.airport.width * AIRPORT_SCALE),
@@ -879,38 +938,44 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       ctx.setLineDash([])
       ctx.restore()
 
-      // Paths (BLUE) + sprites
+      // Paths (BLUE)
       for (const p of gs.airplanes) {
         if (p.path.length > 0) {
           ctx.beginPath(); ctx.moveTo(p.x, p.y)
           for (const wp of p.path) ctx.lineTo(wp.x, wp.y)
           ctx.strokeStyle = 'rgba(77,163,255,0.85)'; ctx.lineWidth = 2; ctx.stroke()
         }
-        if (p.img) {
-          const fuelFrac = Math.max(0, p.fuel / FUEL_MAX[p.type])
-          const period = BLINK_PERIOD_EMPTY + (BLINK_PERIOD_FULL - BLINK_PERIOD_EMPTY) * fuelFrac
-          const blinkOn = p.blinkTimer < (period - BLINK_DARK_DUR)
-          const angle = Math.atan2(p.vy, p.vx)
-          if (!blinkOn) {
-            ctx.save(); ctx.globalAlpha = 0.15
-            drawRotated(ctx, p.img, p.x, p.y, angle, p.def.imgScale)
-            ctx.restore()
-          } else if (fuelFrac < FUEL_CRITICAL) {
-            ctx.save()
-            ctx.translate(p.x, p.y); ctx.rotate(angle)
-            const w = p.img.width * p.def.imgScale, h = p.img.height * p.def.imgScale
-            ctx.drawImage(p.img, -w / 2, -h / 2, w, h)
-            ctx.globalCompositeOperation = 'source-atop'
-            ctx.fillStyle = 'rgba(255,60,60,0.55)'
-            ctx.fillRect(-w / 2, -h / 2, w, h)
-            ctx.restore()
+      }
+
+      // Airplanes — 3D models on the WebGL layer; 2D sprites as fallback
+      if (!pushTo3D(gs, dt, now)) {
+        for (const p of gs.airplanes) {
+          if (p.img) {
+            const fuelFrac = Math.max(0, p.fuel / FUEL_MAX[p.type])
+            const period = BLINK_PERIOD_EMPTY + (BLINK_PERIOD_FULL - BLINK_PERIOD_EMPTY) * fuelFrac
+            const blinkOn = p.blinkTimer < (period - BLINK_DARK_DUR)
+            const angle = Math.atan2(p.vy, p.vx)
+            if (!blinkOn) {
+              ctx.save(); ctx.globalAlpha = 0.15
+              drawRotated(ctx, p.img, p.x, p.y, angle, p.def.imgScale)
+              ctx.restore()
+            } else if (fuelFrac < FUEL_CRITICAL) {
+              ctx.save()
+              ctx.translate(p.x, p.y); ctx.rotate(angle)
+              const w = p.img.width * p.def.imgScale, h = p.img.height * p.def.imgScale
+              ctx.drawImage(p.img, -w / 2, -h / 2, w, h)
+              ctx.globalCompositeOperation = 'source-atop'
+              ctx.fillStyle = 'rgba(255,60,60,0.55)'
+              ctx.fillRect(-w / 2, -h / 2, w, h)
+              ctx.restore()
+            } else {
+              drawRotated(ctx, p.img, p.x, p.y, angle, p.def.imgScale)
+            }
           } else {
-            drawRotated(ctx, p.img, p.x, p.y, angle, p.def.imgScale)
+            const colors = { small: '#4da3ff', medium: '#a78bfa', heavy: '#f6c56f' }
+            ctx.fillStyle = p.crashed ? '#ff4444' : (colors[p.type] || '#fff')
+            const s = p.def.hitbox / 2; ctx.fillRect(p.x - s, p.y - s, p.def.hitbox, p.def.hitbox)
           }
-        } else {
-          const colors = { small: '#4da3ff', medium: '#a78bfa', heavy: '#f6c56f' }
-          ctx.fillStyle = p.crashed ? '#ff4444' : (colors[p.type] || '#fff')
-          const s = p.def.hitbox / 2; ctx.fillRect(p.x - s, p.y - s, p.def.hitbox, p.def.hitbox)
         }
       }
 
@@ -926,7 +991,14 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
     }
 
     animId = requestAnimationFrame(loop)
-    return () => { cancelAnimationFrame(animId); try { musicRef.current?.pause() } catch (_) {} }
+    return () => {
+      cancelAnimationFrame(animId)
+      try { musicRef.current?.pause() } catch (_) {}
+      planes3dRef.current?.dispose()
+      planes3dRef.current = null
+      terrain3dRef.current?.dispose()
+      terrain3dRef.current = null
+    }
   }, [])
 
   // ── Event wiring ───────────────────────────────────────────────
@@ -955,12 +1027,20 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       <div className="atc-game-row">
         {/* Canvas — height-fills viewport, sidebar sits immediately to its right */}
         <div className="atc-canvas-wrap">
+          {/* Bottom WebGL layer — 3D relief map + airport under the radar HUD */}
+          <canvas ref={terrainCanvasRef} width={CW} height={CH}
+            className="atc-canvas-terrain" aria-hidden="true" />
+
           <canvas ref={canvasRef} width={CW} height={CH} className="atc-canvas"
             onMouseDown={onMouseDown} onMouseMove={onMouseMove}
             onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
             onWheel={handleWheel} onTouchStart={onTouchStart}
             onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
           />
+
+          {/* Transparent WebGL layer — 3D airplanes drawn over the radar */}
+          <canvas ref={glCanvasRef} width={CW} height={CH}
+            className="atc-canvas3d" aria-hidden="true" />
 
           {/* Game-over name entry overlay */}
           {uiState === 'gameover_input' && (
@@ -1027,7 +1107,9 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
                   { type: 'heavy',  src: '/atc-game/heavy.png',  label: 'Pesado' },
                 ].map(({ type, src, label }) => (
                   <div className="atc-scard-plane-slot" key={type}>
-                    <img src={src} className="atc-scard-plane-img" alt={label} />
+                    <img src={thumbs?.[type] ?? src}
+                      className={`atc-scard-plane-img${thumbs?.[type] ? ' atc-scard-plane-img--3d' : ''}`}
+                      alt={label} />
                     <span className="atc-scard-plane-count">{hudState.planes[type]}</span>
                     <span className="atc-scard-plane-label">{label}</span>
                   </div>
