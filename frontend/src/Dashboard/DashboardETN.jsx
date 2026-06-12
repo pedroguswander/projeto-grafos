@@ -191,6 +191,37 @@ const CloseBtn = ({ onClick }) => (
   </button>
 )
 
+const WinnerBadge = ({ winner }) => (
+  <span className={`dashboard-etn-winner-badge ${winner === "BFS" ? "bfs" : "dfs"}`}>
+    <Zap size={10} />{winner}
+  </span>
+)
+
+const ComparisonTable = ({ rows }) => (
+  <div className="dashboard-etn-table-wrap">
+    <table className="dashboard-etn-table">
+      <thead>
+        <tr>{["Source", "BFS (ms)", "Camadas", "DFS (ms)", "Ciclos", "Árv.", "Back", "Δ (ms)", "Mais rápido"].map(h => <th key={h}>{h}</th>)}</tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr key={i}>
+            <td className="dashboard-etn-table-strong">{row.source}</td>
+            <td className="dashboard-etn-table-bfs">{(row.bfs.tempo_segundos * 1000).toFixed(4)}</td>
+            <td>{row.bfs.num_camadas}</td>
+            <td className="dashboard-etn-table-dfs">{(row.dfs.tempo_segundos * 1000).toFixed(4)}</td>
+            <td>{row.dfs.ciclos?.toLocaleString("pt-BR")}</td>
+            <td>{row.dfs.arestas_tree}</td>
+            <td>{row.dfs.arestas_back}</td>
+            <td>{Math.abs(row.delta_tempo_ms).toFixed(4)}</td>
+            <td><WinnerBadge winner={row.mais_rapido} /></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)
+
 // ─── Tooltip Helpers ───────────────────────────────────────────
 const TT = ({ cls = "", children }) => (
   <div className={`dashboard-etn-custom-tooltip ${cls}`}>{children}</div>
@@ -809,6 +840,9 @@ export const DashboardETN = ({ onBack }) => {
   const [stats, setStats] = useState(null)
   const [arestas, setArestas] = useState([])
   const [vertices, setVertices] = useState([])
+  const [bfsDfs, setBfsDfs] = useState(null)
+  const [bfsErr, setBfsErr] = useState(null)
+  const [view, setView] = useState("chart")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [weightBins, setWeightBins] = useState(30)
@@ -848,19 +882,25 @@ export const DashboardETN = ({ onBack }) => {
 
   const fetchAll = useCallback(async () => {
     setError(null)
+    setBfsErr(null)
 
-    const [statsRes, arestasRes, verticesRes] = await Promise.allSettled([
+    const [statsRes, arestasRes, verticesRes, bfsRes] = await Promise.allSettled([
       fetch(buildStatsUrl()).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
       fetch(`${API}/api/etn/arestas`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
       fetch(`${API}/api/etn/vertices`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
+      fetch(`${API}/api/report/comparacao/bfs-dfs`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }),
     ])
 
     const statsData = statsRes.status === "fulfilled" ? statsRes.value : null
     const arestasData = arestasRes.status === "fulfilled" ? arestasRes.value : []
     const verticesData = verticesRes.status === "fulfilled" ? verticesRes.value : []
+    const bfsData = bfsRes.status === "fulfilled" ? bfsRes.value : null
 
     if (statsData) setStats(statsData)
     else setError(statsRes.reason?.message)
+
+    if (bfsData) setBfsDfs(bfsData)
+    else setBfsErr(bfsRes.reason?.message)
 
     setArestas(arestasData)
     setVertices(verticesData)
@@ -888,6 +928,11 @@ export const DashboardETN = ({ onBack }) => {
           pesoMax: statsData.pesoMax ?? 0,
           pesoMedioPositivo: statsData.pesoMedioPositivo ?? 0,
         },
+        bfsDfs: bfsData ? {
+          totalComparacoes: bfsData.total_comparacoes,
+          bfsVence: bfsData.comparacoes?.filter(x => x.mais_rapido === "BFS").length,
+          dfsVence: bfsData.comparacoes?.filter(x => x.mais_rapido === "DFS").length,
+        } : null,
       })
     }
   }, [buildStatsUrl, grauRange, pesoRange])
@@ -913,6 +958,19 @@ export const DashboardETN = ({ onBack }) => {
   }, [fetchAll])
 
   const d = stats || {}
+
+  const comparacoes = bfsDfs?.comparacoes || []
+  const bfsWins = comparacoes.filter(r => r.mais_rapido === "BFS").length
+  const dfsWins = comparacoes.filter(r => r.mais_rapido === "DFS").length
+  const avgDelta = comparacoes.length ? (comparacoes.reduce((s, r) => s + Math.abs(r.delta_tempo_ms), 0) / comparacoes.length).toFixed(4) : "—"
+  const chartData = comparacoes.map(r => ({ source: r.source, BFS: r.bfs.tempo_segundos, DFS: r.dfs.tempo_segundos }))
+
+  const comparisonTrendData = useMemo(() => [...comparacoes].sort((a, b) => a.source.localeCompare(b.source))
+    .map(r => ({ source: r.source, BFS: r.bfs.tempo_segundos, DFS: r.dfs.tempo_segundos })), [comparacoes])
+
+  const deltaRankingData = useMemo(() => [...comparacoes]
+    .map(r => ({ source: r.source, delta: Math.abs(r.delta_tempo_ms), winner: r.mais_rapido }))
+    .sort((a, b) => b.delta - a.delta).slice(0, 10), [comparacoes])
 
   const weightBinsData = useMemo(() => buildWeightBins(arestas, weightBins), [arestas, weightBins])
 
@@ -1533,6 +1591,109 @@ export const DashboardETN = ({ onBack }) => {
                 </BarChart>
               </ResponsiveContainer>
             )}
+          </section>
+
+          <section className="glass-card dashboard-etn-chart-card">
+            <div className="dashboard-etn-chart-header dashboard-etn-chart-header-wrap">
+              <div>
+                <h3 className="dashboard-etn-chart-title">Comparação de Tempo — BFS vs DFS</h3>
+                {bfsDfs && <p className="dashboard-etn-chart-meta">{bfsDfs.total_comparacoes} nós comparados</p>}
+              </div>
+              <div className="dashboard-etn-view-toggle">
+                {[{ id: "chart", label: "Gráfico" }, { id: "table", label: "Tabela" }].map(({ id, label }) => (
+                  <button key={id} onClick={() => setView(id)} className={`dashboard-etn-view-btn ${view === id ? "active" : ""}`} type="button">{label}</button>
+                ))}
+              </div>
+            </div>
+            {bfsErr && <div className="dashboard-etn-inline-error"><AlertCircle size={15} /> Falha: {bfsErr}</div>}
+            {bfsDfs && (
+              <div className="dashboard-etn-mini-stats">
+                {[{ label: "BFS mais rápido", value: bfsWins, color: "bfs" },
+                  { label: "DFS mais rápido", value: dfsWins, color: "dfs" },
+                  { label: "Δ médio", value: `${avgDelta} ms`, color: "accent" }].map(({ label, value, color }) => (
+                  <div key={label} className="dashboard-etn-mini-stat-card">
+                    <p className="dashboard-etn-mini-stat-label">{label}</p>
+                    <p className={`dashboard-etn-mini-stat-value ${color}`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!bfsDfs && !bfsErr ? <Skeleton height={300} /> : chartData.length > 0 && (
+              view === "chart" ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }} barCategoryGap="30%" barGap={4}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID} />
+                    <XAxis dataKey="source" tick={{ fontSize: 11, fill: "#9fc7b8", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={v => `${(v * 1000).toFixed(2)}ms`} tick={{ fontSize: 10, fill: "#6f9a8a" }} axisLine={false} tickLine={false} width={68} />
+                    <Tooltip content={<ComparisonTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} formatter={v => <span style={{ color: v === "BFS" ? "#2fbf9b" : "#63d9b1", fontWeight: 700 }}>{v}</span>} />
+                    <Bar dataKey="BFS" fill="#2fbf9b" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    <Bar dataKey="DFS" fill="#63d9b1" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <ComparisonTable rows={comparacoes} />
+            )}
+          </section>
+
+          <section className="dashboard-etn-chart-row">
+            <div className="glass-card dashboard-etn-chart-card">
+              <div className="dashboard-etn-chart-header">
+                <div>
+                  <h3 className="dashboard-etn-chart-title">Tendência dos Tempos — BFS vs DFS</h3>
+                  <p className="dashboard-etn-chart-meta">Comparação contínua dos tempos por origem, em ordem alfabética.</p>
+                </div>
+              </div>
+              {!bfsDfs ? <Skeleton /> : comparisonTrendData.length === 0 ? (
+                <div className="dashboard-etn-empty-state">Sem dados de tendência disponíveis.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={comparisonTrendData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                    <defs>
+                      <linearGradient id="gradBfsTrendETN" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2fbf9b" stopOpacity={0.28} /><stop offset="95%" stopColor="#2fbf9b" stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="gradDfsTrendETN" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#63d9b1" stopOpacity={0.24} /><stop offset="95%" stopColor="#63d9b1" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID} />
+                    <XAxis dataKey="source" tick={{ fontSize: 10, fill: "#9fc7b8" }} interval={0} angle={-25} textAnchor="end" height={65} />
+                    <YAxis tickFormatter={v => `${(v * 1000).toFixed(2)}ms`} tick={{ fontSize: 10, fill: "#9fc7b8" }} />
+                    <Tooltip content={<ComparisonTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} formatter={v => <span style={{ color: v === "BFS" ? "#2fbf9b" : "#63d9b1", fontWeight: 700 }}>{v}</span>} />
+                    <Area type="monotone" dataKey="BFS" stroke="#2fbf9b" fill="url(#gradBfsTrendETN)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="DFS" stroke="#63d9b1" fill="url(#gradDfsTrendETN)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            <div className="glass-card dashboard-etn-chart-card">
+              <div className="dashboard-etn-chart-header">
+                <div>
+                  <h3 className="dashboard-etn-chart-title">Top 10 Maiores Diferenças de Tempo</h3>
+                  <p className="dashboard-etn-chart-meta">Fontes onde BFS e DFS mais divergem em desempenho.</p>
+                </div>
+              </div>
+              {!bfsDfs ? <Skeleton /> : deltaRankingData.length === 0 ? (
+                <div className="dashboard-etn-empty-state">Sem diferenças disponíveis.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={deltaRankingData} layout="vertical" margin={{ top: 8, right: 10, left: 10, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={GRID} />
+                    <XAxis type="number" tick={TICK_ETN} tickFormatter={v => `${Number(v).toFixed(2)} ms`} />
+                    <YAxis dataKey="source" type="category" width={90} tick={TICK_ETN} />
+                    <Tooltip content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null
+                      return <TT><TTH c={label} /><TTV c={`Δ ${Number(payload[0].value).toFixed(4)} ms`} /></TT>
+                    }} />
+                    <Bar dataKey="delta" radius={[0, 6, 6, 0]}>
+                      {deltaRankingData.map((item, i) => <Cell key={i} fill={item.winner === "BFS" ? "rgba(47,191,155,0.85)" : "rgba(99,217,177,0.85)"} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </section>
 
           <section className="etn-tree3d-section">

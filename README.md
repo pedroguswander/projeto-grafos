@@ -85,12 +85,17 @@ projeto-grafos/
 |       +-- utils/
 |       |   \-- apiFetch.js         # Fetch com fallback automatico (Docker / localhost)
 |       \-- Dashboard/              # Dashboards analiticos
-+-- src/                            # Backend Python
-|   +-- api.py                      # API REST Flask
-|   +-- cli.py                      # Interface de linha de comando
-|   +-- solve.py                    # Implementacoes dos algoritmos
++-- src/                            # Backend Python (Parte 1 - ETA)
+|   +-- api.py                      # API REST Flask (serve as duas partes)
 |   +-- viz.py                      # Geracao de visualizacoes
-|   \-- parte2/                     # Modulo da Parte 2 (ETN)
+|   \-- graphs/
+|       +-- graph.py                # Grafo nao-direcionado (aeroportos)
+|       +-- io.py                   # Leitura dos CSVs
+|       \-- algorithms.py           # Dijkstra (Parte 1)
++-- parte2/                         # Modulo da Parte 2 (ETN)
+|   \-- src/graphs/
+|       +-- graph.py                # Digrafo (portos maritimos)
+|       \-- algorithms.py           # BFS, DFS, Dijkstra, Bellman-Ford (Parte 2)
 +-- tests/                          # Testes automatizados (pytest)
 +-- out/                            # Saidas geradas
 +-- Dockerfile.backend
@@ -299,10 +304,11 @@ Total do ciclo: −722.331 USD
 
 | Algoritmo | Arquivo | Complexidade | Aplicação |
 |:---|:---|:---:|:---|
-|**Dijkstra**| `src/graphs/solve.py` | O((V+E) log V) | Caminhos mínimos com pesos ≥ 0 |
-|**Bellman-Ford**| `src/graphs/solve.py` | O(V·E) | Caminhos com pesos negativos; detecção de ciclos |
-|**BFS**| `src/graphs/solve.py` | O(V+E) | Travessia por níveis; caminhos sem peso |
-|**DFS**| `src/graphs/solve.py` | O(V+E) | Travessia profunda; classificação de arestas |
+|**Dijkstra (Parte 1)**| `src/graphs/algorithms.py` | O((V+E) log V) | Caminhos mínimos com pesos ≥ 0 |
+|**Dijkstra (Parte 2)**| `parte2/src/graphs/algorithms.py` | O((V+E) log V) | Caminhos mínimos com pesos ≥ 0 |
+|**Bellman-Ford**| `parte2/src/graphs/algorithms.py` | O(V·E) | Caminhos com pesos negativos; detecção de ciclos |
+|**BFS**| `parte2/src/graphs/algorithms.py` | O(V+E) | Travessia por níveis; caminhos sem peso |
+|**DFS**| `parte2/src/graphs/algorithms.py` | O(V+E) | Travessia profunda; classificação de arestas |
 
 ### Saídas Geradas
 
@@ -408,18 +414,6 @@ npm run dev
 ```
 
 >**Como funciona o fallback automático:**o utilitário `src/utils/apiFetch.js` tenta primeiro a URL relativa (via proxy do Docker/Nginx). Se receber uma página HTML em vez de JSON (sinal de que o proxy não está ativo), refaz a requisição direto para `http://localhost:5000`. Nenhuma configuração manual é necessária.
-
-#### 4 — Executar via CLI (opcional)
-
-```bash
-# Parte 1 — ETA Airlines
-python -m src.cli --dataset ./data/aeroportos_data.csv --alg BFS --source REC --out ./out/
-python -m src.cli --dataset ./data/aeroportos_data.csv --alg DIJKSTRA --source REC --target POA --out ./out/
-
-# Parte 2 — ETN / LINERLIB
-python -m src.cli --dataset ./data/ETN/ --alg DIJKSTRA --source AEJEA --target CAMTR --out ./out/
-python -m src.cli --dataset ./data/ETN/ --alg BELLMAN_FORD --source AEJEA --target CAMTR --out ./out/
-```
 
 ---
 

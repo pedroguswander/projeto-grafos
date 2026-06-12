@@ -1,6 +1,52 @@
-import heapq
 from typing import Dict, List, Tuple, Optional
 from .graph import Graph
+
+
+class MinHeap:
+    def __init__(self):
+        self._data: List[Tuple[float, str]] = []
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def push(self, item: Tuple[float, str]) -> None:
+        self._data.append(item)
+        self._sift_up(len(self._data) - 1)
+
+    def pop(self) -> Tuple[float, str]:
+        data = self._data
+        topo = data[0]
+        ultimo = data.pop()
+        if data:
+            data[0] = ultimo
+            self._sift_down(0)
+        return topo
+
+    def _sift_up(self, i: int) -> None:
+        data = self._data
+        while i > 0:
+            pai = (i - 1) // 2
+            if data[i] < data[pai]:
+                data[i], data[pai] = data[pai], data[i]
+                i = pai
+            else:
+                break
+
+    def _sift_down(self, i: int) -> None:
+        data = self._data
+        n = len(data)
+        while True:
+            menor = i
+            esq = 2 * i + 1
+            dir = 2 * i + 2
+            if esq < n and data[esq] < data[menor]:
+                menor = esq
+            if dir < n and data[dir] < data[menor]:
+                menor = dir
+            if menor == i:
+                break
+            data[i], data[menor] = data[menor], data[i]
+            i = menor
 
 
 def dijkstra(graph: Graph, start: str, end: str) -> Tuple[Optional[float], Optional[List[str]]]:
@@ -10,11 +56,12 @@ def dijkstra(graph: Graph, start: str, end: str) -> Tuple[Optional[float], Optio
     distances: Dict[str, float] = {node: float('inf') for node in graph.adjacency_list}
     distances[start] = 0
     previous: Dict[str, Optional[str]] = {node: None for node in graph.adjacency_list}
-    priority_queue: List[Tuple[float, str]] = [(0, start)]
+    priority_queue = MinHeap()
+    priority_queue.push((0, start))
     visited: set = set()
 
-    while priority_queue:
-        current_distance, current_node = heapq.heappop(priority_queue)
+    while len(priority_queue):
+        current_distance, current_node = priority_queue.pop()
 
         if current_node in visited:
             continue
@@ -32,7 +79,7 @@ def dijkstra(graph: Graph, start: str, end: str) -> Tuple[Optional[float], Optio
             if new_distance < distances.get(neighbor, float('inf')):
                 distances[neighbor] = new_distance
                 previous[neighbor] = current_node
-                heapq.heappush(priority_queue, (new_distance, neighbor))
+                priority_queue.push((new_distance, neighbor))
 
     if distances.get(end, float('inf')) == float('inf'):
         return None, None
