@@ -445,3 +445,58 @@
 }
 .atc-back-btn:hover .atc-back-icon { transform: translateX(-2px); }
 .atc-back-text { white-space: nowrap; padding-right: 0.1rem; }
+
+/* ── Bird-strike alert banner ─────────────────────────────────── */
+.atc-bird-alert {
+  position: absolute;
+  top: 18px; left: 50%;
+  z-index: 5;                       /* above the 3D plane layer, below overlays */
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 22px; border-radius: 12px;
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 900; font-size: 0.95rem; letter-spacing: 0.07em;
+  white-space: nowrap; color: #fff; pointer-events: none;
+  background: linear-gradient(180deg, rgba(70,8,8,0.92), rgba(42,4,4,0.95));
+  border: 1px solid rgba(255,80,80,0.55);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.5), 0 0 26px rgba(255,40,40,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  text-shadow: 0 0 12px rgba(255,60,60,0.7), 0 1px 2px rgba(0,0,0,0.6);
+}
+.atc-bird-alert-icon { font-size: 1.05rem; line-height: 1; filter: drop-shadow(0 0 6px rgba(255,70,70,0.85)); }
+.atc-bird-alert-text { line-height: 1; }
+
+.atc-bird-alert--warn {
+  transform: translateX(-50%);
+  animation: atc-bird-blink 1s ease-in-out infinite, atc-bird-drop 0.35s ease-out;
+}
+.atc-bird-alert--danger {
+  transform: translateX(-50%);
+  border-color: rgba(255,40,40,0.85);
+  background: linear-gradient(180deg, rgba(125,10,10,0.95), rgba(72,4,4,0.97));
+  box-shadow: 0 8px 26px rgba(0,0,0,0.55), 0 0 36px rgba(255,30,30,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+  animation: atc-bird-blink 0.45s ease-in-out infinite;
+}
+@keyframes atc-bird-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+@keyframes atc-bird-drop {
+  from { transform: translate(-50%, -16px); opacity: 0; }
+  to   { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* ── Game-over cause chip ─────────────────────────────────────── */
+.atc-go-reason {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 18px; border-radius: 10px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.88rem; font-weight: 700; color: #edf3ff;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--reason-color, #ff5a5a);
+  box-shadow: 0 0 20px -8px var(--reason-color, #ff5a5a), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.atc-go-reason-icon {
+  font-size: 1.05rem; line-height: 1;
+  color: var(--reason-color, #ff5a5a);
+  filter: drop-shadow(0 0 6px var(--reason-color, #ff5a5a));
+}
+.atc-go-reason-text { line-height: 1.15; }

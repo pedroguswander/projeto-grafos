@@ -72,6 +72,28 @@ const BLINK_PERIOD_EMPTY = 0.3   // seconds between blinks near empty
 const BLINK_DARK_DUR     = 0.12  // duration of each "off" flash
 const FUEL_CRITICAL      = 0.25  // below 25% → red blink
 
+// Bird hazard — periodic no-fly zone over the runway (unlocks past a score gate).
+// Every BIRD_PERIOD seconds the zone activates: a WARN grace window (blinking ring,
+// not yet deadly → time to reroute) followed by a DANGER window (entering = bird strike).
+const BIRD_SCORE_THRESHOLD = 400   // birds only start appearing after this score
+const BIRD_PERIOD          = 30    // seconds between alerts
+const BIRD_WARN_DUR        = 4.5   // grace: zone blinks but isn't lethal yet
+const BIRD_DANGER_DUR      = 9     // lethal window — a plane inside = bird strike
+const BIRD_HAZARD_DUR      = BIRD_WARN_DUR + BIRD_DANGER_DUR
+const BIRD_COUNT           = 8     // silhouettes circling inside the zone
+const BIRD_ZONE = {
+  x: LANDING_AREA.x + LANDING_AREA.w / 2,   // 467 — runway centre
+  y: LANDING_AREA.y + LANDING_AREA.h / 2,   // 256
+  r: 86,
+}
+
+// Game-over cause metadata (shown on the end screen + drives the reason chip)
+const GAMEOVER_REASONS = {
+  collision: { icon: '✕',  label: 'Colisão entre aeronaves',          color: '#ff5a5a' },
+  fuel:      { icon: '⛽', label: 'Combustível esgotado',              color: '#f6c56f' },
+  bird:      { icon: '🐦', label: 'Bird strike — pássaros na pista',   color: '#ff7846' },
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // PURE HELPERS
 // ════════════════════════════════════════════════════════════════════════════
@@ -181,6 +203,149 @@ function drawRotated(ctx, img, x, y, angle, scale) {
   ctx.translate(x, y)
   ctx.rotate(angle)
   ctx.drawImage(img, -w / 2, -h / 2, w, h)
+  ctx.restore()
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// BIRD HAZARD
+// ════════════════════════════════════════════════════════════════════════════
+// Spawn a flock of silhouettes that orbit the runway centre while the zone is active.
+function makeBirds() {
+  const out = []
+  for (let i = 0; i < BIRD_COUNT; i++) {
+    out.push({
+      orbit:      BIRD_ZONE.r * (0.18 + Math.random() * 0.42),  // kept inside the red disc
+      angle:      Math.random() * Math.PI * 2,
+      orbitSpeed: (0.4 + Math.random() * 0.7) * (Math.random() < 0.5 ? 1 : -1),
+      bob:        Math.random() * Math.PI * 2,
+      bobSpeed:   1.4 + Math.random() * 1.6,
+      flap:       Math.random() * Math.PI * 2,
+      flapSpeed:  9 + Math.random() * 6,
+      scale:      0.75 + Math.random() * 0.7,
+    })
+  }
+  return out
+}
+
+// State machine: idle → warn → danger → idle, fired every BIRD_PERIOD once unlocked.
+function updateBirdHazard(gs, dt) {
+  if (gs.score >= BIRD_SCORE_THRESHOLD) {
+    gs.birdTimer += dt
+    if (!gs.birdActive && gs.birdTimer >= BIRD_PERIOD) {
+      gs.birdTimer   = 0
+      gs.birdActive  = true
+      gs.birdElapsed = 0
+      gs.birdPhase   = 'warn'
+      gs.birds       = makeBirds()
+      try { playBirdAlert() } catch (_) {}
+    }
+  }
+
+  if (gs.birdActive) {
+    gs.birdElapsed += dt
+    gs.birdPhase = gs.birdElapsed < BIRD_WARN_DUR ? 'warn' : 'danger'
+    for (const b of gs.birds) {
+      b.angle += b.orbitSpeed * dt
+      b.bob   += b.bobSpeed * dt
+      b.flap  += b.flapSpeed * dt
+    }
+    if (gs.birdElapsed >= BIRD_HAZARD_DUR) {
+      gs.birdActive = false
+      gs.birdPhase  = 'idle'
+      gs.birds      = []
+    }
+  }
+}
+
+// A plane is bird-struck when it sits inside the zone during the DANGER window.
+function birdStrike(gs, p) {
+  return gs.birdPhase === 'danger' &&
+    dist2(p.x, p.y, BIRD_ZONE.x, BIRD_ZONE.y) < BIRD_ZONE.r * BIRD_ZONE.r
+}
+
+// Lightweight two-tone klaxon via WebAudio (no asset needed, fully optional).
+let _alertCtx = null
+function playBirdAlert() {
+  const AC = window.AudioContext || window.webkitAudioContext
+  if (!AC) return
+  _alertCtx = _alertCtx || new AC()
+  const ac = _alertCtx
+  if (ac.state === 'suspended') ac.resume().catch(() => {})
+  const now = ac.currentTime
+  for (let i = 0; i < 2; i++) {
+    const o = ac.createOscillator(), g = ac.createGain()
+    o.type = 'square'
+    o.frequency.value = 860
+    const t0 = now + i * 0.24
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.02)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2)
+    o.connect(g); g.connect(ac.destination)
+    o.start(t0); o.stop(t0 + 0.22)
+  }
+}
+
+// Single seagull silhouette — two wing strokes whose tips flap with `flap`.
+function drawBird(ctx, x, y, size, flap) {
+  const tip = -size * (0.3 + 0.5 * (0.5 + 0.5 * Math.sin(flap)))  // tips rise/fall
+  ctx.save()
+  ctx.shadowColor = 'rgba(255,180,170,0.55)'
+  ctx.shadowBlur  = 4
+  ctx.strokeStyle = 'rgba(12,8,10,0.95)'
+  ctx.lineWidth   = Math.max(1.3, size * 0.22)
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x - size, y + tip)
+  ctx.quadraticCurveTo(x - size * 0.45, y + tip * 0.05, x, y)
+  ctx.quadraticCurveTo(x + size * 0.45, y + tip * 0.05, x + size, y + tip)
+  ctx.stroke()
+  ctx.restore()
+}
+
+// The whole hazard overlay: pulsing red disc, dashed rotating rings + flock.
+function drawBirdHazard(ctx, gs) {
+  if (!gs.birdActive) return
+  const danger = gs.birdPhase === 'danger'
+  const { x: cx, y: cy, r } = BIRD_ZONE
+  const t = gs.elapsed
+  const blink = 0.5 + 0.5 * Math.sin(t * (danger ? 9 : 4.5))
+
+  ctx.save()
+
+  // soft pulsing red disc — the birds' airspace
+  const fillA = (danger ? 0.22 : 0.11) * (0.6 + 0.4 * blink)
+  const g = ctx.createRadialGradient(cx, cy, r * 0.15, cx, cy, r)
+  g.addColorStop(0,   `rgba(255,70,60,${fillA * 0.55})`)
+  g.addColorStop(0.6, `rgba(220,30,30,${fillA})`)
+  g.addColorStop(1,   'rgba(200,20,20,0)')
+  ctx.fillStyle = g
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
+
+  // dashed rotating perimeter — the alert ring
+  ctx.shadowColor = 'rgba(255,40,40,0.9)'
+  ctx.shadowBlur  = danger ? 14 : 7
+  ctx.strokeStyle = `rgba(255,${danger ? 45 : 85},${danger ? 45 : 60},${0.5 + 0.5 * blink})`
+  ctx.lineWidth   = danger ? 3 : 2.2
+  ctx.setLineDash([11, 9])
+  ctx.lineDashOffset = -t * (danger ? 46 : 22)
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke()
+
+  // inner counter-rotating ring for depth
+  ctx.shadowBlur  = 0
+  ctx.strokeStyle = `rgba(255,90,80,${0.28 + 0.32 * blink})`
+  ctx.lineWidth   = 1.2
+  ctx.setLineDash([4, 9])
+  ctx.lineDashOffset = t * 34
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.7, 0, Math.PI * 2); ctx.stroke()
+  ctx.setLineDash([])
+
+  // flock of silhouettes circling the runway
+  for (const b of gs.birds) {
+    const bx = cx + Math.cos(b.angle) * b.orbit
+    const by = cy + Math.sin(b.angle) * b.orbit * 0.78 + Math.sin(b.bob) * 3.5
+    drawBird(ctx, bx, by, 5.2 * b.scale, b.flap)
+  }
+
   ctx.restore()
 }
 
@@ -472,6 +637,13 @@ function freshState(imgs) {
     flashTimer:   0,
     djkTimer:     0.25, // start at threshold so first run fires immediately
     djkDash:      0,
+    // Bird hazard
+    birdTimer:    0,
+    birdActive:   false,
+    birdPhase:    'idle',   // 'idle' | 'warn' | 'danger'
+    birdElapsed:  0,
+    birds:        [],
+    gameOverReason: null,   // 'collision' | 'fuel' | 'bird'
   }
 }
 
@@ -609,10 +781,11 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
   const [thumbs, setThumbs] = useState(null)
 
   // HUD state — updated from game loop ~10fps
-  const [hudState,    setHudState]    = useState({ score: 0, landed: 0, rankPos: 1, planes: { small: 0, medium: 0, heavy: 0 } })
+  const [hudState,    setHudState]    = useState({ score: 0, landed: 0, rankPos: 1, planes: { small: 0, medium: 0, heavy: 0 }, birdPhase: 'idle' })
   const [uiState,     setUiState]     = useState('none')
   const [finalScore,  setFinalScore]  = useState(0)
   const [finalLanded, setFinalLanded] = useState(0)
+  const [finalReason, setFinalReason] = useState('collision')
   const [playerName,  setPlayerName]  = useState('')
 
   // ── Input ──────────────────────────────────────────────────────
@@ -787,6 +960,7 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
           // Advance phase FIRST so the block never runs again
           phaseRef.current = 'gameover_wait'
           setFinalScore(gs.score); setFinalLanded(gs.landed)
+          setFinalReason(gs.gameOverReason || 'collision')
           setPlayerName(''); setUiState('gameover_input')
         }
         if (gs.snapshot) {
@@ -808,6 +982,9 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       // ── Playing ────────────────────────────────────────────────
       gs.elapsed += dt
       gs.sweepAngle = (gs.sweepAngle + SWEEP_SPEED * 60 * dt) % (Math.PI * 2)
+
+      // ── Bird hazard (periodic no-fly zone over the runway) ────────
+      updateBirdHazard(gs, dt)
 
       // ── Dijkstra path update ──────────────────────────────────────
       gs.djkDash  = (gs.djkDash - 55 * dt + 1000) % 100
@@ -842,10 +1019,15 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
         }
       }
 
-      const landed = new Set(); let collision = false, fuelDead = false
-      for (let i = 0; i < gs.airplanes.length && !collision && !fuelDead; i++) {
+      const landed = new Set(); let collision = false, fuelDead = false, birdHit = false
+      for (let i = 0; i < gs.airplanes.length && !collision && !fuelDead && !birdHit; i++) {
         const p = gs.airplanes[i]; if (p.crashed) continue
-        if (checkLanding(p)) {
+        // Bird strike — entering the lethal zone while birds are on the runway
+        if (birdStrike(gs, p)) {
+          p.crashed = true; p.path = []; birdHit = true; break
+        }
+        // Landing is disabled while the runway is closed for birds
+        if (!gs.birdActive && checkLanding(p)) {
           landed.add(p.id); gs.score += p.def.score; gs.landed++
           gs.pointTexts.push({ x: p.x, y: p.y, text: '+' + p.def.score, alpha: 255 })
           try { new Audio('/atc-game/score.ogg').play().catch(() => {}) } catch (_) {}
@@ -874,7 +1056,8 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       }
       gs.justPressed = false
 
-      if (collision || fuelDead) {
+      if (collision || fuelDead || birdHit) {
+        gs.gameOverReason = birdHit ? 'bird' : fuelDead ? 'fuel' : 'collision'
         try { musicRef.current?.pause() } catch (_) {}
         gs.snapshot = ctx.getImageData(0, 0, CW, CH)
         phaseRef.current = 'gameover_flash'
@@ -893,7 +1076,7 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
         const rankPos = rankingRef.current.filter(e => e.score > gs.score).length + 1
         const planes = { small: 0, medium: 0, heavy: 0 }
         for (const p of gs.airplanes) planes[p.type] = (planes[p.type] || 0) + 1
-        setHudState({ score: gs.score, landed: gs.landed, rankPos, planes })
+        setHudState({ score: gs.score, landed: gs.landed, rankPos, planes, birdPhase: gs.birdPhase })
       }
 
       // ── Draw frame ─────────────────────────────────────────────
@@ -946,6 +1129,9 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
           ctx.strokeStyle = 'rgba(77,163,255,0.85)'; ctx.lineWidth = 2; ctx.stroke()
         }
       }
+
+      // Bird hazard zone — drawn under the planes (they fly over the flock)
+      drawBirdHazard(ctx, gs)
 
       // Airplanes — 3D models on the WebGL layer; 2D sprites as fallback
       if (!pushTo3D(gs, dt, now)) {
@@ -1042,12 +1228,25 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
           <canvas ref={glCanvasRef} width={CW} height={CH}
             className="atc-canvas3d" aria-hidden="true" />
 
+          {/* Bird-strike alert banner */}
+          {uiState === 'none' && (hudState.birdPhase === 'warn' || hudState.birdPhase === 'danger') && (
+            <div className={`atc-bird-alert atc-bird-alert--${hudState.birdPhase}`} role="alert">
+              <span className="atc-bird-alert-icon">⚠</span>
+              <span className="atc-bird-alert-text">ATENÇÃO! PÁSSAROS NA PISTA</span>
+              <span className="atc-bird-alert-icon">⚠</span>
+            </div>
+          )}
+
           {/* Game-over name entry overlay */}
           {uiState === 'gameover_input' && (
             <div className="atc-overlay">
               <div className="atc-panel atc-go-panel">
                 <h1 className="atc-go-title">FIM DE JOGO</h1>
                 <div className="atc-go-divider" />
+                <div className="atc-go-reason" style={{ '--reason-color': GAMEOVER_REASONS[finalReason].color }}>
+                  <span className="atc-go-reason-icon">{GAMEOVER_REASONS[finalReason].icon}</span>
+                  <span className="atc-go-reason-text">{GAMEOVER_REASONS[finalReason].label}</span>
+                </div>
                 <div className="atc-go-stats">
                   <span>Pontuação: <b>{finalScore}</b></span>
                   <span>Pousados: <b>{finalLanded}</b></span>
