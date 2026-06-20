@@ -308,6 +308,27 @@
   appearance: none;
 }
 
+.cg-rank-clear {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,80,80,0.25);
+  background: rgba(255,80,80,0.08);
+  color: rgba(255,120,120,0.75);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  outline: none;
+  appearance: none;
+}
+.cg-rank-clear:hover {
+  background: rgba(255,80,80,0.2);
+  color: #ff8080;
+}
+
 .cg-rank-close:hover {
   background: rgba(255,255,255,0.12);
   color: #edfef6;

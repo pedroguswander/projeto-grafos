@@ -290,6 +290,7 @@ export default function AirportGame({ onBack }) {
           <div className="panel ag-rank-panel">
             <div className="ag-rank-header">
               <h2 className="ag-rank-title">Ranking</h2>
+              <button className="ag-rank-clear" onClick={() => { localStorage.removeItem(LS_KEY); setRanking([]); }} type="button" title="Zerar ranking">🗑</button>
               <button className="ag-rank-close" onClick={closeRanking} type="button">✕</button>
             </div>
 
