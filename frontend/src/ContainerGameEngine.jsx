@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { playSound } from './containerSounds.js'
 import logoETN from './assets/logo-2/logo-branca-completa2.png'
+import WebcamCapture from './WebcamCapture.jsx'
 
 // ── Constants ──────────────────────────────────────────────────
 const CW = 480, CH = 750
@@ -181,13 +182,13 @@ function loadRankings() {
   }
 }
 
-function addToRanking(rawName, score) {
+function addToRanking(rawName, score, photo) {
   const name = (rawName.trim().slice(0, 12) || 'ANON').toUpperCase()
   const list = loadRankings()
-  list.push({ name, score, date: new Date().toLocaleDateString('pt-BR') })
+  list.push({ name, score, date: new Date().toLocaleDateString('pt-BR'), photo: photo || null })
   list.sort((a, b) => b.score - a.score)
   const top = list.slice(0, 10)
-  localStorage.setItem(RANKING_KEY, JSON.stringify(top))
+  try { localStorage.setItem(RANKING_KEY, JSON.stringify(top)) } catch { /* cota cheia */ }
   return { top, name }
 }
 
@@ -2032,6 +2033,8 @@ export default function Game({ startDirect = false, onBack }) {
   const [rankings, setRankings] = useState(() => loadRankings())
   const [playerName, setPlayerName] = useState('')
   const [lastSavedIdx, setLastSavedIdx] = useState(-1)
+  const [photo, setPhoto] = useState(null)        // foto da webcam p/ o ranking
+  const [camOpen, setCamOpen] = useState(false)
   const [hudState, setHudState] = useState({
     score: 0, level: 1, reputation: 100, stacked: 0, rankPos: 1,
     graphEdgesPreview: [], bellmanFinalCost: 0,
@@ -2064,6 +2067,8 @@ export default function Game({ startDirect = false, onBack }) {
     stateRef.current = makeState()
     setPlayerName('')
     setLastSavedIdx(-1)
+    setPhoto(null)
+    setCamOpen(false)
     setPhase('playing')
   }, [])
 
@@ -2118,7 +2123,7 @@ export default function Game({ startDirect = false, onBack }) {
   }, [phase])
 
   const handleSaveScore = useCallback(() => {
-    const { top, name } = addToRanking(playerName, finalScore)
+    const { top, name } = addToRanking(playerName, finalScore, photo)
     const idx = top.findIndex(r => r.name === name && r.score === finalScore)
     setLastSavedIdx(idx)
     setRankings(top)
@@ -2131,7 +2136,7 @@ export default function Game({ startDirect = false, onBack }) {
 
     rankingsRef.current = top
     setPhase('ranking')
-  }, [playerName, finalScore])
+  }, [playerName, finalScore, photo])
 
   const handleSkipSave = useCallback(() => {
     setLastSavedIdx(-1)
@@ -2412,6 +2417,25 @@ export default function Game({ startDirect = false, onBack }) {
                 autoFocus
               />
             </div>
+
+            {/* Foto da webcam para o ranking */}
+            <div className="cg-photo-entry">
+              <button
+                type="button"
+                className={`cg-photo-avatar${photo ? ' has-photo' : ''}`}
+                onClick={() => setCamOpen(true)}
+                title={photo ? 'Refazer foto' : 'Tirar foto'}
+              >
+                {photo
+                  ? <img src={photo} alt="sua foto" />
+                  : <span className="cg-photo-icon">📷</span>}
+                <span className="cg-photo-edit">{photo ? '↻' : '+'}</span>
+              </button>
+              <button type="button" className="cg-photo-btn" onClick={() => setCamOpen(true)}>
+                {photo ? 'REFAZER FOTO' : 'TIRAR FOTO'}
+              </button>
+            </div>
+
             <div className="btn-row">
               <button className="btn" onClick={handleSaveScore}>SALVAR</button>
               <button className="btn btn-outline" onClick={handleSkipSave}>PULAR</button>
@@ -2429,6 +2453,7 @@ export default function Game({ startDirect = false, onBack }) {
               <thead>
                 <tr>
                   <th className="th-pos">#</th>
+                  <th className="th-avatar"></th>
                   <th className="th-name">NOME</th>
                   <th className="th-score">PONTOS</th>
                 </tr>
@@ -2436,12 +2461,17 @@ export default function Game({ startDirect = false, onBack }) {
               <tbody>
                 {rankings.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="rank-empty">Sem recordes ainda</td>
+                    <td colSpan={4} className="rank-empty">Sem recordes ainda</td>
                   </tr>
                 ) : (
                   rankings.map((r, i) => (
                     <tr key={i} className={i === lastSavedIdx ? 'rank-highlight' : ''}>
                       <td className={`rank-pos rank-pos-${i + 1}`}>{i + 1}</td>
+                      <td className="rank-avatar-cell">
+                        {r.photo
+                          ? <img className="cg-rank-photo" src={r.photo} alt="" />
+                          : <span className="cg-rank-photo cg-rank-photo--empty">{(r.name || '?').charAt(0)}</span>}
+                      </td>
                       <td className="rank-name">{r.name}</td>
                       <td className="rank-score">{r.score}</td>
                     </tr>
@@ -2456,6 +2486,13 @@ export default function Game({ startDirect = false, onBack }) {
           </div>
         </div>
       )}
+
+      <WebcamCapture
+        open={camOpen}
+        accent="#26c281"
+        onCapture={setPhoto}
+        onClose={() => setCamOpen(false)}
+      />
     </div>
   )
 }

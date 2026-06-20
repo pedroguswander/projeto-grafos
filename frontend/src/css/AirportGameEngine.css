@@ -375,6 +375,49 @@
   font-size: 0.72rem; font-weight: 400; opacity: 0.65; letter-spacing: 0;
 }
 
+/* ── Foto da webcam (game over) ─────────────────────────────── */
+.atc-photo-entry {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; justify-content: center;
+}
+.atc-photo-avatar {
+  position: relative; width: 56px; height: 56px; flex: 0 0 auto;
+  border-radius: 50%; cursor: pointer; padding: 0; overflow: visible;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed rgba(77,163,255,0.45);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.atc-photo-avatar:hover {
+  transform: translateY(-2px); border-color: rgba(77,163,255,0.85);
+  box-shadow: 0 0 18px rgba(77,163,255,0.30);
+}
+.atc-photo-avatar.has-photo { border-style: solid; }
+.atc-photo-avatar img {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;
+}
+.atc-photo-icon { font-size: 1.4rem; }
+.atc-photo-edit {
+  position: absolute; right: -3px; bottom: -3px;
+  width: 21px; height: 21px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 900; line-height: 1; color: #06142a;
+  background: #4da3ff; border: 2px solid rgba(8,16,31,0.95);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.atc-photo-btn {
+  padding: 9px 18px; border-radius: 999px; cursor: pointer;
+  font-family: Inter, system-ui, sans-serif; font-size: 0.78rem;
+  font-weight: 800; letter-spacing: 0.04em; color: #d6e8ff;
+  background: rgba(77,163,255,0.10);
+  border: 1px solid rgba(77,163,255,0.34);
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+.atc-photo-btn:hover {
+  background: rgba(77,163,255,0.20); border-color: rgba(77,163,255,0.6);
+  transform: translateY(-1px);
+}
+
 /* ── Buttons (game-over + ranking) ───────────────────────────── */
 .atc-btn {
   padding: 11px 30px;

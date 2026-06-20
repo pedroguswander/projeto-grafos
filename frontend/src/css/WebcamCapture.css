@@ -1,0 +1,169 @@
+/* ══════════════════════════════════════════════════════════════
+   WebcamCapture — modal de captura por webcam (ETN / ETA)
+   Tema controlado por --wcap-accent (passado via style).
+   ══════════════════════════════════════════════════════════════ */
+.wcap-backdrop {
+  --wcap-accent: #26c281;
+  position: fixed; inset: 0; z-index: 4000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(3, 9, 14, 0.74);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: wcap-fade 0.22s ease;
+}
+@keyframes wcap-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.wcap-modal {
+  width: min(92vw, 384px);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 22px 24px 24px;
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, var(--wcap-accent) 16%, transparent), transparent 60%),
+    linear-gradient(180deg, rgba(13, 24, 22, 0.98), rgba(7, 14, 13, 0.99));
+  border: 1px solid color-mix(in srgb, var(--wcap-accent) 34%, transparent);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 30px 70px rgba(0, 0, 0, 0.6),
+    0 0 60px color-mix(in srgb, var(--wcap-accent) 18%, transparent);
+  animation: wcap-pop 0.28s cubic-bezier(0.2, 1.1, 0.4, 1);
+}
+@keyframes wcap-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Cabeçalho ─────────────────────────────────────────────── */
+.wcap-head {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+}
+.wcap-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--wcap-accent);
+  box-shadow: 0 0 10px var(--wcap-accent);
+  animation: wcap-blink 1.4s ease-in-out infinite;
+}
+@keyframes wcap-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.wcap-title {
+  flex: 1;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.82rem; font-weight: 800; letter-spacing: 2.5px;
+  color: #eafff5; text-transform: uppercase;
+}
+.wcap-x {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; line-height: 1; color: rgba(230, 245, 240, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+.wcap-x:hover { background: rgba(255, 80, 80, 0.18); color: #fff; transform: rotate(90deg); }
+
+/* ── Palco / visor circular ────────────────────────────────── */
+.wcap-stage { position: relative; }
+.wcap-ring {
+  position: relative;
+  width: 248px; height: 248px; border-radius: 50%;
+  overflow: hidden;
+  background: #05100d;
+  border: 3px solid color-mix(in srgb, var(--wcap-accent) 60%, transparent);
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.02),
+    0 0 26px color-mix(in srgb, var(--wcap-accent) 30%, transparent),
+    inset 0 0 30px rgba(0, 0, 0, 0.55);
+}
+.wcap-media {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.wcap-mirror { transform: scaleX(-1); }   /* preview ao vivo espelhado (selfie) */
+
+/* cantos estilo "mira" */
+.wcap-corner {
+  position: absolute; width: 22px; height: 22px; pointer-events: none;
+  border: 2px solid color-mix(in srgb, var(--wcap-accent) 85%, white 0%);
+  opacity: 0.7;
+}
+.wcap-corner.tl { top: 16px; left: 16px; border-right: 0; border-bottom: 0; border-radius: 6px 0 0 0; }
+.wcap-corner.tr { top: 16px; right: 16px; border-left: 0; border-bottom: 0; border-radius: 0 6px 0 0; }
+.wcap-corner.bl { bottom: 16px; left: 16px; border-right: 0; border-top: 0; border-radius: 0 0 0 6px; }
+.wcap-corner.br { bottom: 16px; right: 16px; border-left: 0; border-top: 0; border-radius: 0 0 6px 0; }
+
+/* linha de varredura sutil */
+.wcap-scan {
+  position: absolute; left: 0; right: 0; height: 30%;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--wcap-accent) 14%, transparent), transparent);
+  pointer-events: none; animation: wcap-scan 3.2s linear infinite;
+}
+@keyframes wcap-scan { 0% { top: -30%; } 100% { top: 100%; } }
+
+/* contagem regressiva */
+.wcap-count {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: Inter, system-ui, sans-serif; font-weight: 900; font-size: 5.5rem;
+  color: #fff; text-shadow: 0 0 24px color-mix(in srgb, var(--wcap-accent) 80%, transparent);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.35), transparent 65%);
+  animation: wcap-countpop 0.75s ease;
+}
+@keyframes wcap-countpop {
+  0%   { transform: scale(1.7); opacity: 0; }
+  25%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.7); opacity: 0.15; }
+}
+
+/* flash do obturador */
+.wcap-flash {
+  position: absolute; inset: 0; background: #fff; pointer-events: none;
+  animation: wcap-flash 0.22s ease-out forwards;
+}
+@keyframes wcap-flash { from { opacity: 0.9; } to { opacity: 0; } }
+
+/* mensagens (carregando / sem câmera) */
+.wcap-msg {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; padding: 24px;
+  text-align: center; font-family: Inter, system-ui, sans-serif;
+  font-size: 0.82rem; font-weight: 600; color: rgba(225, 245, 238, 0.85);
+  background: rgba(5, 16, 13, 0.72);
+}
+.wcap-msg small { font-weight: 400; font-size: 0.72rem; opacity: 0.7; line-height: 1.4; }
+.wcap-denied { color: #ffb4b4; }
+.wcap-deny-icon { font-size: 1.6rem; }
+.wcap-spin {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--wcap-accent);
+  animation: wcap-spin 0.8s linear infinite;
+}
+@keyframes wcap-spin { to { transform: rotate(360deg); } }
+
+/* ── Dica + ações ──────────────────────────────────────────── */
+.wcap-hint {
+  font-family: Inter, system-ui, sans-serif; font-size: 0.76rem;
+  color: rgba(200, 224, 216, 0.65); text-align: center; line-height: 1.4;
+}
+.wcap-actions { display: flex; gap: 10px; width: 100%; }
+.wcap-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 11px 16px; border-radius: 12px; cursor: pointer;
+  font-family: Inter, system-ui, sans-serif; font-size: 0.86rem; font-weight: 800;
+  letter-spacing: 0.04em; transition: transform 0.16s, box-shadow 0.16s, background 0.16s, border-color 0.16s;
+}
+.wcap-btn:active { transform: scale(0.96); }
+.wcap-btn:disabled { opacity: 0.5; cursor: default; }
+.wcap-primary {
+  color: #06140f; border: 1px solid transparent;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--wcap-accent) 92%, white 8%), var(--wcap-accent));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--wcap-accent) 26%, transparent);
+}
+.wcap-primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 12px 26px color-mix(in srgb, var(--wcap-accent) 36%, transparent); }
+.wcap-ghost {
+  color: rgba(220, 240, 234, 0.9);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.wcap-ghost:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.22); }
+.wcap-shutter {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: #06140f; box-shadow: 0 0 0 2px rgba(6, 20, 15, 0.5) inset, 0 0 0 2px currentColor;
+}

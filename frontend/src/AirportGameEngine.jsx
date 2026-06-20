@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import './css/AirportGameEngine.css'
 import logoETA from './assets/logo/logo_branca_completa.png'
 import { createPlanes3D, createTerrain3D, makeThumbnails } from './planes3d.js'
+import WebcamCapture from './WebcamCapture.jsx'
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -606,14 +607,27 @@ function loadRanking() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
 }
 
-function saveRanking(name, score, landed) {
+function saveRanking(name, score, landed, photo) {
   const now = new Date()
   const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
-  const entries = [...loadRanking(), { name: name.trim() || 'Anônimo', score, landed, time }]
+  const entries = [...loadRanking(), { name: name.trim() || 'Anônimo', score, landed, time, photo: photo || null }]
   entries.sort((a, b) => b.score - a.score)
   const top50 = entries.slice(0, 50)
   try { localStorage.setItem(LS_KEY, JSON.stringify(top50)) } catch {}
   return top50
+}
+
+// Cache de avatares (dataURL → Image) para desenhar no ranking em canvas.
+const _avatarCache = new Map()
+function getAvatarImg(dataUrl) {
+  if (!dataUrl) return null
+  let img = _avatarCache.get(dataUrl)
+  if (img === undefined) {
+    img = new Image()
+    img.src = dataUrl
+    _avatarCache.set(dataUrl, img)
+  }
+  return (img && img.complete && img.naturalWidth > 0) ? img : null
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -682,6 +696,27 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
+// Avatar circular do jogador (foto da webcam) ou placeholder com a inicial.
+function drawAvatar(ctx, cx, cy, r, entry, accent) {
+  const img = getAvatarImg(entry.photo)
+  ctx.save()
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  if (img) {
+    ctx.save(); ctx.clip()
+    ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2)
+    ctx.restore()
+    ctx.lineWidth = 1.5; ctx.strokeStyle = accent; ctx.stroke()
+  } else {
+    ctx.fillStyle = 'rgba(77,163,255,0.16)'; ctx.fill()
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(120,160,210,0.45)'; ctx.stroke()
+    ctx.fillStyle = 'rgba(214,230,250,0.92)'
+    ctx.font = 'bold 11px Verdana,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText((entry.name || '?').charAt(0).toUpperCase(), cx, cy + 0.5)
+    ctx.textBaseline = 'alphabetic'
+  }
+  ctx.restore()
+}
+
 function drawRankingTable(ctx, entries, scroll, curName, curScore) {
   const cr  = RANK_CARD
   const vis = Math.max(1, Math.floor((cr.h - RANK_PAD_V * 2 - 14 - 6) / RANK_ROW_H))
@@ -698,10 +733,12 @@ function drawRankingTable(ctx, entries, scroll, curName, curScore) {
     land: cr.x + RANK_PAD_H + 213,
     date: cr.x + RANK_PAD_H + 273,
   }
+  const avatarCx = cols.name + 9       // centro do avatar circular
+  const nameX    = cols.name + 24      // texto do nome (após o avatar)
   const hdrY = cr.y + RANK_PAD_V
 
   ctx.font = 'bold 10px Verdana,sans-serif'; ctx.fillStyle = MUTED; ctx.textAlign = 'left'
-  for (const [cx, lbl] of [[cols.rank, '#'], [cols.name, 'JOGADOR'], [cols.pts, 'PTS'], [cols.land, 'POUSO'], [cols.date, 'HORA']])
+  for (const [cx, lbl] of [[cols.rank, '#'], [nameX, 'JOGADOR'], [cols.pts, 'PTS'], [cols.land, 'POUSO'], [cols.date, 'HORA']])
     ctx.fillText(lbl, cx, hdrY + 10)
 
   ctx.strokeStyle = 'rgba(255,255,255,0.149)'; ctx.lineWidth = 1
@@ -740,9 +777,11 @@ function drawRankingTable(ctx, entries, scroll, curName, curScore) {
       ctx.fillText(String(gI + 1), cols.rank + 4, ry + 14)
     }
 
+    drawAvatar(ctx, avatarCx, ry + 11, 9, entry, isMe ? BLUE_C : 'rgba(120,160,210,0.6)')
+
     ctx.font = 'bold 12px Verdana,sans-serif'; ctx.textAlign = 'left'
     ctx.fillStyle = isMe ? BLUE_C : TEXT_C
-    ctx.fillText(entry.name.substring(0, 13), cols.name, ry + 14)
+    ctx.fillText(entry.name.substring(0, 12), nameX, ry + 14)
     ctx.fillStyle = GOLD_C; ctx.fillText(String(entry.score), cols.pts, ry + 14)
     ctx.font = '11px Verdana,sans-serif'; ctx.fillStyle = MUTED
     ctx.fillText(String(entry.landed ?? '-'), cols.land, ry + 15)
@@ -787,6 +826,8 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
   const [finalLanded, setFinalLanded] = useState(0)
   const [finalReason, setFinalReason] = useState('collision')
   const [playerName,  setPlayerName]  = useState('')
+  const [photo,       setPhoto]       = useState(null)   // foto da webcam p/ o ranking
+  const [camOpen,     setCamOpen]     = useState(false)
 
   // ── Input ──────────────────────────────────────────────────────
   const handleDown = useCallback((cx, cy) => {
@@ -841,10 +882,10 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
   // ── Game-over handlers ─────────────────────────────────────────
   const handleSave = useCallback(() => {
     const name = playerName.trim() || 'Anônimo'
-    saveRanking(name, finalScore, finalLanded)
+    saveRanking(name, finalScore, finalLanded, photo)
     setUiState('none')
     onBack()
-  }, [playerName, finalScore, finalLanded, onBack])
+  }, [playerName, finalScore, finalLanded, photo, onBack])
 
   const handleSkip = useCallback(() => {
     setUiState('none')
@@ -961,7 +1002,7 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
           phaseRef.current = 'gameover_wait'
           setFinalScore(gs.score); setFinalLanded(gs.landed)
           setFinalReason(gs.gameOverReason || 'collision')
-          setPlayerName(''); setUiState('gameover_input')
+          setPlayerName(''); setPhoto(null); setCamOpen(false); setUiState('gameover_input')
         }
         if (gs.snapshot) {
           ctx.putImageData(gs.snapshot, 0, 0)
@@ -1260,6 +1301,25 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
                   onKeyDown={e => e.key === 'Enter' && handleSave()}
                   autoFocus
                 />
+
+                {/* Foto da webcam para o ranking */}
+                <div className="atc-photo-entry">
+                  <button
+                    type="button"
+                    className={`atc-photo-avatar${photo ? ' has-photo' : ''}`}
+                    onClick={() => setCamOpen(true)}
+                    title={photo ? 'Refazer foto' : 'Tirar foto'}
+                  >
+                    {photo
+                      ? <img src={photo} alt="sua foto" />
+                      : <span className="atc-photo-icon">📷</span>}
+                    <span className="atc-photo-edit">{photo ? '↻' : '+'}</span>
+                  </button>
+                  <button type="button" className="atc-photo-btn" onClick={() => setCamOpen(true)}>
+                    {photo ? 'Refazer foto' : 'Tirar foto p/ o ranking'}
+                  </button>
+                </div>
+
                 <div className="atc-go-btns">
                   <button className="atc-btn atc-go-save" onClick={handleSave} type="button">
                     <span>SALVAR</span>
@@ -1324,6 +1384,13 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
           </div>
         </div>
       </div>
+
+      <WebcamCapture
+        open={camOpen}
+        accent="#4da3ff"
+        onCapture={setPhoto}
+        onClose={() => setCamOpen(false)}
+      />
     </div>
   )
 }
