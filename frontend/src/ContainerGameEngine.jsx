@@ -2035,6 +2035,7 @@ export default function Game({ startDirect = false, onBack }) {
   const [lastSavedIdx, setLastSavedIdx] = useState(-1)
   const [photo, setPhoto] = useState(null)        // foto da webcam p/ o ranking
   const [camOpen, setCamOpen] = useState(false)
+  const [rankDetail, setRankDetail] = useState(null)  // pessoa selecionada no ranking
   const [hudState, setHudState] = useState({
     score: 0, level: 1, reputation: 100, stacked: 0, rankPos: 1,
     graphEdgesPreview: [], bellmanFinalCost: 0,
@@ -2069,6 +2070,7 @@ export default function Game({ startDirect = false, onBack }) {
     setLastSavedIdx(-1)
     setPhoto(null)
     setCamOpen(false)
+    setRankDetail(null)
     setPhase('playing')
   }, [])
 
@@ -2382,6 +2384,7 @@ export default function Game({ startDirect = false, onBack }) {
                     onClick={() => {
                       setRankings(loadRankings())
                       setLastSavedIdx(-1)
+                      setRankDetail(null)
                       setPhase('ranking')
                     }}
                   >
@@ -2465,7 +2468,12 @@ export default function Game({ startDirect = false, onBack }) {
                   </tr>
                 ) : (
                   rankings.map((r, i) => (
-                    <tr key={i} className={i === lastSavedIdx ? 'rank-highlight' : ''}>
+                    <tr
+                      key={i}
+                      className={`cg-rank-trow${i === lastSavedIdx ? ' rank-highlight' : ''}`}
+                      onClick={() => setRankDetail({ entry: r, rank: i + 1 })}
+                      title="Ver detalhes"
+                    >
                       <td className={`rank-pos rank-pos-${i + 1}`}>{i + 1}</td>
                       <td className="rank-avatar-cell">
                         {r.photo
@@ -2481,8 +2489,38 @@ export default function Game({ startDirect = false, onBack }) {
             </table>
             <div className="btn-row">
               <button className="btn" onClick={startGame}>JOGAR</button>
-              <button className="btn btn-outline" onClick={() => startDirect && onBack ? onBack() : setPhase('menu')}>MENU</button>
+              <button className="btn btn-outline" onClick={() => { setRankDetail(null); startDirect && onBack ? onBack() : setPhase('menu') }}>MENU</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Detalhes do jogador (clique no ranking) ── */}
+      {phase === 'ranking' && rankDetail && (
+        <div className="overlay cg-detail-overlay" onClick={() => setRankDetail(null)}>
+          <div className="panel cg-detail-panel" onClick={e => e.stopPropagation()}>
+            <div className={`cg-detail-rankbadge cg-rankbadge-${rankDetail.rank}`}>#{rankDetail.rank}</div>
+            <div className="cg-detail-photo">
+              {rankDetail.entry.photo
+                ? <img src={rankDetail.entry.photo} alt={rankDetail.entry.name} />
+                : <span className="cg-detail-photo-empty">{(rankDetail.entry.name || '?').charAt(0)}</span>}
+            </div>
+            <h2 className="cg-detail-name">{rankDetail.entry.name}</h2>
+            <div className="cg-detail-stats">
+              <div className="cg-detail-stat">
+                <span className="cg-detail-stat-label">PONTUAÇÃO</span>
+                <span className="cg-detail-stat-value cg-detail-stat--gold">{rankDetail.entry.score}</span>
+              </div>
+              <div className="cg-detail-stat">
+                <span className="cg-detail-stat-label">POSIÇÃO</span>
+                <span className="cg-detail-stat-value">#{rankDetail.rank} de {rankings.length}</span>
+              </div>
+              <div className="cg-detail-stat">
+                <span className="cg-detail-stat-label">DATA</span>
+                <span className="cg-detail-stat-value">{rankDetail.entry.date || '—'}</span>
+              </div>
+            </div>
+            <button className="btn btn-outline cg-detail-back" onClick={() => setRankDetail(null)}>← VOLTAR AO RANKING</button>
           </div>
         </div>
       )}

@@ -22,6 +22,7 @@ export default function AirportGame({ onBack }) {
   const [showRanking, setShowRanking] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [ranking, setRanking] = useState([]);
+  const [rankDetail, setRankDetail] = useState(null);
 
   const handleMouseMove = (e) => {
     const x = e.clientX / window.innerWidth - 0.5;
@@ -36,7 +37,13 @@ export default function AirportGame({ onBack }) {
 
   const openRanking = () => {
     setRanking(loadRanking());
+    setRankDetail(null);
     setShowRanking(true);
+  };
+
+  const closeRanking = () => {
+    setRankDetail(null);
+    setShowRanking(false);
   };
 
   if (playing) {
@@ -279,11 +286,11 @@ export default function AirportGame({ onBack }) {
 
       {/* Ranking overlay */}
       {showRanking && (
-        <div className="ag-rank-overlay" onClick={e => e.target === e.currentTarget && setShowRanking(false)}>
+        <div className="ag-rank-overlay" onClick={e => e.target === e.currentTarget && closeRanking()}>
           <div className="panel ag-rank-panel">
             <div className="ag-rank-header">
               <h2 className="ag-rank-title">Ranking</h2>
-              <button className="ag-rank-close" onClick={() => setShowRanking(false)} type="button">✕</button>
+              <button className="ag-rank-close" onClick={closeRanking} type="button">✕</button>
             </div>
 
             {ranking.length === 0 ? (
@@ -291,18 +298,65 @@ export default function AirportGame({ onBack }) {
             ) : (
               <div className="ag-rank-list">
                 {ranking.slice(0, 15).map((entry, i) => (
-                  <div className="ag-rank-row" key={i}>
+                  <button
+                    className="ag-rank-row"
+                    key={i}
+                    type="button"
+                    onClick={() => setRankDetail({ entry, rank: i + 1 })}
+                    title="Ver detalhes"
+                  >
                     <span className="ag-rank-pos">
                       {i < 3 ? MEDALS[i] : <span className="ag-rank-num">{i + 1}</span>}
                     </span>
+                    {entry.photo
+                      ? <img className="ag-rank-photo" src={entry.photo} alt="" />
+                      : <span className="ag-rank-photo ag-rank-photo--empty">{(entry.name || '?').charAt(0)}</span>}
                     <span className="ag-rank-name">{entry.name}</span>
                     <span className="ag-rank-pts">{entry.score} pts</span>
                     <span className="ag-rank-land">{entry.landed ?? 0} ✈</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </div>
+
+          {/* Detalhe do jogador */}
+          {rankDetail && (
+            <div className="ag-detail-overlay" onClick={e => e.target === e.currentTarget && setRankDetail(null)}>
+              <div className="panel ag-detail-panel">
+                <div className={`ag-detail-rankbadge ag-rankbadge-${rankDetail.rank}`}>
+                  {rankDetail.rank <= 3 ? MEDALS[rankDetail.rank - 1] : `#${rankDetail.rank}`}
+                </div>
+                <div className="ag-detail-photo">
+                  {rankDetail.entry.photo
+                    ? <img src={rankDetail.entry.photo} alt={rankDetail.entry.name} />
+                    : <span className="ag-detail-photo-empty">{(rankDetail.entry.name || '?').charAt(0)}</span>}
+                </div>
+                <h2 className="ag-detail-name">{rankDetail.entry.name}</h2>
+                <div className="ag-detail-stats">
+                  <div className="ag-detail-stat">
+                    <span className="ag-detail-stat-label">PONTUAÇÃO</span>
+                    <span className="ag-detail-stat-value ag-detail-stat--gold">{rankDetail.entry.score}</span>
+                  </div>
+                  <div className="ag-detail-stat">
+                    <span className="ag-detail-stat-label">POUSADOS</span>
+                    <span className="ag-detail-stat-value">{rankDetail.entry.landed ?? 0} ✈</span>
+                  </div>
+                  <div className="ag-detail-stat">
+                    <span className="ag-detail-stat-label">POSIÇÃO</span>
+                    <span className="ag-detail-stat-value">#{rankDetail.rank} de {ranking.length}</span>
+                  </div>
+                  <div className="ag-detail-stat">
+                    <span className="ag-detail-stat-label">HORA</span>
+                    <span className="ag-detail-stat-value">{rankDetail.entry.time || '—'}</span>
+                  </div>
+                </div>
+                <button className="ag-detail-back" onClick={() => setRankDetail(null)} type="button">
+                  ← Voltar ao ranking
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

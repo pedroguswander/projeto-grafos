@@ -418,6 +418,60 @@
   transform: translateY(-1px);
 }
 
+/* ── Detalhe do jogador (clique no ranking) ─────────────────── */
+.atc-detail-overlay { z-index: 30; }
+.atc-detail-panel {
+  position: relative; min-width: 300px; max-width: 340px; gap: 12px;
+  animation: atc-detail-pop 0.26s cubic-bezier(0.2, 1.1, 0.4, 1);
+}
+@keyframes atc-detail-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.atc-detail-rankbadge {
+  position: absolute; top: 16px; right: 18px;
+  font-family: Inter, system-ui, sans-serif; font-weight: 900; font-size: 1.1rem;
+  letter-spacing: 1px; color: rgba(162,195,232,0.6);
+}
+.atc-rankbadge-1 { color: #f6c56f; text-shadow: 0 0 12px rgba(246,197,111,0.5); }
+.atc-rankbadge-2 { color: #c8cfd8; }
+.atc-rankbadge-3 { color: #cd7f32; }
+.atc-detail-photo {
+  width: 130px; height: 130px; border-radius: 50%; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; margin-top: 4px;
+  background: rgba(255,255,255,0.05);
+  border: 3px solid rgba(77,163,255,0.6);
+  box-shadow: 0 0 24px rgba(77,163,255,0.28), inset 0 0 18px rgba(0,0,0,0.5);
+}
+.atc-detail-photo img { width: 100%; height: 100%; object-fit: cover; }
+.atc-detail-photo-empty {
+  font-family: Inter, system-ui, sans-serif; font-size: 3.4rem; font-weight: 900;
+  color: #d6e8ff; text-transform: uppercase;
+}
+.atc-detail-name {
+  font-family: Inter, system-ui, sans-serif; font-size: 1.5rem; font-weight: 900;
+  letter-spacing: 1px; color: #edf3ff; margin: 0; text-align: center;
+  text-shadow: 0 0 16px rgba(77,163,255,0.35);
+}
+.atc-detail-stats {
+  display: flex; flex-direction: column; gap: 1px; width: 100%;
+  border: 1px solid rgba(77,163,255,0.16); border-radius: 12px; overflow: hidden;
+  background: rgba(255,255,255,0.02);
+}
+.atc-detail-stat {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: rgba(255,255,255,0.02);
+}
+.atc-detail-stat-label {
+  font-family: Inter, system-ui, sans-serif; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 1.5px; color: rgba(162,195,232,0.7);
+}
+.atc-detail-stat-value {
+  font-family: Inter, system-ui, sans-serif; font-size: 1rem; font-weight: 800; color: #edf3ff;
+}
+.atc-detail-stat--gold { color: #f6c56f; }
+.atc-detail-back { width: 100%; margin-top: 6px; }
+
 /* ── Buttons (game-over + ranking) ───────────────────────────── */
 .atc-btn {
   padding: 11px 30px;

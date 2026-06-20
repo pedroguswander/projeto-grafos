@@ -29,6 +29,7 @@ export default function ContainerGame({ onBack }) {
   const [showRanking, setShowRanking]   = useState(false)
   const [rankings, setRankings]         = useState([])
   const [showInfo, setShowInfo]         = useState(false)
+  const [rankDetail, setRankDetail]     = useState(null)
 
   const handleMouseMove = (e) => {
     const x = e.clientX / window.innerWidth - 0.5
@@ -43,7 +44,13 @@ export default function ContainerGame({ onBack }) {
 
   const openRanking = () => {
     setRankings(loadRankings())
+    setRankDetail(null)
     setShowRanking(true)
+  }
+
+  const closeRanking = () => {
+    setRankDetail(null)
+    setShowRanking(false)
   }
 
   if (playing) {
@@ -291,11 +298,11 @@ export default function ContainerGame({ onBack }) {
       )}
 
       {showRanking && (
-        <div className="cg-rank-overlay" onClick={e => e.target === e.currentTarget && setShowRanking(false)}>
+        <div className="cg-rank-overlay" onClick={e => e.target === e.currentTarget && closeRanking()}>
           <div className="cg-rank-panel">
             <div className="cg-rank-header">
               <h2 className="cg-rank-title">TOP 10</h2>
-              <button className="cg-rank-close" onClick={() => setShowRanking(false)} type="button">✕</button>
+              <button className="cg-rank-close" onClick={closeRanking} type="button">✕</button>
             </div>
 
             {rankings.length === 0 ? (
@@ -303,26 +310,69 @@ export default function ContainerGame({ onBack }) {
             ) : (
               <div className="cg-rank-list">
                 {rankings.slice(0, 10).map((entry, i) => (
-                  <div className="cg-rank-row" key={i}>
+                  <button
+                    className="cg-rank-row"
+                    key={i}
+                    type="button"
+                    onClick={() => setRankDetail({ entry, rank: i + 1 })}
+                    title="Ver detalhes"
+                  >
                     <span className="cg-rank-pos">
                       {i < 3 ? MEDALS[i] : <span className="cg-rank-num">{i + 1}</span>}
                     </span>
+                    {entry.photo
+                      ? <img className="cg-rank-photo" src={entry.photo} alt="" />
+                      : <span className="cg-rank-photo cg-rank-photo--empty">{(entry.name || '?').charAt(0)}</span>}
                     <span className="cg-rank-name">{entry.name}</span>
                     <span className="cg-rank-pts">{entry.score} pts</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
 
             <button
               className="cg-nav-btn cg-nav-btn--play cg-rank-play-btn"
-              onClick={() => { setShowRanking(false); setPlaying(true) }}
+              onClick={() => { closeRanking(); setPlaying(true) }}
               type="button"
             >
               <span className="cg-nav-btn-title">▶ JOGAR AGORA</span>
               <span className="cg-nav-btn-sub">Iniciar partida</span>
             </button>
           </div>
+
+          {/* Detalhe do jogador */}
+          {rankDetail && (
+            <div className="cg-detail-overlay2" onClick={e => e.target === e.currentTarget && setRankDetail(null)}>
+              <div className="cg-rank-panel cg-detail-panel2">
+                <div className={`cg-detail2-rankbadge cg-rankbadge2-${rankDetail.rank}`}>
+                  {rankDetail.rank <= 3 ? MEDALS[rankDetail.rank - 1] : `#${rankDetail.rank}`}
+                </div>
+                <div className="cg-detail2-photo">
+                  {rankDetail.entry.photo
+                    ? <img src={rankDetail.entry.photo} alt={rankDetail.entry.name} />
+                    : <span className="cg-detail2-photo-empty">{(rankDetail.entry.name || '?').charAt(0)}</span>}
+                </div>
+                <h2 className="cg-detail2-name">{rankDetail.entry.name}</h2>
+                <div className="cg-detail2-stats">
+                  <div className="cg-detail2-stat">
+                    <span className="cg-detail2-label">PONTUAÇÃO</span>
+                    <span className="cg-detail2-value cg-detail2-value--gold">{rankDetail.entry.score}</span>
+                  </div>
+                  <div className="cg-detail2-stat">
+                    <span className="cg-detail2-label">POSIÇÃO</span>
+                    <span className="cg-detail2-value">#{rankDetail.rank} de {rankings.length}</span>
+                  </div>
+                  <div className="cg-detail2-stat">
+                    <span className="cg-detail2-label">DATA</span>
+                    <span className="cg-detail2-value">{rankDetail.entry.date || '—'}</span>
+                  </div>
+                </div>
+                <button className="cg-detail2-back" onClick={() => setRankDetail(null)} type="button">
+                  ← Voltar ao ranking
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

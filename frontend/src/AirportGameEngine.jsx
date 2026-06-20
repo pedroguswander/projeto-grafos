@@ -828,6 +828,7 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
   const [playerName,  setPlayerName]  = useState('')
   const [photo,       setPhoto]       = useState(null)   // foto da webcam p/ o ranking
   const [camOpen,     setCamOpen]     = useState(false)
+  const [rankDetail,  setRankDetail]  = useState(null)   // pessoa selecionada no ranking
 
   // ── Input ──────────────────────────────────────────────────────
   const handleDown = useCallback((cx, cy) => {
@@ -846,13 +847,28 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
       if (pointInRect(RANK_BTN, pos.x, pos.y)) {
         rankingRef.current = loadRanking()
         scrollRef.current  = 0
+        setRankDetail(null)
         phaseRef.current   = 'ranking'
         return
       }
     }
 
     if (phase === 'ranking') {
-      if (pointInRect(BACK_BTN, pos.x, pos.y)) { phaseRef.current = 'menu'; return }
+      if (pointInRect(BACK_BTN, pos.x, pos.y)) { setRankDetail(null); canvas.style.cursor = ''; phaseRef.current = 'menu'; return }
+      // clique numa linha → abre detalhes do jogador
+      const cr = RANK_CARD
+      const hdrY = cr.y + RANK_PAD_V
+      const row0 = hdrY + 22
+      const vis  = Math.max(1, Math.floor((cr.h - RANK_PAD_V * 2 - 14 - 6) / RANK_ROW_H))
+      const inX  = pos.x >= cr.x + RANK_PAD_H && pos.x <= cr.x + cr.w - RANK_PAD_H
+      if (inX && pos.y >= row0 - 1) {
+        const i = Math.floor((pos.y - (row0 - 1)) / RANK_ROW_H)
+        if (i >= 0 && i < vis) {
+          const gI = scrollRef.current + i
+          const entry = rankingRef.current[gI]
+          if (entry) { setRankDetail({ entry, rank: gI + 1 }); return }
+        }
+      }
     }
 
     if (phase === 'playing') {
@@ -862,8 +878,23 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
   }, [onBack])
 
   const handleMove = useCallback((cx, cy) => {
-    if (phaseRef.current !== 'playing') return
     const canvas = canvasRef.current; if (!canvas) return
+    const phase = phaseRef.current
+    if (phase === 'ranking') {
+      const pos = toCanvas(canvas, cx, cy)
+      const cr = RANK_CARD
+      const row0 = cr.y + RANK_PAD_V + 22
+      const vis  = Math.max(1, Math.floor((cr.h - RANK_PAD_V * 2 - 14 - 6) / RANK_ROW_H))
+      const inX  = pos.x >= cr.x + RANK_PAD_H && pos.x <= cr.x + cr.w - RANK_PAD_H
+      let over = false
+      if (inX && pos.y >= row0 - 1) {
+        const i = Math.floor((pos.y - (row0 - 1)) / RANK_ROW_H)
+        if (i >= 0 && i < vis && rankingRef.current[scrollRef.current + i]) over = true
+      }
+      canvas.style.cursor = over ? 'pointer' : 'default'
+      return
+    }
+    if (phase !== 'playing') return
     const pos = toCanvas(canvas, cx, cy)
     const gs  = gsRef.current; if (!gs) return
     gs.mouseX = pos.x; gs.mouseY = pos.y
@@ -1384,6 +1415,42 @@ export default function AirportGameEngine({ onBack, startDirect = false }) {
           </div>
         </div>
       </div>
+
+      {/* Detalhes do jogador (clique no ranking) */}
+      {rankDetail && (
+        <div className="atc-overlay atc-detail-overlay" onClick={() => setRankDetail(null)}>
+          <div className="atc-panel atc-detail-panel" onClick={e => e.stopPropagation()}>
+            <div className={`atc-detail-rankbadge atc-rankbadge-${rankDetail.rank}`}>#{rankDetail.rank}</div>
+            <div className="atc-detail-photo">
+              {rankDetail.entry.photo
+                ? <img src={rankDetail.entry.photo} alt={rankDetail.entry.name} />
+                : <span className="atc-detail-photo-empty">{(rankDetail.entry.name || '?').charAt(0)}</span>}
+            </div>
+            <h2 className="atc-detail-name">{rankDetail.entry.name}</h2>
+            <div className="atc-detail-stats">
+              <div className="atc-detail-stat">
+                <span className="atc-detail-stat-label">PONTUAÇÃO</span>
+                <span className="atc-detail-stat-value atc-detail-stat--gold">{rankDetail.entry.score}</span>
+              </div>
+              <div className="atc-detail-stat">
+                <span className="atc-detail-stat-label">POUSADOS</span>
+                <span className="atc-detail-stat-value">{rankDetail.entry.landed ?? '—'}</span>
+              </div>
+              <div className="atc-detail-stat">
+                <span className="atc-detail-stat-label">POSIÇÃO</span>
+                <span className="atc-detail-stat-value">#{rankDetail.rank} de {rankingRef.current.length}</span>
+              </div>
+              <div className="atc-detail-stat">
+                <span className="atc-detail-stat-label">HORA</span>
+                <span className="atc-detail-stat-value">{rankDetail.entry.time || '—'}</span>
+              </div>
+            </div>
+            <button className="atc-btn atc-btn-outline atc-detail-back" onClick={() => setRankDetail(null)} type="button">
+              ← Voltar ao ranking
+            </button>
+          </div>
+        </div>
+      )}
 
       <WebcamCapture
         open={camOpen}
