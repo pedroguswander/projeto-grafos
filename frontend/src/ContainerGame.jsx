@@ -295,6 +295,7 @@ export default function ContainerGame({ onBack }) {
           <div className="cg-rank-panel">
             <div className="cg-rank-header">
               <h2 className="cg-rank-title">TOP 10</h2>
+              <button className="cg-rank-clear" onClick={() => { localStorage.removeItem(RANKING_KEY); setRankings([]); }} type="button" title="Zerar ranking">🗑</button>
               <button className="cg-rank-close" onClick={() => setShowRanking(false)} type="button">✕</button>
             </div>
 
