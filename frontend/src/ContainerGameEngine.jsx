@@ -34,7 +34,7 @@ const PEND_FREQ_INC = 0.0037
 const LAND_OVERLAP = 0.35
 const LAND_DELAY = 28
 // ── Balanço da torre (a partir do nível 7) ─────────────────────
-const SWAY_START_LEVEL = 2
+const SWAY_START_LEVEL = 7
 const SWAY_FREQ = 0.028      // velocidade do bamboleio (lento e fluido)
 const SWAY_LAG = 0.9         // defasagem por altura → efeito chicote
 const SWAY_MAX_PX = 18       // deslocamento máximo no topo
@@ -317,7 +317,10 @@ function makeState() {
     nextImg: randContainerKey(),
     nextScale: scale,
     pivotX: CW / 2,
+    prevPivotX: CW / 2, // posição do carrinho no frame anterior (p/ detectar movimento)
     cartDir: 1,
+    smoke: [],          // fumaça do carrinho (espaço de tela)
+    smokeTimer: 0,
     clawOpen: 0,        // 0 = garra fechada (segurando), 1 = aberta (soltou)
     clawRecoil: 0,      // recuo elástico do cabo ao soltar a carga
     grabT: 0,           // animação de "morder" ao pegar a carga (0→1 elástico)
@@ -421,6 +424,16 @@ function update(s) {
     s.pivotX += (center - s.pivotX) * 0.12
     if (Math.abs(center - s.pivotX) < 0.1) s.pivotX = center
   }
+
+  // ── fumaça do carrinho: emite enquanto o trole traversa (acompanha-o) ──
+  const cartDelta = s.pivotX - (s.prevPivotX ?? s.pivotX)
+  s.prevPivotX = s.pivotX
+  if (s.smokeTimer > 0) s.smokeTimer--
+  if (Math.abs(cartDelta) > 0.06 && s.smokeTimer <= 0) {
+    spawnCartSmoke(s, cartDelta)
+    s.smokeTimer = 4
+  }
+  updateSmoke(s)
 
   if (s.level >= ROPE_PULSE_START_LEVEL && !s.dropping && s.landDelay === 0) {
     s.ropePulseTime += ROPE_PULSE_SPEED
@@ -585,6 +598,52 @@ function spawnDust(s, cx, wy, width) {
   }
 }
 
+// ── Fumaça do carrinho (trole) ─────────────────────────────────
+// Pequenos baforos cinza que sobem do topo do carrinho enquanto ele se move.
+// Vivem em espaço de TELA (o carrinho é desenhado sem o translate da câmera),
+// por isso não entram no rebase do mundo.
+function spawnCartSmoke(s, dir) {
+  const cx = s.pivotX - CART_W * 0.12 + (Math.random() - 0.5) * 8
+  const cy = getCartY() - CART_H / 2 + 6
+  const drift = -Math.sign(dir) * (0.18 + Math.random() * 0.30)  // arrasta p/ trás do movimento
+  s.smoke.push({
+    x: cx, y: cy,
+    vx: drift + (Math.random() - 0.5) * 0.25,
+    vy: -(0.32 + Math.random() * 0.40),                          // sobe
+    size: 3 + Math.random() * 3,
+    grow: 0.16 + Math.random() * 0.22,
+    alpha: 0.30 + Math.random() * 0.18,
+    fade: 0.0065 + Math.random() * 0.005,
+  })
+  if (s.smoke.length > 60) s.smoke.shift()
+}
+
+function updateSmoke(s) {
+  if (!s.smoke.length) return
+  s.smoke = s.smoke.filter(p => p.alpha > 0.02)
+  for (const p of s.smoke) {
+    p.x += p.vx; p.y += p.vy
+    p.vy *= 0.98; p.vx *= 0.97
+    p.size += p.grow
+    p.alpha -= p.fade
+  }
+}
+
+function drawCartSmoke(ctx, s) {
+  if (!s.smoke || !s.smoke.length) return
+  ctx.save()
+  for (const p of s.smoke) {
+    ctx.globalAlpha = Math.max(0, p.alpha)
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size)
+    g.addColorStop(0, 'rgba(228,233,235,0.92)')
+    g.addColorStop(0.6, 'rgba(182,190,194,0.5)')
+    g.addColorStop(1, 'rgba(165,174,178,0)')
+    ctx.fillStyle = g
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill()
+  }
+  ctx.restore()
+}
+
 function updateParticles(s) {
   s.particles = s.particles.filter(p => p.alpha > 0.04)
   for (const p of s.particles) {
@@ -716,6 +775,7 @@ function draw(ctx, s, imgs) {
   ctx.restore()
 
   drawCraneTop(ctx, s, imgs)
+  drawCartSmoke(ctx, s)
   drawClaw(ctx, s)
 
   ctx.restore()
@@ -1491,15 +1551,16 @@ function drawHeadblock(ctx, cx, cy, w, h) {
 // Pod de canto com twistlock — o indicador gira p/ travar (verde) / soltar (âmbar).
 function drawTwistPod(ctx, cx, topY, w, h, lockT, back) {
   ctx.save()
-  if (back) ctx.globalAlpha = 0.85
+  if (back) ctx.globalAlpha = 0.92
   ctx.fillStyle = back ? '#20251f' : '#2a302c'
   clawRoundRect(ctx, cx - w / 2 - 1.5, topY - 1.5, w + 3, h + 3, 4); ctx.fill()
   const g = ctx.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0)
-  if (back) { g.addColorStop(0, '#3a423d'); g.addColorStop(1, '#252b27') }
+  // traseira: cinza médio (visível, mas um tom abaixo da frente p/ ler como "atrás")
+  if (back) { g.addColorStop(0, '#8b9591'); g.addColorStop(0.5, '#5c655f'); g.addColorStop(1, '#3a423d') }
   else { g.addColorStop(0, '#d7dee0'); g.addColorStop(0.5, '#8b9591'); g.addColorStop(1, '#525b56') }
   ctx.fillStyle = g
   clawRoundRect(ctx, cx - w / 2, topY, w, h, 3); ctx.fill()
-  ctx.fillStyle = back ? '#7a6320' : '#e8b730'
+  ctx.fillStyle = back ? '#b8901f' : '#e8b730'
   ctx.fillRect(cx - w / 2 + 2, topY + 2, w - 4, 3)
   if (!back) {
     // indicador giratório de trava (twistlock)
@@ -1519,18 +1580,22 @@ function drawTwistPod(ctx, cx, topY, w, h, lockT, back) {
 }
 
 // Aba-guia (flipper) articulada que abraça o canto do contêiner; abre ao soltar.
-function drawFlipper(ctx, hingeX, hingeY, len, wTop, dirX, openT) {
+// back=true → versão recuada (atrás do contêiner): tom mais escuro p/ profundidade.
+function drawFlipper(ctx, hingeX, hingeY, len, wTop, dirX, openT, back) {
   const ang = dirX * (0.12 + openT * 0.55)
-  ctx.save(); ctx.translate(hingeX, hingeY); ctx.rotate(ang)
+  ctx.save()
+  if (back) ctx.globalAlpha = 0.82
+  ctx.translate(hingeX, hingeY); ctx.rotate(ang)
   ctx.beginPath()
   ctx.moveTo(-wTop * 0.5, 0); ctx.lineTo(wTop * 0.5, 0)
   ctx.lineTo(wTop * 0.30, len); ctx.lineTo(-wTop * 0.30, len); ctx.closePath()
   const g = ctx.createLinearGradient(-wTop * 0.5, 0, wTop * 0.5, 0)
-  g.addColorStop(0, '#c4cec8'); g.addColorStop(0.5, '#79847d'); g.addColorStop(1, '#39413c')
+  if (back) { g.addColorStop(0, '#717c76'); g.addColorStop(0.5, '#454e49'); g.addColorStop(1, '#252b27') }
+  else { g.addColorStop(0, '#c4cec8'); g.addColorStop(0.5, '#79847d'); g.addColorStop(1, '#39413c') }
   ctx.fillStyle = g; ctx.fill()
   ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1; ctx.stroke()
   // ponta-guia amarela (funil que centraliza no contêiner)
-  ctx.fillStyle = '#e8b730'
+  ctx.fillStyle = back ? '#9a7a1c' : '#e8b730'
   ctx.beginPath()
   ctx.moveTo(-wTop * 0.30, len); ctx.lineTo(wTop * 0.30, len); ctx.lineTo(0, len + wTop * 0.42); ctx.closePath(); ctx.fill()
   ctx.restore()
@@ -1586,10 +1651,18 @@ function drawClaw(ctx, s) {
   }
   ctx.restore()
 
-  // ── estrutura traseira (profundidade 3D): viga + pods recuados ──
+  // dimensões dos flippers (usadas pela estrutura traseira e dianteira)
+  const flipLen = Math.round(contH * 0.5)
+  const flipW = Math.max(8, Math.round(contW * 0.13))
+
+  // ── estrutura traseira (profundidade 3D): viga + flippers + pods recuados ──
+  // Desenhada ANTES do contêiner → fica atrás; só o topo dos pods/abas "espia"
+  // acima da borda traseira, vendendo a garra travando nos 4 cantos.
   drawSpreaderBeam(ctx, beamX0 + dx, beamX1 + dx, beamY + dy, beamH * 0.9)
-  drawTwistPod(ctx, contX + dx, beamTop + dy, Math.max(8, contW * 0.12), beamH * 1.4, lockT, true)
-  drawTwistPod(ctx, Rg + dx, beamTop + dy, Math.max(8, contW * 0.12), beamH * 1.4, lockT, true)
+  drawFlipper(ctx, contX + dx, beamBot + dy, flipLen, flipW, -1, open, true)
+  drawFlipper(ctx, Rg + dx, beamBot + dy, flipLen, flipW, 1, open, true)
+  drawTwistPod(ctx, contX + dx, beamTop + dy, Math.max(8, contW * 0.12), beamH * 1.9, lockT, true)
+  drawTwistPod(ctx, Rg + dx, beamTop + dy, Math.max(8, contW * 0.12), beamH * 1.9, lockT, true)
 
   // ── carga suspensa (entre a estrutura traseira e a dianteira) ──
   if (aiming) {
@@ -1601,8 +1674,6 @@ function drawClaw(ctx, s) {
   }
 
   // ── flippers dianteiros abraçando os cantos (abrem ao soltar) ──
-  const flipLen = Math.round(contH * 0.5)
-  const flipW = Math.max(8, Math.round(contW * 0.13))
   drawFlipper(ctx, contX, beamBot, flipLen, flipW, -1, open)
   drawFlipper(ctx, Rg, beamBot, flipLen, flipW, 1, open)
 
