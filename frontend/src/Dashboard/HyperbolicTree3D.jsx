@@ -3,7 +3,7 @@ import ForceGraph3D from "react-force-graph-3d"
 import SpriteText from "three-spritetext"
 import axios from "axios"
 
-const API = "http://localhost:5000"
+const API = import.meta.env.VITE_API_URL ?? ""
 
 const REGION_CONTINENT = {
   "West Med":               "Europa",

@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SDL_VIDEODRIVER=dummy
+      - SDL_AUDIODRIVER=dummy
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

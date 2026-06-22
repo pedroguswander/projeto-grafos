@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import Modal from 'react-modal';
-import './css/database.css';
 import aviaoCru from './assets/Aviao/aviao cru.png';
 import asasImg from './assets/Aviao/azas.png';
 import caldaImg from './assets/Aviao/calda.png';

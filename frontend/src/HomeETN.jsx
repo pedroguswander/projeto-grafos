@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import logoCompletaEtn from './assets/logo-2/logo-branca-isolada2.png';
+import logoCompletaEtn from './assets/logo-2/logo-branca-completa2.png';
 import navioCabine from './assets/Navio_cabine.png';
 import './css/Home.css';
 

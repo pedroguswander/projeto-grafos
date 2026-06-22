@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
+
+const API = import.meta.env.VITE_API_URL ?? ""
 import { Network } from 'vis-network/standalone'
 import GlobeGL from 'react-globe.gl'
 import * as THREE from 'three'
@@ -374,7 +376,7 @@ function BrazilMap({
                 opacity: 0.8
               }}
             >
-              ✦ Rota ativa
+              Rota ativa
             </div>
           )}
         </div>
@@ -797,7 +799,6 @@ function AirportStopPanel({ airportCode, aeroportosData, isOrigin, isDestination
           <div className="airport-stop-curiosities-title">Curiosidades</div>
           {(info.curiosities || ['Aeroporto regional brasileiro.']).map((c, i) => (
             <div key={i} className="airport-stop-curiosity">
-              <span className="airport-stop-curiosity-bullet">✦</span>
               {c}
             </div>
           ))}
@@ -1267,8 +1268,8 @@ function Globe3DModalETA({ onClose, graphData, pathResult, startAirport, endAirp
               `<div style="font-weight:800;color:#f1f5f9;font-size:15px">${d.id}</div>` +
               `<div style="color:#94a3b8;font-size:12px;margin-top:3px">${d.city}</div>` +
               `<div style="color:#475569;font-size:10px;margin-top:2px">${d.region}</div>` +
-              (d.isStart ? `<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">✦ Origem</div>` : '') +
-              (d.isEnd ? `<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">✦ Destino</div>` : '') +
+              (d.isStart ? `<div style="color:#26c281;font-size:11px;font-weight:700;margin-top:5px">Origem</div>` : '') +
+              (d.isEnd ? `<div style="color:#ff6b6b;font-size:11px;font-weight:700;margin-top:5px">Destino</div>` : '') +
               (d.inPath && !d.isStart && !d.isEnd
                 ? `<div style="color:#FFD700;font-size:11px;font-weight:700;margin-top:5px">★ Na rota</div>`
                 : '') +
@@ -1473,7 +1474,6 @@ function AirportCuriosityModal({ airportCode, aeroportosData, onClose }) {
           <div className="acm-curiosities">
             {(info.curiosities || ['Aeroporto regional brasileiro.']).map((c, i) => (
               <div key={i} className="acm-curiosity">
-                <span className="acm-bullet">✦</span>
                 <span>{c}</span>
               </div>
             ))}
@@ -1566,7 +1566,7 @@ function App({ onNavigate }) {
 
   const loadGraphData = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/graph-data')
+      const response = await axios.get(`${API}/api/graph-data`)
       setGraphData(normalizeGraphData(response.data))
     } catch (error) {
       console.error('Erro ao carregar dados do grafo:', error)
@@ -1588,8 +1588,8 @@ function App({ onNavigate }) {
     async function fetchCSVs() {
       try {
         const [aeroData, egoData] = await Promise.all([
-          axios.get('http://localhost:5000/api/aeroportos-data'),
-          axios.get('http://localhost:5000/api/ego-aeroportos')
+          axios.get(`${API}/api/aeroportos-data`),
+          axios.get(`${API}/api/ego-aeroportos`)
         ])
 
         const aeroObj = {}
@@ -1935,7 +1935,7 @@ function App({ onNavigate }) {
     setLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:5000/api/dijkstra', {
+      const response = await axios.post(`${API}/api/dijkstra`, {
         start: customStart,
         end: customEnd
       })
